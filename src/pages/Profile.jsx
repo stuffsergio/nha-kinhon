@@ -74,7 +74,7 @@ export default function Profile() {
       </div>
 
       <div className="flex flex-col gap-4 border border-black/60 p-6">
-        <h3>Pedidos realizados anteriormente</h3>
+        <h3>Pedidos realizados</h3>
         <div className="flex flex-col gap-2 px-14">
           {pedidosRealizados.map((p, index) => (
             <div
