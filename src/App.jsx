@@ -5,6 +5,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Services from "./pages/Services";
 import Profile from "./pages/Profile";
+import Support from "./pages/Support";
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
           <Route index element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/servicios" element={<Services />} />
+          <Route path="/support" element={<Support />} />
           <Route path="/perfil" element={<Profile />} />
         </Route>
       </Routes>
