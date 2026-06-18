@@ -2,10 +2,10 @@ import "./App.css";
 import { Routes, Route } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
 import Home from "./pages/Home";
-import Login from "./pages/Login";
-import Services from "./pages/Services";
 import Profile from "./pages/Profile";
-import Support from "./pages/Support";
+import Map from "./pages/Map";
+import Search from "./pages/Search";
+import Cart from "./pages/Cart";
 
 export default function App() {
   return (
@@ -13,9 +13,9 @@ export default function App() {
       <Routes>
         <Route element={<MainLayout />}>
           <Route index element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/servicios" element={<Services />} />
-          <Route path="/support" element={<Support />} />
+          <Route path="/mapa" element={<Map />} />
+          <Route path="/buscar" element={<Search />} />
+          <Route path="/carrito" element={<Cart />} />
           <Route path="/perfil" element={<Profile />} />
         </Route>
       </Routes>

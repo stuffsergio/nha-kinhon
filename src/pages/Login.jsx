@@ -32,7 +32,7 @@ export default function Login() {
       return;
     }
 
-    if (form.email != admin.email) {
+    if (form.email !== admin.email) {
       setError("Usuario no existente");
       return;
     } else if (form.password != admin.password) {
