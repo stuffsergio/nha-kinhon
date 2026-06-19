@@ -2,15 +2,17 @@ import { Clock, X } from "lucide-react";
 
 export default function SearchHistory({ history, onHistoryClick, onClearHistory }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-4">
+    <div className="bg-[#ffffff] border border-[#e0e0e0] rounded-[18px] p-[24px] no-shadow">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Clock size={20} className="text-gray-500" />
-          <h3 className="font-semibold">Búsquedas recientes</h3>
+          <Clock size={20} className="text-[#7a7a7a]" />
+          <h3 className="font-apple-display text-[21px] font-semibold leading-[1.19] tracking-[0.231px] text-[#1d1d1f]">
+            Búsquedas recientes
+          </h3>
         </div>
         <button
           onClick={onClearHistory}
-          className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+          className="font-apple-body text-[14px] font-normal leading-[1.29] tracking-[-0.224px] text-[#7a7a7a] hover:text-[#1d1d1f] flex items-center gap-1"
         >
           <X size={16} />
           Limpiar
@@ -21,7 +23,7 @@ export default function SearchHistory({ history, onHistoryClick, onClearHistory 
           <button
             key={index}
             onClick={() => onHistoryClick(query)}
-            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full text-sm transition-colors"
+            className="px-4 py-2 bg-[#f5f5f7] hover:bg-[#e0e0e0] rounded-[9999px] font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#1d1d1f] transition-colors"
           >
             {query}
           </button>

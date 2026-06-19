@@ -16,8 +16,8 @@ export default function BottomNavBar() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-black/20 shadow-lg z-50">
-      <div className="max-w-md mx-auto flex justify-around items-center py-3 px-4">
+    <nav className="fixed bottom-0 left-0 right-0 bg-[#000000] h-[44px] z-50">
+      <div className="max-w-md mx-auto h-full flex justify-around items-center px-4">
         {navItems.map((item) => {
           const Icon = item.icon;
           return (
@@ -25,15 +25,17 @@ export default function BottomNavBar() {
               key={item.path}
               to={item.path}
               className={({ isActive }) =>
-                `relative flex flex-col items-center gap-1 px-3 py-1 rounded-lg transition-colors ${
-                  isActive ? "text-black" : "text-gray-500 hover:text-gray-700"
+                `relative flex flex-col items-center gap-1 px-3 py-1 btn-apple-active ${
+                  isActive ? "text-white" : "text-[#7a7a7a] hover:text-white"
                 }`
               }
             >
-              <Icon size={24} />
-              <span className="text-xs">{item.label}</span>
+              <Icon size={18} />
+              <span className="font-apple-body text-[12px] font-normal leading-[1.0] tracking-[-0.12px]">
+                {item.label}
+              </span>
               {item.badge && item.badge > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 bg-[#0066cc] text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
                   {item.badge}
                 </span>
               )}

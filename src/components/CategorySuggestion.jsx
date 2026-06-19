@@ -13,7 +13,9 @@ export default function CategorySuggestion({ categories, onCategoryClick }) {
   return (
     <div className="space-y-6">
       <section>
-        <h2 className="text-xl font-bold mb-4">Categorías</h2>
+        <h2 className="font-apple-display text-[34px] font-semibold leading-[1.47] tracking-[-0.374px] text-[#1d1d1f] mb-4">
+          Categorías
+        </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {categories.slice(0, 8).map((category) => {
             const Icon = LucideIcons[category.icon] || LucideIcons.Circle;
@@ -21,12 +23,14 @@ export default function CategorySuggestion({ categories, onCategoryClick }) {
               <button
                 key={category.id}
                 onClick={() => onCategoryClick(category.name)}
-                className="bg-white border border-gray-200 p-4 rounded-xl hover:border-blue-500 hover:shadow-md transition-all flex flex-col items-center gap-3"
+                className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow hover:border-[#0066cc] transition-colors flex flex-col items-center gap-4"
               >
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Icon size={24} className="text-blue-600" />
+                <div className="w-12 h-12 bg-[#f5f5f7] rounded-full flex items-center justify-center">
+                  <Icon size={24} className="text-[#1d1d1f]" />
                 </div>
-                <span className="text-sm font-medium">{category.name}</span>
+                <span className="font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#1d1d1f]">
+                  {category.name}
+                </span>
               </button>
             );
           })}
@@ -34,7 +38,9 @@ export default function CategorySuggestion({ categories, onCategoryClick }) {
       </section>
 
       <section>
-        <h2 className="text-xl font-bold mb-4">Alimentos Populares</h2>
+        <h2 className="font-apple-display text-[34px] font-semibold leading-[1.47] tracking-[-0.374px] text-[#1d1d1f] mb-4">
+          Alimentos Populares
+        </h2>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {sampleProducts.map((product) => {
             const Icon = LucideIcons[product.icon] || LucideIcons.Circle;
@@ -42,12 +48,14 @@ export default function CategorySuggestion({ categories, onCategoryClick }) {
               <button
                 key={product.name}
                 onClick={() => onCategoryClick(product.name)}
-                className="bg-white border border-gray-200 p-4 rounded-xl hover:border-blue-500 hover:shadow-md transition-all flex items-center gap-3"
+                className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow hover:border-[#0066cc] transition-colors flex items-center gap-4"
               >
-                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                  <Icon size={20} className="text-green-600" />
+                <div className="w-10 h-10 bg-[#f5f5f7] rounded-full flex items-center justify-center">
+                  <Icon size={20} className="text-[#1d1d1f]" />
                 </div>
-                <span className="text-sm font-medium">{product.name}</span>
+                <span className="font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#1d1d1f]">
+                  {product.name}
+                </span>
               </button>
             );
           })}

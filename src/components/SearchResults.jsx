@@ -1,5 +1,6 @@
-import { Apple, Store, Tag, X } from "lucide-react";
+import { Apple, Store, Tag } from "lucide-react";
 import { useCart } from "../context/CartContext";
+import ButtonPrimary from "./ButtonPrimary";
 
 export default function SearchResults({ results, searchQuery }) {
   const { addToCart } = useCart();
@@ -30,80 +31,67 @@ export default function SearchResults({ results, searchQuery }) {
     }
   };
 
-  const getTypeColor = (type) => {
-    switch (type) {
-      case "product":
-        return "text-green-600 bg-green-100";
-      case "market":
-        return "text-blue-600 bg-blue-100";
-      case "category":
-        return "text-purple-600 bg-purple-100";
-      default:
-        return "text-gray-600 bg-gray-100";
-    }
-  };
-
   if (results.length === 0) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-500 text-lg">No se encontraron resultados para "{searchQuery}"</p>
+      <div className="text-center py-[80px]">
+        <p className="font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a]">
+          No se encontraron resultados para "{searchQuery}"
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <p className="text-gray-600">
+    <div className="space-y-6">
+      <p className="font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a]">
         {results.length} resultado{results.length !== 1 ? "s" : ""} para "{searchQuery}"
       </p>
       
-      <div className="space-y-3">
+      <div className="space-y-4">
         {results.map((result) => {
           const Icon = getIcon(result.type);
-          const typeColor = getTypeColor(result.type);
           const typeLabel = getTypeLabel(result.type);
 
           return (
             <div
               key={`${result.type}-${result.id}`}
-              className="bg-white border border-gray-200 p-4 rounded-xl hover:shadow-md transition-shadow"
+              className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow"
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-4">
-                  <div className={`p-3 rounded-lg ${typeColor}`}>
-                    <Icon size={24} />
+                  <div className="w-12 h-12 bg-[#f5f5f7] rounded-full flex items-center justify-center">
+                    <Icon size={24} className="text-[#1d1d1f]" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-lg">{result.name}</h3>
-                      <span className={`text-xs px-2 py-1 rounded-full ${typeColor}`}>
+                      <h3 className="font-apple-display text-[28px] font-semibold leading-[1.14] tracking-[0.196px] text-[#1d1d1f]">
+                        {result.name}
+                      </h3>
+                      <span className="font-apple-body text-[14px] font-normal leading-[1.43] tracking-[-0.224px] text-[#7a7a7a]">
                         {typeLabel}
                       </span>
                     </div>
                     {result.type === "product" && (
-                      <p className="text-gray-600">
+                      <p className="font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a]">
                         {result.price} FCFA/{result.unit}
                       </p>
                     )}
                     {result.type === "market" && (
-                      <p className="text-gray-600">
+                      <p className="font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a]">
                         {result.location} • {result.hours}
                       </p>
                     )}
                     {result.type === "category" && (
-                      <p className="text-gray-600">
+                      <p className="font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a]">
                         {result.products.length} productos
                       </p>
                     )}
                   </div>
                 </div>
                 {result.type === "product" && (
-                  <button
-                    onClick={() => addToCart(result)}
-                    className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
-                  >
+                  <ButtonPrimary onClick={() => addToCart(result)}>
                     Agregar
-                  </button>
+                  </ButtonPrimary>
                 )}
               </div>
             </div>

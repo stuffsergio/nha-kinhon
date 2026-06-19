@@ -1,4 +1,5 @@
 import { useCart } from "../context/CartContext";
+import ButtonPrimary from "./ButtonPrimary";
 
 export default function CartSummary({ cartTotal }) {
   const { cart, clearCart } = useCart();
@@ -8,36 +9,38 @@ export default function CartSummary({ cartTotal }) {
   };
 
   return (
-    <div className="bg-white border border-gray-200 p-6 rounded-xl space-y-4">
-      <h2 className="text-xl font-bold">Resumen del Pedido</h2>
+    <div className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow space-y-4">
+      <h2 className="font-apple-display text-[34px] font-semibold leading-[1.47] tracking-[-0.374px] text-[#1d1d1f]">
+        Resumen del Pedido
+      </h2>
       
-      <div className="space-y-2">
-        <div className="flex justify-between text-gray-600">
+      <div className="space-y-3">
+        <div className="flex justify-between font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a]">
           <span>Subtotal</span>
           <span>{cartTotal.toLocaleString()} FCFA</span>
         </div>
-        <div className="flex justify-between text-gray-600">
+        <div className="flex justify-between font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a]">
           <span>Envío</span>
           <span>Gratis</span>
         </div>
-        <div className="border-t border-gray-200 pt-2 flex justify-between font-bold text-lg">
+        <div className="border-t border-[#e0e0e0] pt-3 flex justify-between font-apple-display text-[28px] font-semibold leading-[1.14] tracking-[0.196px] text-[#1d1d1f]">
           <span>Total</span>
           <span>{cartTotal.toLocaleString()} FCFA</span>
         </div>
       </div>
 
-      <button
+      <ButtonPrimary
         onClick={handleCheckout}
         disabled={cart.length === 0}
-        className="w-full bg-black text-white py-3 rounded-xl font-semibold hover:bg-gray-800 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+        className="w-full disabled:bg-[#d2d2d7] disabled:cursor-not-allowed"
       >
         Proceder al Pago
-      </button>
+      </ButtonPrimary>
 
       {cart.length > 0 && (
         <button
           onClick={clearCart}
-          className="w-full text-red-500 py-2 rounded-xl font-medium hover:bg-red-50 transition-colors"
+          className="w-full text-[#0066cc] font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] py-3 rounded-[9999px] hover:bg-[#f5f5f7] transition-colors"
         >
           Vaciar Carrito
         </button>

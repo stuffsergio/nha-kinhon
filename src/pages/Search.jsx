@@ -104,8 +104,10 @@ export default function Search() {
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
-      <h1 className="text-3xl font-bold mb-6">Buscar</h1>
+    <div className="w-full max-w-[980px] mx-auto py-[80px] px-6 space-y-6">
+      <h1 className="font-apple-display text-[56px] font-semibold leading-[1.07] tracking-[-0.28px] text-[#1d1d1f] mb-6">
+        Buscar
+      </h1>
 
       <SearchBar
         searchQuery={searchQuery}
