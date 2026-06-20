@@ -1,6 +1,9 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import path from "path";
+import { existsSync } from "fs";
+import { fileURLToPath } from "url";
 import env from "./src/config/env.js";
 import { AppError } from "./src/utils/errors.js";
 import authRoutes from "./src/routes/auth.routes.js";
@@ -23,6 +26,10 @@ app.use(cors({ origin: env.CLIENT_URL, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/markets", marketsRoutes);
 app.use("/api/categories", categoriesRoutes);
@@ -36,6 +43,21 @@ app.use("/api/payment-methods", paymentMethodsRoutes);
 app.use("/api/notifications", notificationsRoutes);
 app.use("/api/supporters", supportersRoutes);
 app.use("/api/stripe", stripeRoutes);
+
+if (process.env.NODE_ENV === "production") {
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const distPath = path.resolve(__dirname, "../dist");
+
+  if (existsSync(distPath)) {
+    app.use(express.static(distPath));
+    app.get("*", (req, res) => {
+      if (!req.path.startsWith("/api")) {
+        res.sendFile(path.join(distPath, "index.html"));
+      }
+    });
+    console.log(`Sirviendo frontend desde ${distPath}`);
+  }
+}
 
 app.use((err, req, res, next) => {
   const status = err.statusCode || 500;
