@@ -46,8 +46,12 @@ async function seed() {
           name: m.name,
           type: m.type,
           location: m.location,
+          address: m.address || null,
+          phone: m.phone || null,
           hours: m.hours,
           coordinates: m.coordinates,
+          lat: m.lat || null,
+          lng: m.lng || null,
         },
       })
     )

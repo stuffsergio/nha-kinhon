@@ -1,44 +1,68 @@
 [
   {
-    "name": "Mercado Central Bissau",
+    "name": "Mercado Central de Bissau",
     "type": "MERCADO_LOCAL",
     "location": "Bissau",
+    "address": "Av. Amílcar Cabral, Bissau",
+    "phone": "+245 96 612 34 56",
     "hours": "Lun-Sáb: 6:00 - 18:00",
-    "coordinates": { "x": 50, "y": 30 }
+    "coordinates": { "x": 50, "y": 30 },
+    "lat": 11.8598,
+    "lng": -15.5875
   },
   {
     "name": "Supermercado Eléctrico",
     "type": "SUPERMERCADO",
     "location": "Bissau",
+    "address": "Rua Guerra Mendes, Bissau",
+    "phone": "+245 95 523 45 67",
     "hours": "Lun-Dom: 8:00 - 20:00",
-    "coordinates": { "x": 35, "y": 45 }
+    "coordinates": { "x": 35, "y": 45 },
+    "lat": 11.8488,
+    "lng": -15.5768
   },
   {
     "name": "Mercado de Bandim",
     "type": "MERCADO_LOCAL",
     "location": "Bandim",
+    "address": "Estrada de Bandim, Bissau",
+    "phone": "+245 96 734 56 78",
     "hours": "Lun-Sáb: 5:30 - 17:30",
-    "coordinates": { "x": 60, "y": 55 }
+    "coordinates": { "x": 60, "y": 55 },
+    "lat": 11.8725,
+    "lng": -15.6052
   },
   {
     "name": "Tienda de Alimentos São José",
     "type": "TIENDA_ESPECIALIZADA",
     "location": "Bafatá",
+    "address": "Rua Principal, Bafatá",
+    "phone": "+245 97 845 67 89",
     "hours": "Lun-Sáb: 7:00 - 19:00",
-    "coordinates": { "x": 25, "y": 70 }
+    "coordinates": { "x": 25, "y": 70 },
+    "lat": 12.1661,
+    "lng": -14.6617
   },
   {
-    "name": "Mercado Regional Gabú",
+    "name": "Mercado Regional de Gabú",
     "type": "MERCADO_LOCAL",
     "location": "Gabú",
+    "address": "Av. da Liberdade, Gabú",
+    "phone": "+245 96 956 78 90",
     "hours": "Lun-Sáb: 6:00 - 18:00",
-    "coordinates": { "x": 75, "y": 65 }
+    "coordinates": { "x": 75, "y": 65 },
+    "lat": 12.2825,
+    "lng": -14.2239
   },
   {
     "name": "Supermercado Canchungo",
     "type": "SUPERMERCADO",
     "location": "Canchungo",
+    "address": "Rua 1º de Maio, Canchungo",
+    "phone": "+245 95 567 89 01",
     "hours": "Lun-Dom: 8:00 - 21:00",
-    "coordinates": { "x": 40, "y": 25 }
+    "coordinates": { "x": 40, "y": 25 },
+    "lat": 12.0681,
+    "lng": -15.8675
   }
 ]

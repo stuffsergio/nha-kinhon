@@ -1,32 +1,90 @@
-import { MapPin } from "lucide-react";
+import { Marker, Tooltip } from "react-leaflet";
+import L from "leaflet";
+
+const typeConfig = {
+  MERCADO_LOCAL: { color: "#dc3545", label: "Mercado Local" },
+  SUPERMERCADO: { color: "#0066cc", label: "Supermercado" },
+  TIENDA_ESPECIALIZADA: { color: "#7c3aed", label: "Tienda Especializada" },
+};
+
+const iconCache = {};
+
+function createIcon(type, isSelected) {
+  const key = `${type}-${isSelected}`;
+  if (iconCache[key]) return iconCache[key];
+
+  const cfg = typeConfig[type] || typeConfig.MERCADO_LOCAL;
+  const size = isSelected ? 56 : 44;
+  const dotSize = isSelected ? 22 : 16;
+  const ringSize = isSelected ? 48 : 36;
+
+  const icon = L.divIcon({
+    className: "",
+    html: `
+      <div style="
+        width: ${size}px;
+        height: ${size}px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      ">
+        <div style="
+          position: absolute;
+          width: ${ringSize}px;
+          height: ${ringSize}px;
+          background: ${cfg.color}22;
+          border-radius: 50%;
+          animation: ${isSelected ? "marker-pulse 2s ease-in-out infinite" : "none"};
+        "></div>
+        <div style="
+          position: relative;
+          width: ${dotSize}px;
+          height: ${dotSize}px;
+          background: ${cfg.color};
+          border: 3px solid white;
+          border-radius: 50%;
+          box-shadow: 0 3px 12px rgba(0,0,0,0.35);
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        ">
+          <div style="
+            width: ${isSelected ? 8 : 6}px;
+            height: ${isSelected ? 8 : 6}px;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.9;
+          "></div>
+        </div>
+      </div>
+    `,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
+
+  iconCache[key] = icon;
+  return icon;
+}
 
 export default function MarketMarker({ market, onClick, isSelected }) {
-  const typeColors = {
-    mercado_local: "bg-red-500",
-    supermercado: "bg-blue-500",
-    tienda_especializada: "bg-purple-500",
-  };
-
   return (
-    <div
-      className={`absolute cursor-pointer transform hover:scale-110 transition-transform ${
-        isSelected ? "scale-125 z-10" : "z-0"
-      }`}
-      style={{
-        left: `${market.coordinates.x}%`,
-        top: `${market.coordinates.y}%`,
-        transform: "translate(-50%, -50%)"
-      }}
-      onClick={onClick}
+    <Marker
+      position={[market.lat, market.lng]}
+      icon={createIcon(market.type, isSelected)}
+      eventHandlers={{ click: () => onClick(market) }}
     >
-      <div className={`${typeColors[market.type]} p-2 rounded-full shadow-lg`}>
-        <MapPin size={24} className="text-white" />
-      </div>
-      {isSelected && (
-        <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-white px-3 py-1 rounded-lg shadow-md whitespace-nowrap">
-          <p className="text-sm font-medium">{market.name}</p>
+      <Tooltip
+        direction="top"
+        offset={[0, -8]}
+        opacity={0.95}
+        permanent={false}
+      >
+        <div className="font-apple-body text-[13px] font-semibold whitespace-nowrap">
+          {market.name}
         </div>
-      )}
-    </div>
+      </Tooltip>
+    </Marker>
   );
 }
