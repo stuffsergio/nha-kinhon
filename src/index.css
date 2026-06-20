@@ -86,6 +86,16 @@
   50% { transform: scale(1.4); opacity: 0.3; }
 }
 
+/* Toast slide-in animation */
+@keyframes toast-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.animate-toast-in {
+  animation: toast-in 0.3s ease-out;
+}
+
 /* Modal fade-in animation */
 @keyframes fade-in {
   from { opacity: 0; transform: scale(0.95) translateY(8px); }

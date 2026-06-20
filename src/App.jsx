@@ -7,6 +7,8 @@ import Map from "./pages/Map";
 import Search from "./pages/Search";
 import Cart from "./pages/Cart";
 import Login from "./pages/Login";
+import Services from "./pages/Services";
+import Support from "./pages/Support";
 
 export default function App() {
   return (
@@ -19,6 +21,8 @@ export default function App() {
           <Route path="/carrito" element={<Cart />} />
           <Route path="/perfil" element={<Profile />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/servicios" element={<Services />} />
+          <Route path="/supporters" element={<Support />} />
         </Route>
       </Routes>
     </>

@@ -17,6 +17,12 @@ export default function NavBar() {
         <NavLink to="/buscar" className="font-apple-body text-[14px] text-[#7a7a7a] hover:text-[#1d1d1f] transition-colors">
           Buscar
         </NavLink>
+        <NavLink to="/servicios" className="font-apple-body text-[14px] text-[#7a7a7a] hover:text-[#1d1d1f] transition-colors">
+          Servicios
+        </NavLink>
+        <NavLink to="/supporters" className="font-apple-body text-[14px] text-[#7a7a7a] hover:text-[#1d1d1f] transition-colors">
+          Supporters
+        </NavLink>
         {user ? (
           <div className="flex items-center gap-4">
             <Link to="/perfil" className="font-apple-body text-[14px] text-[#0066cc] hover:underline">

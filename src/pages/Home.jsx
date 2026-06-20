@@ -55,7 +55,7 @@ export default function Home() {
               {popularCategories.map((category) => (
                 <button
                   key={category.id}
-                  onClick={() => window.location.href = "/buscar"}
+                  onClick={() => window.location.href = `/buscar?categoryId=${category.id}`}
                   className="bg-[#ffffff] p-6 rounded-[18px] no-shadow hover:shadow-product transition-shadow"
                 >
                   <div className="w-16 h-16 bg-[#f5f5f7] rounded-full flex items-center justify-center mx-auto mb-4">

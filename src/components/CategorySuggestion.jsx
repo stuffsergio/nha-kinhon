@@ -1,6 +1,6 @@
 import * as LucideIcons from "lucide-react";
 
-export default function CategorySuggestion({ categories, onCategoryClick }) {
+export default function CategorySuggestion({ categories, onCategoryClick, onSearchClick }) {
   const sampleProducts = [
     { name: "Arroz", icon: "Wheat" },
     { name: "Tomates", icon: "Carrot" },
@@ -22,7 +22,7 @@ export default function CategorySuggestion({ categories, onCategoryClick }) {
             return (
               <button
                 key={category.id}
-                onClick={() => onCategoryClick(category.name)}
+                onClick={() => onCategoryClick(category)}
                 className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow hover:border-[#0066cc] transition-colors flex flex-col items-center gap-4"
               >
                 <div className="w-12 h-12 bg-[#f5f5f7] rounded-full flex items-center justify-center">
@@ -47,7 +47,7 @@ export default function CategorySuggestion({ categories, onCategoryClick }) {
             return (
               <button
                 key={product.name}
-                onClick={() => onCategoryClick(product.name)}
+                onClick={() => onSearchClick(product.name)}
                 className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow hover:border-[#0066cc] transition-colors flex items-center gap-4"
               >
                 <div className="w-10 h-10 bg-[#f5f5f7] rounded-full flex items-center justify-center">

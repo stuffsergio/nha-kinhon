@@ -23,24 +23,21 @@ export function CartProvider({ children }) {
   }, [user]);
 
   const addToCart = useCallback(async (product) => {
-    if (!user) return;
-    try {
-      const data = await api.post("/cart/items", {
-        productId: product.id,
-        quantity: 1,
-      });
-      setCart((prev) => {
-        const exists = prev.find((i) => i.productId === data.item.productId);
-        if (exists) {
-          return prev.map((i) =>
-            i.id === data.item.id ? { ...i, quantity: data.item.quantity } : i
-          );
-        }
-        return [...prev, data.item];
-      });
-    } catch (e) {
-      console.error("Error al agregar al carrito:", e);
-    }
+    if (!user) throw new Error("Debes iniciar sesión para agregar productos al carrito");
+    const data = await api.post("/cart/items", {
+      productId: product.id,
+      quantity: 1,
+    });
+    setCart((prev) => {
+      const exists = prev.find((i) => i.productId === data.item.productId);
+      if (exists) {
+        return prev.map((i) =>
+          i.id === data.item.id ? { ...i, quantity: data.item.quantity } : i
+        );
+      }
+      return [...prev, data.item];
+    });
+    return data.item;
   }, [user]);
 
   const removeFromCart = useCallback(async (productId) => {

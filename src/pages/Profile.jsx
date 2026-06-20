@@ -7,17 +7,19 @@ import { useContacts } from "../hooks/useContacts";
 import { useUnreadCount, useMarkAllAsRead } from "../hooks/useNotifications";
 import { api } from "../services/api";
 import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "../context/ToastContext";
 
 export default function Profile() {
   const { user, updateUser } = useAuth();
   const qc = useQueryClient();
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [showDetails, setShowDetails] = useState(false);
   const [contactoToShow, setContactoToShow] = useState({ id: null, nombre: "", email: "" });
 
-  const { data: ordersRes } = useOrders();
-  const { data: favoritesRes } = useFavorites();
-  const { data: contactsRes } = useContacts();
+  const { data: ordersRes, isLoading: ordersLoading } = useOrders();
+  const { data: favoritesRes, isLoading: favLoading } = useFavorites();
+  const { data: contactsRes, isLoading: contactsLoading } = useContacts();
   const { data: unreadRes } = useUnreadCount();
 
   const orders = ordersRes?.data || [];
@@ -42,9 +44,9 @@ export default function Profile() {
         email: emailInput?.value,
       });
       updateUser(data.user);
-      alert("Perfil actualizado");
+      toast("Perfil actualizado", "success");
     } catch (e) {
-      alert("Error: " + e.message);
+      toast("Error: " + e.message, "error");
     }
   };
 
@@ -161,7 +163,16 @@ export default function Profile() {
 
       {activeTab === "favorites" && (
         <div className="space-y-4">
-          {favoriteProducts.length === 0 ? (
+          {favLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow animate-pulse">
+                  <div className="h-7 bg-[#f5f5f7] rounded w-2/3 mb-3" />
+                  <div className="h-5 bg-[#f5f5f7] rounded w-1/3" />
+                </div>
+              ))}
+            </div>
+          ) : favoriteProducts.length === 0 ? (
             <div className="text-center py-[80px] font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a]">
               No tienes productos favoritos
             </div>
@@ -194,7 +205,18 @@ export default function Profile() {
 
       {activeTab === "orders" && (
         <div className="space-y-4">
-          {orders.length === 0 ? (
+          {ordersLoading ? (
+            <div className="space-y-4">
+              {[1, 2].map((i) => (
+                <div key={i} className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow animate-pulse">
+                  <div className="h-7 bg-[#f5f5f7] rounded w-1/3 mb-2" />
+                  <div className="h-5 bg-[#f5f5f7] rounded w-1/4 mb-4" />
+                  <div className="h-5 bg-[#f5f5f7] rounded w-full mb-2" />
+                  <div className="h-5 bg-[#f5f5f7] rounded w-3/4" />
+                </div>
+              ))}
+            </div>
+          ) : orders.length === 0 ? (
             <div className="text-center py-[80px] font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a]">
               No tienes pedidos aún
             </div>
@@ -250,7 +272,16 @@ export default function Profile() {
             <h3 className="font-apple-display text-[34px] font-semibold leading-[1.47] tracking-[-0.374px] text-[#1d1d1f] mb-4">
               Contactos Añadidos
             </h3>
-            {contacts.length === 0 ? (
+            {contactsLoading ? (
+              <div className="space-y-3">
+                {[1, 2].map((i) => (
+                  <div key={i} className="animate-pulse p-4 border border-[#e0e0e0] rounded-[8px]">
+                    <div className="h-6 bg-[#f5f5f7] rounded w-1/3 mb-2" />
+                    <div className="h-5 bg-[#f5f5f7] rounded w-1/2" />
+                  </div>
+                ))}
+              </div>
+            ) : contacts.length === 0 ? (
               <p className="font-apple-body text-[17px] text-[#7a7a7a]">No tienes contactos guardados</p>
             ) : (
               <div className="space-y-3">

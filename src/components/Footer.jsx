@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 export default function Footer() {
   return (
     <footer className="bg-surface-tile-1 text-white px-6 pt-14 pb-6">
@@ -16,11 +18,13 @@ export default function Footer() {
               Navegación
             </h4>
             <ul className="space-y-2.5">
-              <li><a href="/" className="font-apple-body text-[14px] text-body-muted hover:text-white transition-colors">Inicio</a></li>
-              <li><a href="/mapa" className="font-apple-body text-[14px] text-body-muted hover:text-white transition-colors">Mapa</a></li>
-              <li><a href="/buscar" className="font-apple-body text-[14px] text-body-muted hover:text-white transition-colors">Buscar</a></li>
-              <li><a href="/carrito" className="font-apple-body text-[14px] text-body-muted hover:text-white transition-colors">Carrito</a></li>
-              <li><a href="/perfil" className="font-apple-body text-[14px] text-body-muted hover:text-white transition-colors">Perfil</a></li>
+              <li><Link to="/" className="font-apple-body text-[14px] text-body-muted hover:text-white transition-colors">Inicio</Link></li>
+              <li><Link to="/mapa" className="font-apple-body text-[14px] text-body-muted hover:text-white transition-colors">Mapa</Link></li>
+              <li><Link to="/buscar" className="font-apple-body text-[14px] text-body-muted hover:text-white transition-colors">Buscar</Link></li>
+              <li><Link to="/servicios" className="font-apple-body text-[14px] text-body-muted hover:text-white transition-colors">Servicios</Link></li>
+              <li><Link to="/supporters" className="font-apple-body text-[14px] text-body-muted hover:text-white transition-colors">Supporters</Link></li>
+              <li><Link to="/carrito" className="font-apple-body text-[14px] text-body-muted hover:text-white transition-colors">Carrito</Link></li>
+              <li><Link to="/perfil" className="font-apple-body text-[14px] text-body-muted hover:text-white transition-colors">Perfil</Link></li>
             </ul>
           </div>
           <div>
@@ -39,12 +43,12 @@ export default function Footer() {
             &copy; {new Date().getFullYear()} Nha Kinhon. Todos los derechos reservados.
           </p>
           <div className="flex gap-6">
-            <a href="/servicios" className="font-apple-body text-[12px] text-ink-muted-48 hover:text-white transition-colors">
+            <Link to="/servicios" className="font-apple-body text-[12px] text-ink-muted-48 hover:text-white transition-colors">
               Servicios
-            </a>
-            <a href="/supporters" className="font-apple-body text-[12px] text-ink-muted-48 hover:text-white transition-colors">
+            </Link>
+            <Link to="/supporters" className="font-apple-body text-[12px] text-ink-muted-48 hover:text-white transition-colors">
               Supporters
-            </a>
+            </Link>
           </div>
         </div>
       </div>
