@@ -1,21 +1,23 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import SearchBar from "../components/SearchBar";
 import SearchResults from "../components/SearchResults";
 import CategorySuggestion from "../components/CategorySuggestion";
 import SearchHistory from "../components/SearchHistory";
-import { categories } from "../data/categories";
-import { products } from "../data/products";
-import { markets } from "../data/markets";
+import { useCategories } from "../hooks/useCategories";
+import { useSearch } from "../hooks/useSearch";
 
 export default function Search() {
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
   const [searchHistory, setSearchHistory] = useState([]);
   const [hasSearched, setHasSearched] = useState(false);
+  const { data: categoriesRes } = useCategories();
+  const categories = categoriesRes?.data || [];
 
-  // Load search history from localStorage on mount
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const { data: searchRes, isFetching } = useSearch(debouncedQuery);
+
   useEffect(() => {
     const savedHistory = localStorage.getItem("searchHistory");
     if (savedHistory) {
@@ -23,56 +25,36 @@ export default function Search() {
     }
   }, []);
 
-  // Check if category is passed from navigation
   useEffect(() => {
     if (location.state?.category) {
       const category = categories.find((c) => c.id === location.state.category);
       if (category) {
         setSearchQuery(category.name);
-        performSearch(category.name);
+        setDebouncedQuery(category.name);
         saveToHistory(category.name);
       }
     }
-  }, [location.state]);
+  }, [location.state, categories]);
 
-  const performSearch = (query) => {
-    if (!query.trim()) {
-      setSearchResults([]);
+  useEffect(() => {
+    if (!debouncedQuery.trim()) {
       setHasSearched(false);
-      return;
     }
+  }, [debouncedQuery]);
 
-    const lowerQuery = query.toLowerCase();
-
-    // Search in products
-    const productResults = products.filter(
-      (p) =>
-        p.name.toLowerCase().includes(lowerQuery) ||
-        p.category.toLowerCase().includes(lowerQuery)
-    );
-
-    // Search in markets
-    const marketResults = markets.filter(
-      (m) =>
-        m.name.toLowerCase().includes(lowerQuery) ||
-        m.location.toLowerCase().includes(lowerQuery) ||
-        m.type.toLowerCase().includes(lowerQuery)
-    );
-
-    // Search in categories
-    const categoryResults = categories.filter((c) =>
-      c.name.toLowerCase().includes(lowerQuery)
-    );
-
+  const buildResults = useCallback(() => {
+    if (!searchRes) return [];
     const results = [
-      ...productResults.map((p) => ({ ...p, type: "product" })),
-      ...marketResults.map((m) => ({ ...m, type: "market" })),
-      ...categoryResults.map((c) => ({ ...c, type: "category" })),
+      ...(searchRes.products || []).map((p) => ({ ...p, type: "product" })),
+      ...(searchRes.markets || []).map((m) => ({ ...m, type: "market" })),
+      ...(searchRes.categories || []).map((c) => ({
+        ...c,
+        type: "category",
+        products: c._count?.products ? Array(c._count.products).fill(0) : [],
+      })),
     ];
-
-    setSearchResults(results);
-    setHasSearched(true);
-  };
+    return results;
+  }, [searchRes]);
 
   const saveToHistory = (query) => {
     if (query.trim() && !searchHistory.includes(query)) {
@@ -84,17 +66,21 @@ export default function Search() {
 
   const handleSearch = (query) => {
     setSearchQuery(query);
-    performSearch(query);
+    setDebouncedQuery(query);
+    if (query.trim()) {
+      setHasSearched(true);
+      saveToHistory(query);
+    }
   };
 
   const handleSearchSubmit = () => {
-    performSearch(searchQuery);
-    saveToHistory(searchQuery);
+    handleSearch(searchQuery);
   };
 
   const handleHistoryClick = (query) => {
     setSearchQuery(query);
-    performSearch(query);
+    setDebouncedQuery(query);
+    setHasSearched(true);
     saveToHistory(query);
   };
 
@@ -102,6 +88,9 @@ export default function Search() {
     setSearchHistory([]);
     localStorage.removeItem("searchHistory");
   };
+
+  const results = buildResults();
+  const showResults = hasSearched && debouncedQuery.trim().length > 0;
 
   return (
     <div className="w-full max-w-[980px] mx-auto py-[80px] px-6 space-y-6">
@@ -116,9 +105,12 @@ export default function Search() {
         placeholder="Buscar productos, categorías o tiendas..."
       />
 
-      {!hasSearched ? (
+      {isFetching && showResults && (
+        <p className="text-[#7a7a7a] font-apple-body">Buscando...</p>
+      )}
+
+      {!showResults ? (
         <>
-          {/* Search History */}
           {searchHistory.length > 0 && (
             <SearchHistory
               history={searchHistory}
@@ -126,12 +118,10 @@ export default function Search() {
               onClearHistory={clearHistory}
             />
           )}
-
-          {/* Category Suggestions */}
           <CategorySuggestion categories={categories} onCategoryClick={handleSearch} />
         </>
       ) : (
-        <SearchResults results={searchResults} searchQuery={searchQuery} />
+        !isFetching && <SearchResults results={results} searchQuery={searchQuery} />
       )}
     </div>
   );

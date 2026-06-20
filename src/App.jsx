@@ -6,6 +6,7 @@ import Profile from "./pages/Profile";
 import Map from "./pages/Map";
 import Search from "./pages/Search";
 import Cart from "./pages/Cart";
+import Login from "./pages/Login";
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
           <Route path="/buscar" element={<Search />} />
           <Route path="/carrito" element={<Cart />} />
           <Route path="/perfil" element={<Profile />} />
+          <Route path="/login" element={<Login />} />
         </Route>
       </Routes>
     </>

@@ -1,46 +1,92 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useCallback, useEffect } from "react";
+import { api } from "../services/api";
+import { useAuth } from "./AuthContext";
 
 export const CartContext = createContext();
 
 export function CartProvider({ children }) {
+  const { user } = useAuth();
   const [cart, setCart] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const addToCart = (product) => {
-    setCart((prevCart) => {
-      const existingItem = prevCart.find((item) => item.id === product.id);
-      if (existingItem) {
-        return prevCart.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      }
-      return [...prevCart, { ...product, quantity: 1 }];
-    });
-  };
-
-  const removeFromCart = (productId) => {
-    setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
-  };
-
-  const updateQuantity = (productId, quantity) => {
-    if (quantity <= 0) {
-      removeFromCart(productId);
-      return;
+  useEffect(() => {
+    if (user) {
+      setLoading(true);
+      api
+        .get("/cart")
+        .then((data) => setCart(data.items || []))
+        .catch(() => setCart([]))
+        .finally(() => setLoading(false));
+    } else {
+      setCart([]);
     }
-    setCart((prevCart) =>
-      prevCart.map((item) =>
-        item.id === productId ? { ...item, quantity } : item
-      )
-    );
-  };
+  }, [user]);
 
-  const clearCart = () => {
-    setCart([]);
-  };
+  const addToCart = useCallback(async (product) => {
+    if (!user) return;
+    try {
+      const data = await api.post("/cart/items", {
+        productId: product.id,
+        quantity: 1,
+      });
+      setCart((prev) => {
+        const exists = prev.find((i) => i.productId === data.item.productId);
+        if (exists) {
+          return prev.map((i) =>
+            i.id === data.item.id ? { ...i, quantity: data.item.quantity } : i
+          );
+        }
+        return [...prev, data.item];
+      });
+    } catch (e) {
+      console.error("Error al agregar al carrito:", e);
+    }
+  }, [user]);
+
+  const removeFromCart = useCallback(async (productId) => {
+    if (!user) return;
+    try {
+      const item = cart.find((i) => i.productId === productId || i.id === productId);
+      if (item) await api.del(`/cart/items/${item.id}`);
+      setCart((prev) => prev.filter((i) => i.productId !== productId && i.id !== productId));
+    } catch (e) {
+      console.error("Error al eliminar del carrito:", e);
+    }
+  }, [user, cart]);
+
+  const updateQuantity = useCallback(async (productId, quantity) => {
+    if (!user) return;
+    try {
+      const item = cart.find((i) => i.productId === productId || i.id === productId);
+      if (!item) return;
+
+      if (quantity <= 0) {
+        await api.del(`/cart/items/${item.id}`);
+        setCart((prev) => prev.filter((i) => i.id !== item.id));
+        return;
+      }
+
+      const data = await api.put(`/cart/items/${item.id}`, { quantity });
+      setCart((prev) =>
+        prev.map((i) => (i.id === item.id ? { ...i, quantity: data.item?.quantity ?? quantity } : i))
+      );
+    } catch (e) {
+      console.error("Error al actualizar cantidad:", e);
+    }
+  }, [user, cart]);
+
+  const clearCart = useCallback(async () => {
+    if (!user) return;
+    try {
+      await api.del("/cart");
+      setCart([]);
+    } catch (e) {
+      console.error("Error al vaciar carrito:", e);
+    }
+  }, [user]);
 
   const cartTotal = cart.reduce(
-    (total, item) => total + item.price * item.quantity,
+    (total, item) => total + (item.product?.price || item.price || 0) * item.quantity,
     0
   );
 
@@ -48,6 +94,7 @@ export function CartProvider({ children }) {
     <CartContext.Provider
       value={{
         cart,
+        loading,
         addToCart,
         removeFromCart,
         updateQuantity,
@@ -63,7 +110,7 @@ export function CartProvider({ children }) {
 export function useCart() {
   const context = useContext(CartContext);
   if (!context) {
-    throw new Error("useCart must be used within a CartProvider");
+    throw new Error("useCart debe usarse dentro de CartProvider");
   }
   return context;
 }
