@@ -1,0 +1,18 @@
+[
+  { "name": "Frutas", "icon": "Apple" },
+  { "name": "Verduras", "icon": "Carrot" },
+  { "name": "Carnes", "icon": "Beef" },
+  { "name": "Pescados", "icon": "Fish" },
+  { "name": "Lácteos", "icon": "Milk" },
+  { "name": "Panadería", "icon": "Bread" },
+  { "name": "Granos", "icon": "Wheat" },
+  { "name": "Tubérculos", "icon": "Potato" },
+  { "name": "Bebidas", "icon": "Coffee" },
+  { "name": "Aceites", "icon": "Droplet" },
+  { "name": "Condimentos", "icon": "Sparkles" },
+  { "name": "Snacks", "icon": "Cookie" },
+  { "name": "Postres", "icon": "IceCream" },
+  { "name": "Frutos Secos", "icon": "Nut" },
+  { "name": "Desayuno", "icon": "Sunrise" },
+  { "name": "Endulzantes", "icon": "Candy" }
+]

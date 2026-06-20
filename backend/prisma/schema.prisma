@@ -1,0 +1,253 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String    @id @default(cuid())
+  name            String
+  email           String    @unique
+  password        String
+  phone           String?
+  avatar          String?
+  balance         Float     @default(0)
+  role            Role      @default(USER)
+  refreshToken    String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  cartItems       CartItem[]
+  orders          Order[]
+  favorites       Favorite[]
+  contacts        Contact[]
+  paymentMethods  PaymentMethod[]
+  notifications   Notification[]
+  supporters      Supporter[]
+
+  @@map("users")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model Market {
+  id          String        @id @default(cuid())
+  name        String
+  type        MarketType
+  location    String
+  address     String?
+  phone       String?
+  hours       String
+  coordinates Json
+  lat         Float?
+  lng         Float?
+  image       String?
+  active      Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  products    Product[]
+
+  @@index([active])
+  @@map("markets")
+}
+
+enum MarketType {
+  MERCADO_LOCAL
+  SUPERMERCADO
+  TIENDA_ESPECIALIZADA
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  icon      String
+  image     String?
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+
+  products  Product[]
+
+  @@index([active])
+  @@map("categories")
+}
+
+model Product {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  price       Float
+  unit        String
+  image       String?
+  available   Boolean   @default(true)
+  categoryId  String
+  marketId    String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  category    Category  @relation(fields: [categoryId], references: [id])
+  market      Market    @relation(fields: [marketId], references: [id])
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+  favorites   Favorite[]
+
+  @@index([name])
+  @@index([available])
+  @@map("products")
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id])
+
+  @@unique([userId, productId])
+  @@map("cart_items")
+}
+
+model Order {
+  id               String       @id @default(cuid())
+  userId           String
+  status           OrderStatus  @default(PENDING)
+  subtotal         Float
+  shipping         Float        @default(0)
+  total            Float
+  notes            String?
+  recipientName    String
+  recipientPhone   String?
+  recipientAddress String?
+  stripePaymentId  String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  user             User         @relation(fields: [userId], references: [id])
+  items            OrderItem[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("orders")
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  name      String
+  price     Float
+  quantity  Int
+
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id])
+
+  @@unique([userId, productId])
+  @@map("favorites")
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("contacts")
+}
+
+model PaymentMethod {
+  id          String            @id @default(cuid())
+  userId      String
+  type        PaymentMethodType
+  last4       String?
+  expiry      String?
+  provider    String?
+  phone       String?
+  stripeId    String?
+  isDefault   Boolean           @default(false)
+  createdAt   DateTime          @default(now())
+
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("payment_methods")
+}
+
+enum PaymentMethodType {
+  VISA
+  MASTERCARD
+  MPESA
+  ORANGE_MONEY
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  ORDER_CONFIRMED
+  ORDER_PROCESSING
+  ORDER_SHIPPED
+  ORDER_DELIVERED
+  PAYMENT_RECEIVED
+  PROMO
+}
+
+model Supporter {
+  id        String   @id @default(cuid())
+  userId    String?
+  name      String
+  message   String
+  avatar    String?
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@map("supporters")
+}

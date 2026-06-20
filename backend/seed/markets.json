@@ -1,0 +1,44 @@
+[
+  {
+    "name": "Mercado Central Bissau",
+    "type": "MERCADO_LOCAL",
+    "location": "Bissau",
+    "hours": "Lun-Sáb: 6:00 - 18:00",
+    "coordinates": { "x": 50, "y": 30 }
+  },
+  {
+    "name": "Supermercado Eléctrico",
+    "type": "SUPERMERCADO",
+    "location": "Bissau",
+    "hours": "Lun-Dom: 8:00 - 20:00",
+    "coordinates": { "x": 35, "y": 45 }
+  },
+  {
+    "name": "Mercado de Bandim",
+    "type": "MERCADO_LOCAL",
+    "location": "Bandim",
+    "hours": "Lun-Sáb: 5:30 - 17:30",
+    "coordinates": { "x": 60, "y": 55 }
+  },
+  {
+    "name": "Tienda de Alimentos São José",
+    "type": "TIENDA_ESPECIALIZADA",
+    "location": "Bafatá",
+    "hours": "Lun-Sáb: 7:00 - 19:00",
+    "coordinates": { "x": 25, "y": 70 }
+  },
+  {
+    "name": "Mercado Regional Gabú",
+    "type": "MERCADO_LOCAL",
+    "location": "Gabú",
+    "hours": "Lun-Sáb: 6:00 - 18:00",
+    "coordinates": { "x": 75, "y": 65 }
+  },
+  {
+    "name": "Supermercado Canchungo",
+    "type": "SUPERMERCADO",
+    "location": "Canchungo",
+    "hours": "Lun-Dom: 8:00 - 21:00",
+    "coordinates": { "x": 40, "y": 25 }
+  }
+]

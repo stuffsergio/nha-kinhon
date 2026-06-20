@@ -4,7 +4,7 @@ import BottomNavBar from "../components/BottomNavBar";
 
 export default function MainLayout() {
   return (
-    <div className="flex flex-col pb-20">
+    <div className="flex flex-col">
       <main className="min-h-screen relative">
         <Outlet />
       </main>

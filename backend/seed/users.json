@@ -1,0 +1,16 @@
+[
+  {
+    "name": "Admin",
+    "email": "admin@nhakinhon.com",
+    "password": "admin1234",
+    "role": "ADMIN"
+  },
+  {
+    "name": "Carlos",
+    "email": "carlos@example.com",
+    "password": "123456",
+    "role": "USER",
+    "balance": 80,
+    "favorites": [5, 8, 12, 17, 22]
+  }
+]

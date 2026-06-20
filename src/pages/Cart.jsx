@@ -8,12 +8,14 @@ export default function Cart() {
   const { cart, cartTotal } = useCart();
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
+    <div className="w-full max-w-245 mx-auto py-[80px] px-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Carrito</h1>
+        <h1 className="font-apple-display text-[56px] font-semibold leading-[1.07] tracking-[-0.28px] text-[#1d1d1f]">
+          Carrito
+        </h1>
         <Link
           to="/perfil"
-          className="text-blue-600 hover:text-blue-700 font-medium"
+          className="text-primary font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px]"
         >
           Ver pedidos anteriores
         </Link>
