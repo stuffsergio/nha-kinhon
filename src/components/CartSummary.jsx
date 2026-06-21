@@ -1,9 +1,15 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Elements } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
 import { useCart } from "../context/CartContext";
 import { useCheckout } from "../hooks/useOrders";
-import { useNavigate } from "react-router-dom";
-import ButtonPrimary from "./ButtonPrimary";
-import { useState } from "react";
+import { api } from "../services/api";
 import { useToast } from "../context/ToastContext";
+import ButtonPrimary from "./ButtonPrimary";
+import StripePaymentForm from "./StripePaymentForm";
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
 
 export default function CartSummary({ cartTotal }) {
   const { cart, clearCart } = useCart();
@@ -12,25 +18,18 @@ export default function CartSummary({ cartTotal }) {
   const toast = useToast();
   const [checkingOut, setCheckingOut] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [clientSecret, setClientSecret] = useState(null);
+  const [createdOrderId, setCreatedOrderId] = useState(null);
 
   const [recipientName, setRecipientName] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
   const [recipientAddress, setRecipientAddress] = useState("");
   const [notes, setNotes] = useState("");
 
-  const handleCheckout = async () => {
-    if (!recipientName.trim()) {
-      toast("Introduce el nombre del destinatario", "error");
-      return;
-    }
-    if (!recipientPhone.trim()) {
-      toast("Introduce el teléfono del destinatario", "error");
-      return;
-    }
-    if (!recipientAddress.trim()) {
-      toast("Introduce la dirección del destinatario", "error");
-      return;
-    }
+  const handleCheckout = () => {
+    if (!recipientName.trim()) { toast("Introduce el nombre del destinatario", "error"); return; }
+    if (!recipientPhone.trim()) { toast("Introduce el teléfono del destinatario", "error"); return; }
+    if (!recipientAddress.trim()) { toast("Introduce la dirección del destinatario", "error"); return; }
     setShowConfirm(true);
   };
 
@@ -38,20 +37,34 @@ export default function CartSummary({ cartTotal }) {
     setShowConfirm(false);
     setCheckingOut(true);
     try {
-      await checkout.mutateAsync({
+      const data = await checkout.mutateAsync({
         recipientName: recipientName.trim(),
         recipientPhone: recipientPhone.trim(),
         recipientAddress: recipientAddress.trim(),
         notes: notes.trim(),
         paymentMethodId: null,
       });
-      toast("Pedido realizado con éxito", "success");
-      navigate("/perfil");
+      const orderId = data.order?.id || data.id;
+      setCreatedOrderId(orderId);
+      const pi = await api.post("/stripe/create-payment-intent", { orderId });
+      setClientSecret(pi.clientSecret);
     } catch (e) {
-      toast("Error al procesar el pedido: " + e.message, "error");
-    } finally {
+      toast("Error al crear el pedido: " + e.message, "error");
       setCheckingOut(false);
     }
+  };
+
+  const handlePaymentSuccess = () => {
+    setClientSecret(null);
+    setCreatedOrderId(null);
+    setCheckingOut(false);
+    navigate("/perfil");
+  };
+
+  const handlePaymentCancel = () => {
+    setClientSecret(null);
+    setCreatedOrderId(null);
+    setCheckingOut(false);
   };
 
   return (
@@ -167,6 +180,25 @@ export default function CartSummary({ cartTotal }) {
                 Confirmar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {clientSecret && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handlePaymentCancel} />
+          <div className="relative bg-[#ffffff] rounded-[18px] no-shadow w-full max-w-[420px] p-8 animate-fade-in">
+            <h3 className="font-apple-display text-[28px] font-semibold leading-[1.14] tracking-[0.196px] text-[#1d1d1f] mb-2">
+              Pagar con Tarjeta
+            </h3>
+            <p className="font-apple-body text-[15px] font-normal leading-[1.43] tracking-[-0.224px] text-[#7a7a7a] mb-6">
+              Total: <strong className="text-[#1d1d1f]">{cartTotal.toLocaleString()} FCFA</strong>
+            </p>
+            {stripePromise && (
+              <Elements stripe={stripePromise} options={{ clientSecret }}>
+                <StripePaymentForm onSuccess={handlePaymentSuccess} onCancel={handlePaymentCancel} />
+              </Elements>
+            )}
           </div>
         </div>
       )}

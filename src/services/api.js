@@ -1,36 +1,30 @@
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
+let accessToken = null;
 let refreshPromise = null;
 
 function getAccessToken() {
-  return localStorage.getItem("accessToken");
+  return accessToken;
 }
 
 function setAccessToken(token) {
-  if (token) localStorage.setItem("accessToken", token);
-  else localStorage.removeItem("accessToken");
+  accessToken = token;
 }
 
 async function refreshAccessToken() {
-  const refreshToken = localStorage.getItem("refreshToken");
-  if (!refreshToken) return null;
-
   const res = await fetch(`${BASE_URL}/auth/refresh`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refreshToken }),
+    credentials: "include",
   });
 
   if (!res.ok) {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
+    setAccessToken(null);
     window.dispatchEvent(new Event("auth:logout"));
     return null;
   }
 
   const data = await res.json();
   setAccessToken(data.accessToken);
-  localStorage.setItem("refreshToken", data.refreshToken);
   return data.accessToken;
 }
 
@@ -56,6 +50,7 @@ async function request(endpoint, options = {}) {
   let res = await fetch(url, {
     method,
     headers,
+    credentials: "include",
     body: body ? JSON.stringify(body) : undefined,
   });
 
@@ -69,6 +64,7 @@ async function request(endpoint, options = {}) {
       res = await fetch(url, {
         method,
         headers,
+        credentials: "include",
         body: body ? JSON.stringify(body) : undefined,
       });
     }
@@ -91,12 +87,10 @@ export const api = {
   del: (endpoint, opts = {}) => request(endpoint, { ...opts, method: "DELETE" }),
 };
 
-export function setTokens(accessToken, refreshToken) {
-  setAccessToken(accessToken);
-  if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
+export function setTokens(newAccessToken) {
+  setAccessToken(newAccessToken);
 }
 
 export function clearTokens() {
-  localStorage.removeItem("accessToken");
-  localStorage.removeItem("refreshToken");
+  setAccessToken(null);
 }

@@ -8,35 +8,45 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    if (token) {
-      api
-        .get("/auth/me")
-        .then((data) => setUser(data.user))
-        .catch(() => clearTokens())
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
+    let cancelled = false;
+
+    async function init() {
+      try {
+        const data = await api.post("/auth/refresh", undefined, { auth: false });
+        if (cancelled) return;
+        setTokens(data.accessToken);
+        const me = await api.get("/auth/me");
+        if (cancelled) return;
+        setUser(me.user);
+      } catch {
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
+
+    init();
 
     const handleLogout = () => {
       setUser(null);
       clearTokens();
     };
     window.addEventListener("auth:logout", handleLogout);
-    return () => window.removeEventListener("auth:logout", handleLogout);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("auth:logout", handleLogout);
+    };
   }, []);
 
   const login = useCallback(async (email, password) => {
     const data = await api.post("/auth/login", { email, password }, { auth: false });
-    setTokens(data.accessToken, data.refreshToken);
+    setTokens(data.accessToken);
     setUser(data.user);
     return data.user;
   }, []);
 
   const register = useCallback(async (name, email, password) => {
     const data = await api.post("/auth/register", { name, email, password }, { auth: false });
-    setTokens(data.accessToken, data.refreshToken);
+    setTokens(data.accessToken);
     setUser(data.user);
     return data.user;
   }, []);

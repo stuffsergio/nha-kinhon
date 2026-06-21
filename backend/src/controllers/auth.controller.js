@@ -3,6 +3,13 @@ import prisma from "../config/db.js";
 import { signAccessToken, signRefreshToken, verifyToken } from "../utils/jwt.js";
 import { AppError, NotFoundError, UnauthorizedError } from "../utils/errors.js";
 
+const REFRESH_COOKIE_OPTS = {
+  httpOnly: true,
+  secure: true,
+  sameSite: "none",
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
 export async function register(req, res) {
   const { name, email, password } = req.body;
 
@@ -22,17 +29,11 @@ export async function register(req, res) {
     data: { refreshToken },
   });
 
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
+  res.cookie("refreshToken", refreshToken, REFRESH_COOKIE_OPTS);
 
   res.status(201).json({
     user: { id: user.id, name: user.name, email: user.email, role: user.role },
     accessToken,
-    refreshToken,
   });
 }
 
@@ -53,12 +54,7 @@ export async function login(req, res) {
     data: { refreshToken },
   });
 
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
+  res.cookie("refreshToken", refreshToken, REFRESH_COOKIE_OPTS);
 
   res.json({
     user: {
@@ -71,12 +67,11 @@ export async function login(req, res) {
       avatar: user.avatar,
     },
     accessToken,
-    refreshToken,
   });
 }
 
 export async function refresh(req, res) {
-  const { refreshToken } = req.body;
+  const refreshToken = req.cookies?.refreshToken;
   if (!refreshToken) throw new UnauthorizedError("Refresh token requerido");
 
   let decoded;
@@ -99,7 +94,9 @@ export async function refresh(req, res) {
     data: { refreshToken: newRefresh },
   });
 
-  res.json({ accessToken: newAccess, refreshToken: newRefresh });
+  res.cookie("refreshToken", newRefresh, REFRESH_COOKIE_OPTS);
+
+  res.json({ accessToken: newAccess });
 }
 
 export async function logout(req, res) {
@@ -108,7 +105,7 @@ export async function logout(req, res) {
     data: { refreshToken: null },
   });
 
-  res.clearCookie("refreshToken");
+  res.clearCookie("refreshToken", { httpOnly: true, secure: true, sameSite: "none" });
   res.json({ message: "Sesión cerrada" });
 }
 
