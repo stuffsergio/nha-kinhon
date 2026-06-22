@@ -14,5 +14,10 @@
   { "name": "Postres", "icon": "IceCream" },
   { "name": "Frutos Secos", "icon": "Nut" },
   { "name": "Desayuno", "icon": "Sunrise" },
-  { "name": "Endulzantes", "icon": "Candy" }
+  { "name": "Endulzantes", "icon": "Candy" },
+  { "name": "Higiene", "icon": "Sparkles" },
+  { "name": "Limpieza", "icon": "Sparkles" },
+  { "name": "Congelados", "icon": "Snowflake" },
+  { "name": "Bebidas Alcohólicas", "icon": "Wine" },
+  { "name": "Enlatados", "icon": "Package" }
 ]

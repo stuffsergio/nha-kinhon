@@ -23,7 +23,7 @@ export async function list(req, res) {
 export async function getById(req, res) {
   const market = await prisma.market.findUnique({
     where: { id: req.params.id },
-    include: { products: { where: { available: true } } },
+    include: { products: { where: { available: true }, include: { category: true } } },
   });
 
   if (!market || !market.active) throw new NotFoundError("Mercado");

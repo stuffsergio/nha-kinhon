@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Elements } from "@stripe/react-stripe-js";
+import { CheckoutElementsProvider } from "@stripe/react-stripe-js/checkout";
 import { loadStripe } from "@stripe/stripe-js";
 import { useCart } from "../context/CartContext";
 import { useCheckout } from "../hooks/useOrders";
@@ -50,8 +50,8 @@ export default function CartSummary({ cartTotal }) {
       });
       const orderId = data.order?.id || data.id;
       setPendingOrderId(orderId);
-      const pi = await api.post("/stripe/create-payment-intent", { orderId });
-      setClientSecret(pi.clientSecret);
+      const session = await api.post("/stripe/create-checkout-session", { orderId });
+      setClientSecret(session.clientSecret);
       setCreatingPayment(false);
     } catch (e) {
       toast("Error al crear el pedido: " + e.message, "error");
@@ -216,9 +216,9 @@ export default function CartSummary({ cartTotal }) {
               Total: <strong className="text-[#1d1d1f]">{cartTotal.toLocaleString()} FCFA</strong>
             </p>
             {stripePromise ? (
-              <Elements stripe={stripePromise} options={{ clientSecret }}>
+              <CheckoutElementsProvider stripe={stripePromise} clientSecret={clientSecret}>
                 <StripePaymentForm onSuccess={handlePaymentSuccess} onCancel={handlePaymentCancel} />
-              </Elements>
+              </CheckoutElementsProvider>
             ) : (
               <p className="font-apple-body text-[17px] text-[#dc2626]">Error: Stripe no está configurado</p>
             )}

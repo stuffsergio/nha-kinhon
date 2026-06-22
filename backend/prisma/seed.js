@@ -14,6 +14,9 @@ const categorySlugToName = {
   bebidas: "Bebidas", condimentos: "Condimentos", snacks: "Snacks",
   postres: "Postres", frutos_secos: "Frutos Secos",
   desayuno: "Desayuno", endulzantes: "Endulzantes",
+  higiene: "Higiene", limpieza: "Limpieza",
+  congelados: "Congelados", bebidas_alcoholicas: "Bebidas Alcohólicas",
+  enlatados: "Enlatados",
 };
 
 async function seed() {

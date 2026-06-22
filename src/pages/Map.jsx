@@ -168,13 +168,38 @@ export default function Map() {
         </MapContainer>
       </div>
 
-      <div className="flex flex-wrap gap-5 justify-center mt-5">
-        {typeFilters.map((f) => (
-          <div key={f.key} className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: f.color }} />
-            <span className="font-apple-body text-[14px] text-[#7a7a7a]">{f.label}</span>
-          </div>
-        ))}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+        {filteredMarkets.length === 0 ? (
+          <p className="font-apple-body text-[15px] text-[#7a7a7a] col-span-full text-center py-12">
+            No se encontraron mercados con los filtros actuales.
+          </p>
+        ) : (
+          filteredMarkets.map((m) => {
+            const f = typeFilters.find((t) => t.key === m.type) || typeFilters[0];
+            return (
+              <button
+                key={m.id}
+                onClick={() => setSelectedMarket(m)}
+                className="text-left bg-white border border-[#e0e0e0] p-4 rounded-[14px] no-shadow hover:border-[#0071e3] hover:shadow-sm transition-all group"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: f.color }} />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-apple-body text-[15px] font-semibold text-[#1d1d1f] truncate group-hover:text-[#0066cc] transition-colors">
+                      {m.name}
+                    </p>
+                    <p className="font-apple-body text-[12px] text-[#7a7a7a] truncate">{m.location}</p>
+                  </div>
+                  <span className="px-2 py-0.5 bg-[#f5f5f7] rounded-full font-apple-body text-[11px] text-[#7a7a7a] whitespace-nowrap">{f.label}</span>
+                </div>
+                <div className="flex items-center justify-between text-[12px] text-[#7a7a7a]">
+                  <span>{m._count?.products || 0} productos</span>
+                  <span className="font-apple-body text-[11px] text-[#0066cc] opacity-0 group-hover:opacity-100 transition-opacity">Ver productos →</span>
+                </div>
+              </button>
+            );
+          })
+        )}
       </div>
 
       {selectedMarket && (

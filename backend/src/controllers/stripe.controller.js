@@ -5,33 +5,38 @@ import { NotFoundError, ForbiddenError } from "../utils/errors.js";
 
 const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
-export async function createPaymentIntent(req, res) {
+export async function createCheckoutSession(req, res) {
   const { orderId } = req.body;
 
   const order = await prisma.order.findUnique({ where: { id: orderId } });
   if (!order) throw new NotFoundError("Pedido");
   if (order.userId !== req.user.id) throw new ForbiddenError("No tienes permiso");
 
-  if (order.stripePaymentId) {
-    const existing = await stripe.paymentIntents.retrieve(order.stripePaymentId);
-    if (existing.status === "succeeded" || existing.status === "processing") {
-      return res.json({ clientSecret: existing.client_secret, status: existing.status });
-    }
-  }
-
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount: Math.round(order.total * 100),
-    currency: "xof",
+  const session = await stripe.checkout.sessions.create({
+    ui_mode: "elements",
+    mode: "payment",
+    line_items: [
+      {
+        price_data: {
+          currency: "xof",
+          product_data: { name: `Pedido #${order.id.slice(0, 8)}` },
+          unit_amount: Math.round(order.total * 100),
+        },
+        quantity: 1,
+      },
+    ],
     metadata: { orderId: order.id, userId: req.user.id },
-    automatic_payment_methods: { enabled: true },
+    payment_intent_data: {
+      metadata: { orderId: order.id, userId: req.user.id },
+    },
   });
 
   await prisma.order.update({
     where: { id: order.id },
-    data: { stripePaymentId: paymentIntent.id },
+    data: { stripePaymentId: session.id },
   });
 
-  res.json({ clientSecret: paymentIntent.client_secret, status: paymentIntent.status });
+  res.json({ clientSecret: session.client_secret, status: session.status });
 }
 
 export async function handleWebhook(req, res) {
@@ -48,9 +53,9 @@ export async function handleWebhook(req, res) {
     event = req.body;
   }
 
-  if (event.type === "payment_intent.succeeded") {
-    const paymentIntent = event.data.object;
-    const orderId = paymentIntent.metadata?.orderId;
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object;
+    const orderId = session.metadata?.orderId;
 
     if (orderId) {
       await prisma.order.update({
@@ -72,9 +77,9 @@ export async function handleWebhook(req, res) {
     }
   }
 
-  if (event.type === "payment_intent.payment_failed") {
-    const paymentIntent = event.data.object;
-    const orderId = paymentIntent.metadata?.orderId;
+  if (event.type === "checkout.session.async_payment_failed") {
+    const session = event.data.object;
+    const orderId = session.metadata?.orderId;
 
     if (orderId) {
       await prisma.order.update({

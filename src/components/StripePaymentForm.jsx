@@ -1,26 +1,26 @@
 import { useState } from "react";
-import { PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { PaymentElement, useCheckout } from "@stripe/react-stripe-js/checkout";
 import { useToast } from "../context/ToastContext";
 
 export default function StripePaymentForm({ onSuccess, onCancel }) {
-  const stripe = useStripe();
-  const elements = useElements();
+  const checkout = useCheckout();
   const toast = useToast();
   const [processing, setProcessing] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!stripe || !elements) return;
+    if (!checkout) return;
 
     setProcessing(true);
 
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: window.location.origin + "/perfil",
-      },
-      redirect: "if_required",
-    });
+    const loadResult = await checkout.loadActions();
+    if (loadResult.error) {
+      toast(loadResult.error.message || "Error al cargar el pago", "error");
+      setProcessing(false);
+      return;
+    }
+
+    const { error } = await checkout.confirm();
 
     if (error) {
       toast(error.message || "Error al procesar el pago", "error");
@@ -45,10 +45,10 @@ export default function StripePaymentForm({ onSuccess, onCancel }) {
         </button>
         <button
           type="submit"
-          disabled={!stripe || processing}
+          disabled={!checkout || processing}
           className="flex-1 px-4 py-3 bg-[#0066cc] text-white rounded-[9999px] font-apple-body text-[17px] font-normal leading-[1.47] hover:bg-[#0071e3] transition-colors disabled:bg-[#d2d2d7] disabled:cursor-not-allowed"
         >
-          {processing ? "Procesando..." : `Pagar`}
+          {processing ? "Procesando..." : "Pagar"}
         </button>
       </div>
     </form>
