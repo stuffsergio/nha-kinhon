@@ -13,6 +13,8 @@
     "db:seed": "node prisma/seed.js",
     "db:studio": "npx prisma studio",
     "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "postinstall": "npx prisma generate"
   },
   "dependencies": {
@@ -26,11 +28,13 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.2.0",
     "pg": "^8.22.0",
-    "stripe": "^18.5.0",
+    "stripe": "^22.2.2",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "eslint": "^10.5.0",
-    "prisma": "^6.19.3"
+    "prisma": "^6.19.3",
+    "supertest": "^7.2.2",
+    "vitest": "^4.1.9"
   }
 }

@@ -216,7 +216,7 @@ export default function CartSummary({ cartTotal }) {
               Total: <strong className="text-[#1d1d1f]">{cartTotal.toLocaleString()} FCFA</strong>
             </p>
             {stripePromise ? (
-              <CheckoutElementsProvider stripe={stripePromise} clientSecret={clientSecret}>
+              <CheckoutElementsProvider stripe={stripePromise} options={{ clientSecret }}>
                 <StripePaymentForm onSuccess={handlePaymentSuccess} onCancel={handlePaymentCancel} />
               </CheckoutElementsProvider>
             ) : (

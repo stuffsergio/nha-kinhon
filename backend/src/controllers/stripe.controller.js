@@ -15,12 +15,13 @@ export async function createCheckoutSession(req, res) {
   const session = await stripe.checkout.sessions.create({
     ui_mode: "elements",
     mode: "payment",
+    return_url: `${env.CLIENT_URL}/perfil?session_id={CHECKOUT_SESSION_ID}`,
     line_items: [
       {
         price_data: {
           currency: "xof",
           product_data: { name: `Pedido #${order.id.slice(0, 8)}` },
-          unit_amount: Math.round(order.total * 100),
+          unit_amount: Math.round(order.total),
         },
         quantity: 1,
       },
