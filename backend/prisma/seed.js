@@ -147,6 +147,16 @@ async function seed() {
     console.log(`  ✅ Usuario: ${u.email} (${u.role})`);
   }
 
+  // Delivery user
+  const deliveryHash = await bcrypt.hash("123456", 10);
+  const deliveryUser = await prisma.user.create({
+    data: { name: "João Repartidor", email: "joao@example.com", password: deliveryHash, role: "DELIVERY" },
+  });
+  await prisma.deliveryProfile.create({
+    data: { userId: deliveryUser.id, phone: "+245 955 123 456", vehicle: "moto", serviceArea: "Bissau", isActive: true },
+  });
+  console.log(`  ✅ Delivery: joao@example.com (DELIVERY)`);
+
   console.log("🎉 Seed completado!");
 }
 

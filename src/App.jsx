@@ -11,6 +11,8 @@ const Login = lazy(() => import("./pages/Login"));
 const Services = lazy(() => import("./pages/Services"));
 const Support = lazy(() => import("./pages/Support"));
 const Admin = lazy(() => import("./pages/Admin"));
+const DeliveryLogin = lazy(() => import("./pages/DeliveryLogin"));
+const DeliveryDashboard = lazy(() => import("./pages/DeliveryDashboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 function PageLoading() {
@@ -41,6 +43,8 @@ export default function App() {
           <Route path="/admin" element={<Admin />} />
           <Route path="*" element={<NotFound />} />
         </Route>
+        <Route path="/delivery/login" element={<DeliveryLogin />} />
+        <Route path="/delivery/dashboard" element={<DeliveryDashboard />} />
       </Routes>
     </Suspense>
   );

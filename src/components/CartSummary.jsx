@@ -9,7 +9,8 @@ import { useToast } from "../context/ToastContext";
 import ButtonPrimary from "./ButtonPrimary";
 import StripePaymentForm from "./StripePaymentForm";
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
+const PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+const stripePromise = PUBLISHABLE_KEY ? loadStripe(PUBLISHABLE_KEY) : null;
 
 export default function CartSummary({ cartTotal }) {
   const { cart, clearCart } = useCart();
@@ -17,9 +18,10 @@ export default function CartSummary({ cartTotal }) {
   const navigate = useNavigate();
   const toast = useToast();
   const [checkingOut, setCheckingOut] = useState(false);
+  const [creatingPayment, setCreatingPayment] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [clientSecret, setClientSecret] = useState(null);
-  const [createdOrderId, setCreatedOrderId] = useState(null);
+  const [pendingOrderId, setPendingOrderId] = useState(null);
 
   const [recipientName, setRecipientName] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
@@ -30,12 +32,14 @@ export default function CartSummary({ cartTotal }) {
     if (!recipientName.trim()) { toast("Introduce el nombre del destinatario", "error"); return; }
     if (!recipientPhone.trim()) { toast("Introduce el teléfono del destinatario", "error"); return; }
     if (!recipientAddress.trim()) { toast("Introduce la dirección del destinatario", "error"); return; }
+    if (!PUBLISHABLE_KEY) { toast("El sistema de pago no está configurado", "error"); return; }
     setShowConfirm(true);
   };
 
   const confirmCheckout = async () => {
     setShowConfirm(false);
     setCheckingOut(true);
+    setCreatingPayment(true);
     try {
       const data = await checkout.mutateAsync({
         recipientName: recipientName.trim(),
@@ -45,25 +49,32 @@ export default function CartSummary({ cartTotal }) {
         paymentMethodId: null,
       });
       const orderId = data.order?.id || data.id;
-      setCreatedOrderId(orderId);
+      setPendingOrderId(orderId);
       const pi = await api.post("/stripe/create-payment-intent", { orderId });
       setClientSecret(pi.clientSecret);
+      setCreatingPayment(false);
     } catch (e) {
       toast("Error al crear el pedido: " + e.message, "error");
+      setCreatingPayment(false);
       setCheckingOut(false);
     }
   };
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = async () => {
+    if (pendingOrderId) {
+      try {
+        await api.post(`/orders/${pendingOrderId}/confirm-payment`);
+      } catch {}
+    }
     setClientSecret(null);
-    setCreatedOrderId(null);
+    setPendingOrderId(null);
     setCheckingOut(false);
+    clearCart();
     navigate("/perfil");
   };
 
   const handlePaymentCancel = () => {
     setClientSecret(null);
-    setCreatedOrderId(null);
     setCheckingOut(false);
   };
 
@@ -184,6 +195,16 @@ export default function CartSummary({ cartTotal }) {
         </div>
       )}
 
+      {creatingPayment && !clientSecret && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <div className="relative bg-[#ffffff] rounded-[18px] no-shadow w-full max-w-[420px] p-8 animate-fade-in text-center">
+            <div className="w-8 h-8 border-4 border-[#e0e0e0] border-t-[#0066cc] rounded-full animate-spin mx-auto mb-4" />
+            <p className="font-apple-body text-[17px] text-[#7a7a7a]">Preparando el pago...</p>
+          </div>
+        </div>
+      )}
+
       {clientSecret && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handlePaymentCancel} />
@@ -194,10 +215,12 @@ export default function CartSummary({ cartTotal }) {
             <p className="font-apple-body text-[15px] font-normal leading-[1.43] tracking-[-0.224px] text-[#7a7a7a] mb-6">
               Total: <strong className="text-[#1d1d1f]">{cartTotal.toLocaleString()} FCFA</strong>
             </p>
-            {stripePromise && (
+            {stripePromise ? (
               <Elements stripe={stripePromise} options={{ clientSecret }}>
                 <StripePaymentForm onSuccess={handlePaymentSuccess} onCancel={handlePaymentCancel} />
               </Elements>
+            ) : (
+              <p className="font-apple-body text-[17px] text-[#dc2626]">Error: Stripe no está configurado</p>
             )}
           </div>
         </div>

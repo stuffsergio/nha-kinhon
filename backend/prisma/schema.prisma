@@ -27,6 +27,8 @@ model User {
   paymentMethods  PaymentMethod[]
   notifications   Notification[]
   supporters      Supporter[]
+  deliveryProfile DeliveryProfile?
+  deliveryOrders  Order[]          @relation("DeliveryOrders")
 
   @@map("users")
 }
@@ -34,6 +36,7 @@ model User {
 enum Role {
   USER
   ADMIN
+  DELIVERY
 }
 
 model Market {
@@ -128,14 +131,19 @@ model Order {
   recipientPhone   String?
   recipientAddress String?
   stripePaymentId  String?
+  deliveryId       String?
+  pickedUpAt       DateTime?
+  deliveredAt      DateTime?
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
   user             User         @relation(fields: [userId], references: [id])
+  delivery         User?        @relation("DeliveryOrders", fields: [deliveryId], references: [id])
   items            OrderItem[]
 
   @@index([userId])
   @@index([status])
+  @@index([deliveryId])
   @@map("orders")
 }
 
@@ -144,6 +152,8 @@ enum OrderStatus {
   CONFIRMED
   PROCESSING
   SHIPPED
+  PICKED_UP
+  IN_TRANSIT
   DELIVERED
   CANCELLED
 }
@@ -233,9 +243,27 @@ enum NotificationType {
   ORDER_CONFIRMED
   ORDER_PROCESSING
   ORDER_SHIPPED
+  ORDER_PICKED_UP
   ORDER_DELIVERED
   PAYMENT_RECEIVED
   PROMO
+}
+
+model DeliveryProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone           String
+  vehicle         String
+  serviceArea     String?
+  isActive        Boolean  @default(false)
+  totalDeliveries Int      @default(0)
+  rating          Float    @default(5.0)
+  currentLocation Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("delivery_profiles")
 }
 
 model Supporter {

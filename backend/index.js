@@ -19,6 +19,9 @@ import paymentMethodsRoutes from "./src/routes/paymentMethods.routes.js";
 import notificationsRoutes from "./src/routes/notifications.routes.js";
 import supportersRoutes from "./src/routes/supporters.routes.js";
 import stripeRoutes from "./src/routes/stripe.routes.js";
+import deliveryAuthRoutes from "./src/routes/delivery.auth.routes.js";
+import deliveryRoutes from "./src/routes/delivery.routes.js";
+import adminDeliveryRoutes from "./src/routes/admin.delivery.routes.js";
 
 const app = express();
 
@@ -43,6 +46,9 @@ app.use("/api/payment-methods", paymentMethodsRoutes);
 app.use("/api/notifications", notificationsRoutes);
 app.use("/api/supporters", supportersRoutes);
 app.use("/api/stripe", stripeRoutes);
+app.use("/api/delivery/auth", deliveryAuthRoutes);
+app.use("/api/delivery", deliveryRoutes);
+app.use("/api/admin", adminDeliveryRoutes);
 
 if (process.env.NODE_ENV === "production") {
   const __dirname = path.dirname(fileURLToPath(import.meta.url));

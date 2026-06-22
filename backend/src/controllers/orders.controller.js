@@ -91,6 +91,22 @@ export async function checkout(req, res) {
   res.status(201).json({ order });
 }
 
+export async function confirmAfterPayment(req, res) {
+  const { id } = req.params;
+
+  const order = await prisma.order.findUnique({ where: { id } });
+  if (!order) throw new NotFoundError("Pedido");
+  if (order.userId !== req.user.id) throw new AppError("No tienes permiso", 403);
+  if (order.status !== "PENDING") throw new AppError("El pedido no está pendiente", 400);
+
+  const updated = await prisma.order.update({
+    where: { id },
+    data: { status: "CONFIRMED" },
+  });
+
+  res.json({ order: updated });
+}
+
 export async function updateStatus(req, res) {
   const { status } = req.body;
   const validStatuses = ["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED"];
@@ -175,7 +191,7 @@ export async function listAll(req, res) {
       where,
       skip: (page - 1) * limit,
       take: Number(limit),
-      include: { items: true, user: { select: { id: true, name: true, email: true } } },
+      include: { items: true, user: { select: { id: true, name: true, email: true } }, delivery: { select: { id: true, name: true } } },
       orderBy: { createdAt: "desc" },
     }),
     prisma.order.count({ where }),
