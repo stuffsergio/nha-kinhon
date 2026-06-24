@@ -1,16 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckoutElementsProvider } from "@stripe/react-stripe-js/checkout";
-import { loadStripe } from "@stripe/stripe-js";
 import { useCart } from "../context/CartContext";
 import { useCheckout } from "../hooks/useOrders";
 import { api } from "../services/api";
 import { useToast } from "../context/ToastContext";
 import ButtonPrimary from "./ButtonPrimary";
-import StripePaymentForm from "./StripePaymentForm";
-
-const PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
-const stripePromise = PUBLISHABLE_KEY ? loadStripe(PUBLISHABLE_KEY) : null;
 
 export default function CartSummary({ cartTotal }) {
   const { cart, clearCart } = useCart();
@@ -18,10 +12,7 @@ export default function CartSummary({ cartTotal }) {
   const navigate = useNavigate();
   const toast = useToast();
   const [checkingOut, setCheckingOut] = useState(false);
-  const [creatingPayment, setCreatingPayment] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [clientSecret, setClientSecret] = useState(null);
-  const [pendingOrderId, setPendingOrderId] = useState(null);
 
   const [recipientName, setRecipientName] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
@@ -32,14 +23,12 @@ export default function CartSummary({ cartTotal }) {
     if (!recipientName.trim()) { toast("Introduce el nombre del destinatario", "error"); return; }
     if (!recipientPhone.trim()) { toast("Introduce el teléfono del destinatario", "error"); return; }
     if (!recipientAddress.trim()) { toast("Introduce la dirección del destinatario", "error"); return; }
-    if (!PUBLISHABLE_KEY) { toast("El sistema de pago no está configurado", "error"); return; }
     setShowConfirm(true);
   };
 
   const confirmCheckout = async () => {
     setShowConfirm(false);
     setCheckingOut(true);
-    setCreatingPayment(true);
     try {
       const data = await checkout.mutateAsync({
         recipientName: recipientName.trim(),
@@ -49,33 +38,15 @@ export default function CartSummary({ cartTotal }) {
         paymentMethodId: null,
       });
       const orderId = data.order?.id || data.id;
-      setPendingOrderId(orderId);
       const session = await api.post("/stripe/create-checkout-session", { orderId });
-      setClientSecret(session.clientSecret);
-      setCreatingPayment(false);
+      navigate("/checkout", {
+        state: { clientSecret: session.clientSecret, orderId, cartTotal },
+        replace: true,
+      });
     } catch (e) {
       toast("Error al crear el pedido: " + e.message, "error");
-      setCreatingPayment(false);
       setCheckingOut(false);
     }
-  };
-
-  const handlePaymentSuccess = async () => {
-    if (pendingOrderId) {
-      try {
-        await api.post(`/orders/${pendingOrderId}/confirm-payment`);
-      } catch {}
-    }
-    setClientSecret(null);
-    setPendingOrderId(null);
-    setCheckingOut(false);
-    clearCart();
-    navigate("/perfil");
-  };
-
-  const handlePaymentCancel = () => {
-    setClientSecret(null);
-    setCheckingOut(false);
   };
 
   return (
@@ -150,7 +121,7 @@ export default function CartSummary({ cartTotal }) {
         disabled={cart.length === 0 || checkingOut}
         className="w-full disabled:bg-[#d2d2d7] disabled:cursor-not-allowed"
       >
-        {checkingOut ? "Procesando..." : "Proceder al Pago"}
+        {checkingOut ? "Preparando pago..." : "Proceder al Pago"}
       </ButtonPrimary>
 
       {cart.length > 0 && (
@@ -168,60 +139,31 @@ export default function CartSummary({ cartTotal }) {
       )}
 
       {showConfirm && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowConfirm(false)} />
-          <div className="relative bg-[#ffffff] rounded-[18px] no-shadow w-full max-w-[420px] p-8 animate-fade-in">
-            <h3 className="font-apple-display text-[28px] font-semibold leading-[1.14] tracking-[0.196px] text-[#1d1d1f] mb-4">
-              Confirmar Pedido
-            </h3>
-            <p className="font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a] mb-6">
-              ¿Estás seguro de realizar este pedido de <strong className="text-[#1d1d1f]">{cartTotal.toLocaleString()} FCFA</strong> para <strong className="text-[#1d1d1f]">{recipientName}</strong>?
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowConfirm(false)}
-                className="flex-1 px-4 py-3 border border-[#e0e0e0] rounded-[9999px] font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#1d1d1f] hover:bg-[#f5f5f7] transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={confirmCheckout}
-                className="flex-1 px-4 py-3 bg-[#0066cc] text-white rounded-[9999px] font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] hover:bg-[#0071e3] transition-colors"
-              >
-                Confirmar
-              </button>
+          <div className="relative min-h-full flex items-center justify-center p-6">
+            <div className="relative bg-[#ffffff] rounded-[18px] no-shadow w-full max-w-[420px] p-8 animate-fade-in">
+              <h3 className="font-apple-display text-[28px] font-semibold leading-[1.14] tracking-[0.196px] text-[#1d1d1f] mb-4">
+                Confirmar Pedido
+              </h3>
+              <p className="font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a] mb-6">
+                ¿Estás seguro de realizar este pedido de <strong className="text-[#1d1d1f]">{cartTotal.toLocaleString()} FCFA</strong> para <strong className="text-[#1d1d1f]">{recipientName}</strong>?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowConfirm(false)}
+                  className="flex-1 px-4 py-3 border border-[#e0e0e0] rounded-[9999px] font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#1d1d1f] hover:bg-[#f5f5f7] transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmCheckout}
+                  className="flex-1 px-4 py-3 bg-[#0066cc] text-white rounded-[9999px] font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] hover:bg-[#0071e3] transition-colors"
+                >
+                  Confirmar
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {creatingPayment && !clientSecret && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-          <div className="relative bg-[#ffffff] rounded-[18px] no-shadow w-full max-w-[420px] p-8 animate-fade-in text-center">
-            <div className="w-8 h-8 border-4 border-[#e0e0e0] border-t-[#0066cc] rounded-full animate-spin mx-auto mb-4" />
-            <p className="font-apple-body text-[17px] text-[#7a7a7a]">Preparando el pago...</p>
-          </div>
-        </div>
-      )}
-
-      {clientSecret && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handlePaymentCancel} />
-          <div className="relative bg-[#ffffff] rounded-[18px] no-shadow w-full max-w-[420px] p-8 animate-fade-in">
-            <h3 className="font-apple-display text-[28px] font-semibold leading-[1.14] tracking-[0.196px] text-[#1d1d1f] mb-2">
-              Pagar con Tarjeta
-            </h3>
-            <p className="font-apple-body text-[15px] font-normal leading-[1.43] tracking-[-0.224px] text-[#7a7a7a] mb-6">
-              Total: <strong className="text-[#1d1d1f]">{cartTotal.toLocaleString()} FCFA</strong>
-            </p>
-            {stripePromise ? (
-              <CheckoutElementsProvider stripe={stripePromise} options={{ clientSecret }}>
-                <StripePaymentForm onSuccess={handlePaymentSuccess} onCancel={handlePaymentCancel} />
-              </CheckoutElementsProvider>
-            ) : (
-              <p className="font-apple-body text-[17px] text-[#dc2626]">Error: Stripe no está configurado</p>
-            )}
           </div>
         </div>
       )}

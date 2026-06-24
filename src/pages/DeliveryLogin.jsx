@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Truck } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import { Truck, ArrowLeft } from "lucide-react";
 import { useDeliveryLogin, useDeliveryRegister } from "../hooks/useDeliveryAuth";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
@@ -65,6 +65,9 @@ export default function DeliveryLogin() {
   return (
     <div className="w-full min-h-[80dvh] flex items-center justify-center px-6 py-[80px]">
       <div className="w-full max-w-[440px] mx-auto">
+        <Link to="/" className="inline-flex items-center gap-1.5 font-apple-body text-[15px] text-[#7a7a7a] hover:text-[#1d1d1f] transition-colors mb-6">
+          <ArrowLeft size={18} /> Volver al inicio
+        </Link>
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-[#059669]/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <Truck size={32} className="text-[#059669]" />

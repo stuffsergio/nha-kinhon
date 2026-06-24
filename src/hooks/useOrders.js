@@ -5,6 +5,7 @@ export function useOrders() {
   return useQuery({
     queryKey: ["orders"],
     queryFn: () => api.get("/orders"),
+    refetchInterval: 30_000,
   });
 }
 

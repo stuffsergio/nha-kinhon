@@ -14,6 +14,7 @@ const Admin = lazy(() => import("./pages/Admin"));
 const DeliveryLogin = lazy(() => import("./pages/DeliveryLogin"));
 const DeliveryDashboard = lazy(() => import("./pages/DeliveryDashboard"));
 const MarketDetail = lazy(() => import("./pages/MarketDetail"));
+const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 function PageLoading() {
@@ -43,6 +44,7 @@ export default function App() {
           <Route path="/supporters" element={<Support />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/tienda/:id" element={<MarketDetail />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="*" element={<NotFound />} />
         </Route>
         <Route path="/delivery/login" element={<DeliveryLogin />} />

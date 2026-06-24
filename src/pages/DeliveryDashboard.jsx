@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Package, ClipboardList, User, Clock, Truck, DollarSign, Star, TrendingUp } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import { Package, ClipboardList, User, Clock, Truck, DollarSign, Star, TrendingUp, ArrowLeft, MapPin } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
 import { useToast } from "../context/ToastContext";
@@ -66,11 +66,46 @@ export default function DeliveryDashboard() {
 
   if (!user || user.role !== "DELIVERY") {
     return (
-      <div className="w-full max-w-[980px] mx-auto py-[80px] px-6 text-center">
-        <Truck size={48} className="mx-auto mb-4 text-[#059669]" />
-        <h1 className="font-apple-display text-[40px] font-semibold text-[#1d1d1f] mb-4">Acceso Repartidores</h1>
-        <p className="font-apple-body text-[17px] text-[#7a7a7a] mb-6">Inicia sesión como repartidor para acceder al panel.</p>
-        <ButtonPrimary onClick={() => navigate("/delivery/login")}>Ir a iniciar sesión</ButtonPrimary>
+      <div className="w-full max-w-[980px] mx-auto py-[80px] px-6">
+        <Link to="/" className="inline-flex items-center gap-1.5 font-apple-body text-[15px] text-[#7a7a7a] hover:text-[#1d1d1f] transition-colors mb-10">
+          <ArrowLeft size={18} /> Volver al inicio
+        </Link>
+        <div className="max-w-[420px] mx-auto">
+          <div className="bg-[#ffffff] border border-[#e0e0e0] rounded-[24px] no-shadow p-8 text-center">
+            <div className="w-20 h-20 bg-[#059669]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Truck size={40} className="text-[#059669]" />
+            </div>
+            <h1 className="font-apple-display text-[32px] font-semibold leading-[1.1] text-[#1d1d1f] mb-3">
+              Panel de Repartidores
+            </h1>
+            <p className="font-apple-body text-[17px] text-[#7a7a7a] mb-8 leading-relaxed">
+              Inicia sesión o regístrate para gestionar tus entregas, ver tu historial y recibir pedidos cerca de ti.
+            </p>
+            <div className="space-y-3 mb-8">
+              {[
+                { icon: MapPin, text: "Recoge pedidos cerca de tu zona" },
+                { icon: DollarSign, text: "Gana por cada entrega" },
+                { icon: Clock, text: "Horario flexible, tú decides" },
+              ].map(({ icon: Icon, text }) => (
+                <div key={text} className="flex items-center gap-3 text-left">
+                  <div className="w-9 h-9 bg-[#f5f5f7] rounded-full flex items-center justify-center shrink-0">
+                    <Icon size={18} className="text-[#059669]" />
+                  </div>
+                  <p className="font-apple-body text-[15px] text-[#4a4a4a]">{text}</p>
+                </div>
+              ))}
+            </div>
+            <ButtonPrimary onClick={() => navigate("/delivery/login")} className="w-full">
+              Ir a iniciar sesión
+            </ButtonPrimary>
+            <p className="font-apple-body text-[14px] text-[#7a7a7a] mt-4">
+              ¿No tienes cuenta?{" "}
+              <button onClick={() => navigate("/delivery/login")} className="text-[#0066cc] hover:underline">
+                Regístrate aquí
+              </button>
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -93,9 +128,14 @@ export default function DeliveryDashboard() {
             {user.name} &bull; {profile?.vehicle || "—"} &bull; {profile?.serviceArea || "Sin zona"}
           </p>
         </div>
-        <button onClick={logout} className="font-apple-body text-[14px] text-[#7a7a7a] hover:text-[#1d1d1f] transition-colors">
-          Salir
-        </button>
+        <div className="flex items-center gap-4">
+          <Link to="/" className="flex items-center gap-1 font-apple-body text-[14px] text-[#7a7a7a] hover:text-[#1d1d1f] transition-colors">
+            <ArrowLeft size={16} /> Inicio
+          </Link>
+          <button onClick={logout} className="font-apple-body text-[14px] text-[#7a7a7a] hover:text-[#1d1d1f] transition-colors">
+            Salir
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

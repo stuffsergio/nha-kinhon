@@ -57,12 +57,17 @@ export async function handleWebhook(req, res) {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
     const orderId = session.metadata?.orderId;
+    const userId = session.metadata?.userId;
 
     if (orderId) {
       await prisma.order.update({
         where: { id: orderId },
         data: { status: "CONFIRMED" },
       });
+
+      if (userId) {
+        await prisma.cartItem.deleteMany({ where: { userId } });
+      }
 
       const order = await prisma.order.findUnique({ where: { id: orderId } });
       if (order) {

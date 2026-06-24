@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { User, Heart, ShoppingBag, Users, Settings, Bell, Wallet, CreditCard, X } from "lucide-react";
+import { User, Heart, ShoppingBag, Users, Settings, Bell, Wallet, CreditCard, X, Truck } from "lucide-react";
+import OrderTimeline from "../components/OrderTimeline";
 import { useAuth } from "../context/AuthContext";
 import { useOrders } from "../hooks/useOrders";
 import { useFavorites, useRemoveFavorite } from "../hooks/useFavorites";
@@ -221,47 +222,69 @@ export default function Profile() {
               No tienes pedidos aún
             </div>
           ) : (
-            orders.map((order) => (
-              <div key={order.id} className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow">
-                <div className="flex justify-between items-start mb-4">
+            orders.map((order) => {
+              const badgeColors = {
+                DELIVERED: "bg-[#ecfdf5] text-[#059669]",
+                CANCELLED: "bg-[#fef2f2] text-[#dc2626]",
+                PENDING: "bg-[#fffbeb] text-[#d97706]",
+                CONFIRMED: "bg-[#eff6ff] text-[#0066cc]",
+                PROCESSING: "bg-[#f5f3ff] text-[#7c3aed]",
+                SHIPPED: "bg-[#ecfdf5] text-[#059669]",
+                PICKED_UP: "bg-[#ecfdf5] text-[#059669]",
+                IN_TRANSIT: "bg-[#eff6ff] text-[#0066cc]",
+              };
+              const statusLabels = {
+                DELIVERED: "Entregado",
+                CANCELLED: "Cancelado",
+                PENDING: "Pendiente",
+                CONFIRMED: "Confirmado",
+                PROCESSING: "En Preparación",
+                SHIPPED: "Enviado",
+                PICKED_UP: "Recogido",
+                IN_TRANSIT: "En Camino",
+              };
+              return (
+              <div key={order.id} className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow space-y-4">
+                <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-apple-display text-[28px] font-semibold leading-[1.14] tracking-[0.196px] text-[#1d1d1f]">
                       Pedido #{order.id.slice(0, 8)}
                     </h3>
-                    <p className="font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a]">
-                      {new Date(order.createdAt).toLocaleDateString()}
+                    <p className="font-apple-body text-[15px] text-[#7a7a7a]">
+                      {new Date(order.createdAt).toLocaleDateString()} &bull; {order.recipientName}
                     </p>
                   </div>
-                  <span className={`px-3 py-1 rounded-[9999px] font-apple-body text-[14px] font-normal leading-[1.43] tracking-[-0.224px] ${
-                    order.status === "DELIVERED" ? "bg-[#f5f5f7] text-[#1d1d1f]" : "bg-[#f5f5f7] text-[#1d1d1f]"
-                  }`}>
-                    {order.status === "DELIVERED" ? "Entregado" :
-                     order.status === "PENDING" ? "Pendiente" :
-                     order.status === "CONFIRMED" ? "Confirmado" :
-                     order.status === "PROCESSING" ? "En Preparación" :
-                     order.status === "SHIPPED" ? "Enviado" :
-                     order.status === "CANCELLED" ? "Cancelado" : order.status}
+                  <span className={`px-3 py-1 rounded-[9999px] font-apple-body text-[13px] font-medium ${badgeColors[order.status] || "bg-[#f5f5f7] text-[#1d1d1f]"}`}>
+                    {statusLabels[order.status] || order.status}
                   </span>
                 </div>
-                <div className="border-t border-[#e0e0e0] pt-4">
-                  <p className="font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a] mb-2">
-                    Destinatario: {order.recipientName}
-                  </p>
-                  <div className="space-y-2">
-                    {(order.items || []).map((item, index) => (
-                      <div key={index} className="flex justify-between font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a]">
-                        <span>{item.name} x{item.quantity}</span>
-                        <span>{(item.price * item.quantity).toLocaleString()} FCFA</span>
-                      </div>
-                    ))}
+
+                <div className="bg-[#f5f5f7] rounded-[12px] p-4">
+                  <OrderTimeline status={order.status} />
+                </div>
+
+                {order.delivery && (
+                  <div className="flex items-center gap-2 text-[15px] text-[#1d1d1f]">
+                    <Truck size={16} className="text-[#059669]" />
+                    <span className="font-apple-body">Repartidor: <strong>{order.delivery.name}</strong></span>
                   </div>
-                  <div className="border-t border-[#e0e0e0] mt-2 pt-2 flex justify-between font-apple-display text-[28px] font-semibold leading-[1.14] tracking-[0.196px] text-[#1d1d1f]">
+                )}
+
+                <div className="border-t border-[#e0e0e0] pt-4 space-y-2">
+                  {(order.items || []).map((item, index) => (
+                    <div key={index} className="flex justify-between font-apple-body text-[15px] text-[#7a7a7a]">
+                      <span>{item.name} x{item.quantity}</span>
+                      <span>{(item.price * item.quantity).toLocaleString()} FCFA</span>
+                    </div>
+                  ))}
+                  <div className="border-t border-[#e0e0e0] pt-2 flex justify-between font-apple-display text-[24px] font-semibold leading-[1.14] text-[#1d1d1f]">
                     <span>Total</span>
                     <span>{order.total.toLocaleString()} FCFA</span>
                   </div>
                 </div>
               </div>
-            ))
+              );
+            })
           )}
         </div>
       )}

@@ -11,7 +11,7 @@ export async function listMyOrders(req, res) {
       where,
       skip: (page - 1) * limit,
       take: Number(limit),
-      include: { items: true },
+      include: { items: true, delivery: { select: { id: true, name: true } } },
       orderBy: { createdAt: "desc" },
     }),
     prisma.order.count({ where }),
@@ -23,7 +23,7 @@ export async function listMyOrders(req, res) {
 export async function getById(req, res) {
   const order = await prisma.order.findUnique({
     where: { id: req.params.id },
-    include: { items: { include: { product: true } } },
+    include: { items: { include: { product: true } }, delivery: { select: { id: true, name: true } } },
   });
 
   if (!order) throw new NotFoundError("Pedido");
@@ -77,8 +77,6 @@ export async function checkout(req, res) {
     include: { items: true },
   });
 
-  await prisma.cartItem.deleteMany({ where: { userId: req.user.id } });
-
   await prisma.notification.create({
     data: {
       userId: req.user.id,
@@ -103,6 +101,8 @@ export async function confirmAfterPayment(req, res) {
     where: { id },
     data: { status: "CONFIRMED" },
   });
+
+  await prisma.cartItem.deleteMany({ where: { userId: req.user.id } });
 
   res.json({ order: updated });
 }
