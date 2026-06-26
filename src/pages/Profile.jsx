@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { User, Heart, ShoppingBag, Users, Settings, Bell, Wallet, CreditCard, X, Truck } from "lucide-react";
+import { User, Heart, ShoppingBag, Users, Settings, Bell, Wallet, CreditCard, X, Truck, Plus } from "lucide-react";
 import OrderTimeline from "../components/OrderTimeline";
 import { useAuth } from "../context/AuthContext";
 import { useOrders } from "../hooks/useOrders";
 import { useFavorites, useRemoveFavorite } from "../hooks/useFavorites";
-import { useContacts } from "../hooks/useContacts";
+import { useContacts, useCreateContact } from "../hooks/useContacts";
 import { useUnreadCount, useMarkAllAsRead } from "../hooks/useNotifications";
 import { api } from "../services/api";
 import { useQueryClient } from "@tanstack/react-query";
@@ -17,11 +17,14 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [showDetails, setShowDetails] = useState(false);
   const [contactoToShow, setContactoToShow] = useState({ id: null, nombre: "", email: "" });
+  const [showAddContact, setShowAddContact] = useState(false);
+  const [newContact, setNewContact] = useState({ name: "", email: "", phone: "", address: "" });
+  const createContact = useCreateContact();
 
-  const { data: ordersRes, isLoading: ordersLoading } = useOrders();
-  const { data: favoritesRes, isLoading: favLoading } = useFavorites();
-  const { data: contactsRes, isLoading: contactsLoading } = useContacts();
-  const { data: unreadRes } = useUnreadCount();
+  const { data: ordersRes, isLoading: ordersLoading } = useOrders({ enabled: !!user });
+  const { data: favoritesRes, isLoading: favLoading } = useFavorites({ enabled: !!user });
+  const { data: contactsRes, isLoading: contactsLoading } = useContacts({ enabled: !!user });
+  const { data: unreadRes } = useUnreadCount({ enabled: !!user });
 
   const orders = ordersRes?.data || [];
   const favoriteProducts = favoritesRes?.data || [];
@@ -132,7 +135,7 @@ export default function Profile() {
                   Saldo
                 </h3>
               </div>
-              <p className="font-apple-display text-[40px] font-semibold leading-[1.1] text-[#1d1d1f]">
+              <p className="font-apple-display text-[40px] font-semibold leading-[1.1] text-[#1d1d1f] tabular-nums">
                 {(user.balance || 0).toLocaleString()} FCFA
               </p>
             </div>
@@ -143,7 +146,7 @@ export default function Profile() {
                   Pedidos
                 </h3>
               </div>
-              <p className="font-apple-display text-[40px] font-semibold leading-[1.1] text-[#1d1d1f]">
+              <p className="font-apple-display text-[40px] font-semibold leading-[1.1] text-[#1d1d1f] tabular-nums">
                 {orders.length}
               </p>
             </div>
@@ -154,7 +157,7 @@ export default function Profile() {
                   Favoritos
                 </h3>
               </div>
-              <p className="font-apple-display text-[40px] font-semibold leading-[1.1] text-[#1d1d1f]">
+              <p className="font-apple-display text-[40px] font-semibold leading-[1.1] text-[#1d1d1f] tabular-nums">
                 {favoriteProducts.length}
               </p>
             </div>
@@ -270,7 +273,7 @@ export default function Profile() {
                   </div>
                 )}
 
-                <div className="border-t border-[#e0e0e0] pt-4 space-y-2">
+                <div className="border-t border-[#e0e0e0] pt-4 space-y-2 tabular-nums">
                   {(order.items || []).map((item, index) => (
                     <div key={index} className="flex justify-between font-apple-body text-[15px] text-[#7a7a7a]">
                       <span>{item.name} x{item.quantity}</span>
@@ -292,9 +295,18 @@ export default function Profile() {
       {activeTab === "contacts" && (
         <div className="space-y-4">
           <div className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow">
-            <h3 className="font-apple-display text-[34px] font-semibold leading-[1.47] tracking-[-0.374px] text-[#1d1d1f] mb-4">
-              Contactos Añadidos
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-apple-display text-[34px] font-semibold leading-[1.47] tracking-[-0.374px] text-[#1d1d1f]">
+                Contactos
+              </h3>
+              <button
+                onClick={() => setShowAddContact(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-[#0066cc] text-white rounded-[9999px] font-apple-body text-[15px] font-normal hover:bg-[#0071e3] transition-colors duration-150"
+              >
+                <Plus size={18} />
+                Añadir
+              </button>
+            </div>
             {contactsLoading ? (
               <div className="space-y-3">
                 {[1, 2].map((i) => (
@@ -305,7 +317,9 @@ export default function Profile() {
                 ))}
               </div>
             ) : contacts.length === 0 ? (
-              <p className="font-apple-body text-[17px] text-[#7a7a7a]">No tienes contactos guardados</p>
+              <p className="font-apple-body text-[17px] text-[#7a7a7a] text-center py-8">
+                No tienes contactos guardados. ¡Añade tu primer contacto!
+              </p>
             ) : (
               <div className="space-y-3">
                 {contacts.map((contact) => (
@@ -318,7 +332,7 @@ export default function Profile() {
                         {contact.name}
                       </p>
                       <p className="font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a]">
-                        {contact.email || ""}
+                        {contact.email || contact.phone || ""}
                       </p>
                     </div>
                     <button
@@ -333,6 +347,123 @@ export default function Profile() {
             )}
           </div>
         </div>
+      )}
+
+      {showAddContact && (
+        <div className="fixed inset-0 z-[9999] overflow-y-auto" role="dialog" aria-modal="true" aria-label="A\u00f1adir contacto">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowAddContact(false)} />
+          <div className="relative min-h-full flex items-center justify-center p-6">
+            <div className="relative bg-[#ffffff] rounded-[18px] no-shadow w-full max-w-md p-6 animate-fade-in">
+            <button
+              onClick={() => setShowAddContact(false)}
+              className="absolute top-4 right-4 p-2 hover:bg-[#f5f5f7] rounded-full transition-colors duration-150"
+              aria-label="Cerrar"
+            >
+              <X size={24} />
+            </button>
+            <h2 className="font-apple-display text-[34px] font-semibold leading-[1.47] tracking-[-0.374px] text-[#1d1d1f] mb-6">
+              A\u00f1adir Contacto
+            </h2>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!newContact.name.trim()) {
+                  toast("El nombre es obligatorio", "error");
+                  return;
+                }
+                if (!newContact.phone.trim()) {
+                  toast("El tel\u00e9fono es obligatorio", "error");
+                  return;
+                }
+                createContact.mutate(newContact, {
+                  onSuccess: () => {
+                    toast("Contacto a\u00f1adido", "success");
+                    setNewContact({ name: "", email: "", phone: "", address: "" });
+                    setShowAddContact(false);
+                  },
+                  onError: (err) => toast(err.message, "error"),
+                });
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label htmlFor="contact-name" className="block font-apple-body text-[14px] leading-[1.43] text-[#7a7a7a] mb-1">
+                  Nombre completo <span className="text-[#dc2626]">*</span>
+                </label>
+                <input
+                  id="contact-name"
+                  type="text"
+                  value={newContact.name}
+                  onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
+                  placeholder="Nombre del contacto"
+                  autoComplete="name"
+                  className="w-full px-4 py-2.5 border border-[#e0e0e0] rounded-[10px] focus-visible:outline-2 focus-visible:outline-[#0071e3] focus-visible:outline-offset-2 font-apple-body text-[17px] transition-shadow duration-150"
+                />
+              </div>
+              <div>
+                <label htmlFor="contact-email" className="block font-apple-body text-[14px] leading-[1.43] text-[#7a7a7a] mb-1">
+                  Email
+                </label>
+                <input
+                  id="contact-email"
+                  type="email"
+                  value={newContact.email}
+                  onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
+                  placeholder="correo@ejemplo.com"
+                  autoComplete="email"
+                  inputMode="email"
+                  className="w-full px-4 py-2.5 border border-[#e0e0e0] rounded-[10px] focus-visible:outline-2 focus-visible:outline-[#0071e3] focus-visible:outline-offset-2 font-apple-body text-[17px] transition-shadow duration-150"
+                />
+              </div>
+              <div>
+                <label htmlFor="contact-phone" className="block font-apple-body text-[14px] leading-[1.43] text-[#7a7a7a] mb-1">
+                  Tel\u00e9fono <span className="text-[#dc2626]">*</span>
+                </label>
+                <input
+                  id="contact-phone"
+                  type="tel"
+                  value={newContact.phone}
+                  onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
+                  placeholder="+245 XXX XXX XXX"
+                  autoComplete="tel"
+                  inputMode="tel"
+                  className="w-full px-4 py-2.5 border border-[#e0e0e0] rounded-[10px] focus-visible:outline-2 focus-visible:outline-[#0071e3] focus-visible:outline-offset-2 font-apple-body text-[17px] transition-shadow duration-150"
+                />
+              </div>
+              <div>
+                <label htmlFor="contact-address" className="block font-apple-body text-[14px] leading-[1.43] text-[#7a7a7a] mb-1">
+                  Direcci\u00f3n
+                </label>
+                <input
+                  id="contact-address"
+                  type="text"
+                  value={newContact.address}
+                  onChange={(e) => setNewContact({ ...newContact, address: e.target.value })}
+                  placeholder="Direcci\u00f3n en Guinea-Bissau"
+                  autoComplete="street-address"
+                  className="w-full px-4 py-2.5 border border-[#e0e0e0] rounded-[10px] focus-visible:outline-2 focus-visible:outline-[#0071e3] focus-visible:outline-offset-2 font-apple-body text-[17px] transition-shadow duration-150"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddContact(false)}
+                  className="flex-1 px-4 py-3 border border-[#e0e0e0] rounded-[9999px] font-apple-body text-[17px] text-[#1d1d1f] hover:bg-[#f5f5f7] transition-colors duration-150"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={createContact.isPending}
+                  className="flex-1 px-4 py-3 bg-[#0066cc] text-white rounded-[9999px] font-apple-body text-[17px] hover:bg-[#0071e3] disabled:bg-[#d2d2d7] disabled:cursor-not-allowed transition-colors duration-150"
+                >
+                  {createContact.isPending ? "Guardando\u2026" : "Guardar"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
       )}
 
       {activeTab === "settings" && (
@@ -405,8 +536,24 @@ export default function Profile() {
                 <p className="font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a]">
                   Email
                 </p>
-                <p className="font-apple-display text-[28px] font-semibold leading-[1.14] tracking-[0.196px] text-[#1d1d1f]">
+                <p className="font-apple-display text-[22px] font-semibold leading-[1.14] text-[#1d1d1f]">
                   {contactoToShow.email || "—"}
+                </p>
+              </div>
+              <div>
+                <p className="font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a]">
+                  Tel&eacute;fono
+                </p>
+                <p className="font-apple-display text-[22px] font-semibold leading-[1.14] text-[#1d1d1f]">
+                  {contactoToShow.phone || "—"}
+                </p>
+              </div>
+              <div>
+                <p className="font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a]">
+                  Direcci&oacute;n
+                </p>
+                <p className="font-apple-display text-[22px] font-semibold leading-[1.14] text-[#1d1d1f]">
+                  {contactoToShow.address || "—"}
                 </p>
               </div>
             </div>

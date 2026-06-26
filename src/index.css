@@ -46,6 +46,14 @@
   --rounded-lg: 18px;
   --rounded-pill: 9999px;
   --rounded-full: 9999px;
+
+  /* Animation tokens */
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 350ms;
+  --ease-apple: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-apple-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-apple-out: cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 /* Apple Typography Classes */
@@ -109,4 +117,65 @@
 /* Remove all shadows except product shadow */
 .no-shadow {
   box-shadow: none;
+}
+
+/* ============================================================
+   Vercel Web Interface Guidelines – compliance additions
+   ============================================================ */
+
+/* Typography — prevent widows on headings */
+h1, h2, h3, h4, h5, h6 {
+  text-wrap: balance;
+}
+
+/* Numbers — tabular-nums for price columns / comparisons */
+.tabular-nums,
+[class*="font-apple"] {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Focus ring — global */
+*:focus-visible {
+  outline: 2px solid var(--color-primary-focus);
+  outline-offset: 2px;
+}
+
+/* Remove default focus outline only when :focus-visible is supported */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Safe area for notched devices */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.pl-safe {
+  padding-left: env(safe-area-inset-left, 0px);
+}
+
+.pr-safe {
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* Reduced motion – respect user preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .animate-fade-in,
+  .animate-toast-in,
+  .btn-apple-active:active {
+    animation: none !important;
+    transform: none !important;
+  }
 }

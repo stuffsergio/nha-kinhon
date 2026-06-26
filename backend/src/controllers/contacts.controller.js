@@ -11,6 +11,14 @@ export async function list(req, res) {
 }
 
 export async function create(req, res) {
+  const { name, phone } = req.body;
+  if (!name?.trim()) {
+    return res.status(400).json({ error: "El nombre es obligatorio" });
+  }
+  if (!phone?.trim()) {
+    return res.status(400).json({ error: "El tel\u00e9fono es obligatorio" });
+  }
+
   const contact = await prisma.contact.create({
     data: { ...req.body, userId: req.user.id },
   });

@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../services/api";
 
-export function useContacts() {
+export function useContacts(options = {}) {
   return useQuery({
     queryKey: ["contacts"],
     queryFn: () => api.get("/contacts"),
+    ...options,
   });
 }
 

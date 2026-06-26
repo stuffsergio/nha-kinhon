@@ -28,12 +28,12 @@ export default function Login() {
     if (mode === "register") {
       if (!form.name.trim()) { setError("Debes rellenar el nombre"); return; }
       if (!form.email.trim()) { setError("Debes rellenar el email"); return; }
-      if (!form.password) { setError("Debes rellenar la contraseña"); return; }
-      if (form.password.length < 6) { setError("La contraseña debe tener al menos 6 caracteres"); return; }
-      if (form.password !== form.confirm) { setError("Las contraseñas no coinciden"); return; }
+      if (!form.password) { setError("Debes rellenar la contrase\u00f1a"); return; }
+      if (form.password.length < 6) { setError("La contrase\u00f1a debe tener al menos 6 caracteres"); return; }
+      if (form.password !== form.confirm) { setError("Las contrase\u00f1as no coinciden"); return; }
     } else {
       if (!form.email.trim()) { setError("Debes rellenar el email"); return; }
-      if (!form.password) { setError("Debes rellenar la contraseña"); return; }
+      if (!form.password) { setError("Debes rellenar la contrase\u00f1a"); return; }
     }
 
     setSubmitting(true);
@@ -51,17 +51,19 @@ export default function Login() {
     }
   };
 
+  const inputClass = "w-full px-5 py-4 border border-[#d2d2d7] rounded-[14px] focus-visible:outline-2 focus-visible:outline-[#0071e3] focus-visible:outline-offset-2 focus:border-transparent font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#1d1d1f] placeholder:text-[#7a7a7a] bg-white transition-shadow duration-150";
+
   return (
     <div className="w-full max-w-[980px] mx-auto px-6">
       <div className="py-[60px]">
         <Link to="/" className="font-apple-body text-[17px] text-[#0066cc] hover:underline inline-flex items-center gap-1.5 mb-10">
-          &larr; Volver atrás
+          &larr; Volver atr&aacute;s
         </Link>
 
         <div className="flex flex-col lg:flex-row lg:gap-24">
           <div className="flex-1 mb-12 lg:mb-0">
             <h1 className="font-apple-display text-[48px] lg:text-[64px] font-semibold leading-[1.07] tracking-[-0.28px] text-[#1d1d1f] mb-3">
-              {mode === "login" ? "Iniciar Sesión" : "Crear Cuenta"}
+              {mode === "login" ? "Iniciar Sesi\u00f3n" : "Crear Cuenta"}
             </h1>
             <p className="font-apple-body text-[17px] text-[#7a7a7a] leading-[1.6]">
               {mode === "login"
@@ -71,20 +73,24 @@ export default function Login() {
           </div>
 
           <div className="w-full lg:w-[440px]">
-            <div className="flex gap-0 mb-8 border-b border-[#e0e0e0]">
+            <div className="flex gap-0 mb-8 border-b border-[#e0e0e0]" role="tablist">
               <button
+                role="tab"
+                aria-selected={mode === "login"}
                 onClick={() => switchMode("login")}
-                className={`flex-1 pb-3 font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] transition-colors ${
+                className={`flex-1 pb-3 font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] transition-colors duration-150 ${
                   mode === "login"
                     ? "text-[#1d1d1f] border-b-2 border-[#1d1d1f]"
                     : "text-[#7a7a7a] hover:text-[#1d1d1f]"
                 }`}
               >
-                Iniciar Sesión
+                Iniciar Sesi&oacute;n
               </button>
               <button
+                role="tab"
+                aria-selected={mode === "register"}
                 onClick={() => switchMode("register")}
-                className={`flex-1 pb-3 font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] transition-colors ${
+                className={`flex-1 pb-3 font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] transition-colors duration-150 ${
                   mode === "register"
                     ? "text-[#1d1d1f] border-b-2 border-[#1d1d1f]"
                     : "text-[#7a7a7a] hover:text-[#1d1d1f]"
@@ -97,65 +103,74 @@ export default function Login() {
             <form onSubmit={handleSubmit} className="space-y-5">
               {mode === "register" && (
                 <div>
-                  <label className="block font-apple-body text-[14px] font-normal leading-[1.43] tracking-[-0.224px] text-[#7a7a7a] mb-1.5">
+                  <label htmlFor="reg-name" className="block font-apple-body text-[14px] font-normal leading-[1.43] tracking-[-0.224px] text-[#7a7a7a] mb-1.5">
                     Nombre completo
                   </label>
                   <input
+                    id="reg-name"
                     name="name"
                     value={form.name}
                     onChange={handleChange}
                     placeholder="Tu nombre"
-                    className="w-full px-5 py-4 border border-[#d2d2d7] rounded-[14px] focus:outline-none focus:ring-2 focus:ring-[#0071e3] focus:border-transparent font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#1d1d1f] placeholder:text-[#7a7a7a] bg-white"
+                    autoComplete="name"
+                    className={inputClass}
                   />
                 </div>
               )}
 
               <div>
-                <label className="block font-apple-body text-[14px] font-normal leading-[1.43] tracking-[-0.224px] text-[#7a7a7a] mb-1.5">
+                <label htmlFor={`${mode}-email`} className="block font-apple-body text-[14px] font-normal leading-[1.43] tracking-[-0.224px] text-[#7a7a7a] mb-1.5">
                   Email
                 </label>
                 <input
+                  id={`${mode}-email`}
                   type="email"
                   name="email"
                   value={form.email}
                   onChange={handleChange}
                   placeholder="tu@email.com"
-                  className="w-full px-5 py-4 border border-[#d2d2d7] rounded-[14px] focus:outline-none focus:ring-2 focus:ring-[#0071e3] focus:border-transparent font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#1d1d1f] placeholder:text-[#7a7a7a] bg-white"
+                  autoComplete="email"
+                  inputMode="email"
+                  className={inputClass}
                 />
               </div>
 
               <div>
-                <label className="block font-apple-body text-[14px] font-normal leading-[1.43] tracking-[-0.224px] text-[#7a7a7a] mb-1.5">
-                  Contraseña
+                <label htmlFor={`${mode}-password`} className="block font-apple-body text-[14px] font-normal leading-[1.43] tracking-[-0.224px] text-[#7a7a7a] mb-1.5">
+                  Contrase&ntilde;a
                 </label>
                 <input
+                  id={`${mode}-password`}
                   type="password"
                   name="password"
                   value={form.password}
                   onChange={handleChange}
-                  placeholder={mode === "register" ? "Mínimo 6 caracteres" : "Tu contraseña"}
-                  className="w-full px-5 py-4 border border-[#d2d2d7] rounded-[14px] focus:outline-none focus:ring-2 focus:ring-[#0071e3] focus:border-transparent font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#1d1d1f] placeholder:text-[#7a7a7a] bg-white"
+                  placeholder={mode === "register" ? "M\u00ednimo 6 caracteres" : "Tu contrase\u00f1a"}
+                  autoComplete={mode === "register" ? "new-password" : "current-password"}
+                  className={inputClass}
                 />
               </div>
 
               {mode === "register" && (
                 <div>
-                  <label className="block font-apple-body text-[14px] font-normal leading-[1.43] tracking-[-0.224px] text-[#7a7a7a] mb-1.5">
-                    Confirmar contraseña
+                  <label htmlFor="reg-confirm" className="block font-apple-body text-[14px] font-normal leading-[1.43] tracking-[-0.224px] text-[#7a7a7a] mb-1.5">
+                    Confirmar contrase&ntilde;a
                   </label>
                   <input
+                    id="reg-confirm"
                     type="password"
                     name="confirm"
                     value={form.confirm}
                     onChange={handleChange}
-                    placeholder="Repite la contraseña"
-                    className="w-full px-5 py-4 border border-[#d2d2d7] rounded-[14px] focus:outline-none focus:ring-2 focus:ring-[#0071e3] focus:border-transparent font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#1d1d1f] placeholder:text-[#7a7a7a] bg-white"
+                    placeholder="Repite la contrase\u00f1a"
+                    autoComplete="new-password"
+                    className={inputClass}
                   />
                 </div>
               )}
 
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-[14px] px-5 py-4">
+                <div className="bg-red-50 border border-red-200 rounded-[14px] px-5 py-4" role="alert">
                   <p className="font-apple-body text-[15px] text-red-700">{error}</p>
                 </div>
               )}
@@ -163,28 +178,28 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-[#0066cc] text-white font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] rounded-[9999px] px-[22px] py-[14px] hover:bg-[#0071e3] focus:outline-none focus:ring-2 focus:ring-[#0071e3] disabled:bg-[#d2d2d7] disabled:cursor-not-allowed transition-colors"
+                className="w-full bg-[#0066cc] text-white font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] rounded-[9999px] px-[22px] py-[14px] hover:bg-[#0071e3] focus-visible:outline-2 focus-visible:outline-[#0071e3] focus-visible:outline-offset-2 disabled:bg-[#d2d2d7] disabled:cursor-not-allowed transition-colors duration-150"
               >
                 {submitting
-                  ? "Procesando..."
+                  ? "Procesando\u2026"
                   : mode === "login"
-                    ? "Iniciar Sesión"
+                    ? "Iniciar Sesi\u00f3n"
                     : "Crear Cuenta"}
               </button>
 
               <p className="text-center font-apple-body text-[15px] text-[#7a7a7a] pt-2">
                 {mode === "login" ? (
                   <>
-                    ¿No tienes cuenta?{" "}
+                    &iquest;No tienes cuenta?{" "}
                     <button type="button" onClick={() => switchMode("register")} className="text-[#0066cc] hover:underline font-medium">
-                      Regístrate
+                      Reg&iacute;strate
                     </button>
                   </>
                 ) : (
                   <>
-                    ¿Ya tienes cuenta?{" "}
+                    &iquest;Ya tienes cuenta?{" "}
                     <button type="button" onClick={() => switchMode("login")} className="text-[#0066cc] hover:underline font-medium">
-                      Inicia sesión
+                      Inicia sesi&oacute;n
                     </button>
                   </>
                 )}

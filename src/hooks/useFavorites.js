@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../services/api";
 
-export function useFavorites() {
+export function useFavorites(options = {}) {
   return useQuery({
     queryKey: ["favorites"],
     queryFn: () => api.get("/favorites"),
+    ...options,
   });
 }
 

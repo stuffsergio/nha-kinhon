@@ -1,11 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../services/api";
 
-export function useOrders() {
+export function useOrders(options = {}) {
   return useQuery({
     queryKey: ["orders"],
     queryFn: () => api.get("/orders"),
     refetchInterval: 30_000,
+    ...options,
   });
 }
 

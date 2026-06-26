@@ -8,11 +8,12 @@ export function useNotifications() {
   });
 }
 
-export function useUnreadCount() {
+export function useUnreadCount(options = {}) {
   return useQuery({
     queryKey: ["notifications", "unread"],
     queryFn: () => api.get("/notifications/unread-count"),
     refetchInterval: 30000,
+    ...options,
   });
 }
 

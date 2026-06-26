@@ -12,7 +12,7 @@ export default function ActionCard({ title, description, icon: Icon, to, color =
           <h3 className="text-xl font-bold mb-2">{title}</h3>
           <p className="text-sm opacity-90">{description}</p>
         </div>
-        {Icon && <Icon size={32} />}
+        {Icon && <Icon size={32} aria-hidden="true" />}
       </div>
       <div className="flex items-center gap-2 text-sm font-semibold">
         <span>Acceder</span>

@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
 
@@ -19,7 +19,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 function PageLoading() {
   return (
-    <div className="w-full max-w-[980px] mx-auto py-[80px] px-6">
+    <div className="w-full max-w-[980px] mx-auto py-[80px] px-6" role="status" aria-live="polite">
       <div className="animate-pulse space-y-4">
         <div className="h-10 bg-[#f5f5f7] rounded w-1/3" />
         <div className="h-6 bg-[#f5f5f7] rounded w-2/3" />
@@ -30,6 +30,23 @@ function PageLoading() {
 }
 
 export default function App() {
+  useEffect(() => {
+    const link = document.createElement("link");
+    link.rel = "preconnect";
+    link.href = "https://js.stripe.com";
+    document.head.appendChild(link);
+
+    const link2 = document.createElement("link");
+    link2.rel = "preconnect";
+    link2.href = "https://tile.openstreetmap.org";
+    document.head.appendChild(link2);
+
+    return () => {
+      link.remove();
+      link2.remove();
+    };
+  }, []);
+
   return (
     <Suspense fallback={<PageLoading />}>
       <Routes>
