@@ -82,7 +82,6 @@ export default function Search() {
     setDebouncedQuery(query);
     if (query.trim()) {
       setHasSearched(true);
-      saveToHistory(query);
     }
   };
 
@@ -116,6 +115,12 @@ export default function Search() {
       setAddingId(null);
     } catch {
       setAddingId(null);
+    }
+  };
+
+  const handleProductClick = () => {
+    if (searchQuery.trim()) {
+      saveToHistory(searchQuery);
     }
   };
 
@@ -157,9 +162,9 @@ export default function Search() {
           </h2>
 
           {catLoading ? (
-            <p className="font-apple-body text-[15px] text-[#7a7a7a]" role="status" aria-live="polite">Cargando productos&hellip;</p>
+            <p className="font-apple-body text-[15px] text-[#7a7a7a]" role="status" aria-live="polite">Cargando productos…</p>
           ) : categoryProducts.length === 0 ? (
-            <p className="font-apple-body text-[15px] text-[#7a7a7a]">No hay productos en esta categor&iacute;a</p>
+            <p className="font-apple-body text-[15px] text-[#7a7a7a]">No hay productos en esta categoría</p>
           ) : (
             <div className="space-y-3">
               {categoryProducts.map((product) => (
@@ -194,7 +199,7 @@ export default function Search() {
       {!selectedCategory && (
         <>
           {isFetching && showResults && (
-            <p className="text-[#7a7a7a] font-apple-body" role="status" aria-live="polite">Buscando&hellip;</p>
+            <p className="text-[#7a7a7a] font-apple-body" role="status" aria-live="polite">Buscando…</p>
           )}
 
           {!showResults ? (
@@ -213,7 +218,7 @@ export default function Search() {
               />
             </>
           ) : (
-            !isFetching && <SearchResults results={results} searchQuery={searchQuery} />
+            !isFetching && <SearchResults results={results} searchQuery={searchQuery} onProductClick={handleProductClick} />
           )}
         </>
       )}

@@ -3,15 +3,13 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { CheckoutElementsProvider, useCheckout, PaymentElement } from "@stripe/react-stripe-js/checkout";
 import { loadStripe } from "@stripe/stripe-js";
 import { ArrowLeft, CreditCard } from "lucide-react";
-import { api } from "../services/api";
-import { useCart } from "../context/CartContext";
 import { useToast } from "../context/ToastContext";
-import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext";
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 const stripePromise = PUBLISHABLE_KEY ? loadStripe(PUBLISHABLE_KEY) : null;
 
-function PaymentForm({ cartTotal, email, onSuccess, onCancel }) {
+function PaymentForm({ cartTotal, email, onCancel, onSuccess }) {
   const checkoutResult = useCheckout();
   const toast = useToast();
   const [processing, setProcessing] = useState(false);
@@ -27,8 +25,7 @@ function PaymentForm({ cartTotal, email, onSuccess, onCancel }) {
       toast(error.message || "Error al procesar el pago", "error");
       setProcessing(false);
     } else {
-      toast("Pago realizado con éxito", "success");
-      await onSuccess();
+      onSuccess();
     }
   };
 
@@ -82,11 +79,9 @@ function PaymentForm({ cartTotal, email, onSuccess, onCancel }) {
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const toast = useToast();
-  const { user } = useAuth();
   const { clearCart } = useCart();
 
-  const { clientSecret, orderId, cartTotal } = location.state || {};
+  const { clientSecret, orderId, cartTotal, userEmail } = location.state || {};
 
   if (!clientSecret || !orderId) {
     return (
@@ -101,14 +96,7 @@ export default function CheckoutPage() {
   }
 
   const handleSuccess = async () => {
-    if (orderId) {
-      try {
-        await api.post(`/orders/${orderId}/confirm-payment`);
-      } catch {}
-    }
     await clearCart();
-    toast("Pedido realizado con éxito", "success");
-    navigate("/perfil", { replace: true });
   };
 
   const handleCancel = () => {
@@ -135,7 +123,7 @@ export default function CheckoutPage() {
 
       {stripePromise ? (
         <CheckoutElementsProvider stripe={stripePromise} options={{ clientSecret }}>
-          <PaymentForm cartTotal={cartTotal} email={user?.email} onSuccess={handleSuccess} onCancel={handleCancel} />
+          <PaymentForm cartTotal={cartTotal} email={userEmail} onCancel={handleCancel} onSuccess={handleSuccess} />
         </CheckoutElementsProvider>
       ) : (
         <div className="text-center py-12 bg-[#fef2f2] rounded-[18px]">

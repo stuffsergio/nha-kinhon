@@ -26,7 +26,9 @@ import adminDeliveryRoutes from "./src/routes/admin.delivery.routes.js";
 const app = express();
 
 app.use(cors({ origin: env.CLIENT_URL, credentials: true }));
-app.use(express.json());
+app.use(express.json({
+  verify: (req, res, buf) => { req.rawBody = buf; },
+}));
 app.use(cookieParser());
 
 app.get("/api/health", (req, res) => {

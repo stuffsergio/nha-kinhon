@@ -4,6 +4,7 @@ import { useCart } from "../context/CartContext";
 import { useCheckout } from "../hooks/useOrders";
 import { api } from "../services/api";
 import { useToast } from "../context/ToastContext";
+import { useAuth } from "../context/AuthContext";
 import ButtonPrimary from "./ButtonPrimary";
 
 export default function CartSummary({ cartTotal }) {
@@ -11,6 +12,7 @@ export default function CartSummary({ cartTotal }) {
   const checkout = useCheckout();
   const navigate = useNavigate();
   const toast = useToast();
+  const { user } = useAuth();
   const [checkingOut, setCheckingOut] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -21,8 +23,8 @@ export default function CartSummary({ cartTotal }) {
 
   const handleCheckout = () => {
     if (!recipientName.trim()) { toast("Introduce el nombre del destinatario", "error"); return; }
-    if (!recipientPhone.trim()) { toast("Introduce el tel\u00e9fono del destinatario", "error"); return; }
-    if (!recipientAddress.trim()) { toast("Introduce la direcci\u00f3n del destinatario", "error"); return; }
+    if (!recipientPhone.trim()) { toast("Introduce el teléfono del destinatario", "error"); return; }
+    if (!recipientAddress.trim()) { toast("Introduce la dirección del destinatario", "error"); return; }
     setShowConfirm(true);
   };
 
@@ -40,7 +42,7 @@ export default function CartSummary({ cartTotal }) {
       const orderId = data.order?.id || data.id;
       const session = await api.post("/stripe/create-checkout-session", { orderId });
       navigate("/checkout", {
-        state: { clientSecret: session.clientSecret, orderId, cartTotal },
+        state: { clientSecret: session.clientSecret, orderId, cartTotal, userEmail: user?.email },
         replace: true,
       });
     } catch (e) {
@@ -74,7 +76,7 @@ export default function CartSummary({ cartTotal }) {
           />
         </div>
         <div>
-          <label htmlFor="recipient-phone" className="block font-apple-body text-[14px] text-[#7a7a7a] mb-1">Tel&eacute;fono *</label>
+          <label htmlFor="recipient-phone" className="block font-apple-body text-[14px] text-[#7a7a7a] mb-1">Teléfono *</label>
           <input
             id="recipient-phone"
             type="tel"
@@ -87,13 +89,13 @@ export default function CartSummary({ cartTotal }) {
           />
         </div>
         <div>
-          <label htmlFor="recipient-address" className="block font-apple-body text-[14px] text-[#7a7a7a] mb-1">Direcci&oacute;n *</label>
+          <label htmlFor="recipient-address" className="block font-apple-body text-[14px] text-[#7a7a7a] mb-1">Dirección *</label>
           <input
             id="recipient-address"
             type="text"
             value={recipientAddress}
             onChange={(e) => setRecipientAddress(e.target.value)}
-            placeholder="Direcci\u00f3n completa en Guinea-Bissau"
+            placeholder="Dirección completa en Guinea-Bissau"
             autoComplete="street-address"
             className={inputClass}
           />
@@ -117,7 +119,7 @@ export default function CartSummary({ cartTotal }) {
           <span>{cartTotal.toLocaleString()} FCFA</span>
         </div>
         <div className="flex justify-between font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a]">
-          <span>Env&iacute;o</span>
+          <span>Envío</span>
           <span>Gratis</span>
         </div>
         <div className="border-t border-[#e0e0e0] pt-3 flex justify-between font-apple-display text-[28px] font-semibold leading-[1.14] tracking-[0.196px] text-[#1d1d1f]">
@@ -137,7 +139,7 @@ export default function CartSummary({ cartTotal }) {
       {cart.length > 0 && (
         <button
           onClick={() => {
-            if (window.confirm("\u00bfVaciar el carrito? Se perder\u00e1n todos los productos a\u00f1adidos.")) {
+            if (window.confirm("¿Vaciar el carrito? Se perderán todos los productos añadidos.")) {
               clearCart();
               toast("Carrito vaciado", "info");
             }
@@ -157,7 +159,7 @@ export default function CartSummary({ cartTotal }) {
                 Confirmar Pedido
               </h3>
               <p className="font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a] mb-6">
-                &iquest;Est&aacute;s seguro de realizar este pedido de <strong className="text-[#1d1d1f]">{cartTotal.toLocaleString()} FCFA</strong> para <strong className="text-[#1d1d1f]">{recipientName}</strong>?
+                ¿Est&aacute;s seguro de realizar este pedido de <strong className="text-[#1d1d1f]">{cartTotal.toLocaleString()} FCFA</strong> para <strong className="text-[#1d1d1f]">{recipientName}</strong>?
               </p>
               <div className="flex gap-3">
                 <button

@@ -5,7 +5,7 @@ import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import ButtonPrimary from "./ButtonPrimary";
 
-export default function SearchResults({ results, searchQuery }) {
+export default function SearchResults({ results, searchQuery, onProductClick }) {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { user } = useAuth();
@@ -16,6 +16,7 @@ export default function SearchResults({ results, searchQuery }) {
       navigate("/login");
       return;
     }
+    onProductClick?.();
     setAddingId(product.id);
     try {
       await addToCart(product);

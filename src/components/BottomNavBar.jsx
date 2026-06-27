@@ -22,7 +22,7 @@ export default function BottomNavBar() {
 
   return (
     <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center pointer-events-none pb-safe">
-      <nav className="w-82 bg-black/20 backdrop-blur-sm border border-white/10 shadow-2xl rounded-2xl h-14 pointer-events-auto" aria-label="Navegaci\u00f3n principal">
+      <nav className="w-82 bg-black/20 backdrop-blur-sm border border-white/10 shadow-2xl rounded-2xl h-14 pointer-events-auto" aria-label="Navegación principal">
         <div className="h-full w-full flex flex-row gap-3 justify-center items-center px-4">
           {navItems.map((item) => {
             const Icon = item.icon;

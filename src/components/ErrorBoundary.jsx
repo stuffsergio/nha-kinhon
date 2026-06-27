@@ -23,7 +23,7 @@ export default class ErrorBoundary extends Component {
               <span className="text-4xl font-bold text-red-600">!</span>
             </div>
             <h1 className="font-apple-display text-[40px] font-semibold leading-[1.1] text-[#1d1d1f] mb-3">
-              Algo sali&oacute; mal
+              Algo salió mal
             </h1>
             <p className="font-apple-body text-[17px] text-[#7a7a7a] mb-8">
               {this.state.error?.message || "Ha ocurrido un error inesperado."}
@@ -32,7 +32,7 @@ export default class ErrorBoundary extends Component {
               onClick={this.handleReload}
               className="bg-[#0066cc] text-white font-apple-body text-[17px] rounded-[9999px] px-[22px] py-[12px] hover:bg-[#0071e3] transition-colors duration-150"
             >
-              Recargar p&aacute;gina
+              Recargar página
             </button>
           </div>
         </div>

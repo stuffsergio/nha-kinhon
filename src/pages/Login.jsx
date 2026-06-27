@@ -28,12 +28,12 @@ export default function Login() {
     if (mode === "register") {
       if (!form.name.trim()) { setError("Debes rellenar el nombre"); return; }
       if (!form.email.trim()) { setError("Debes rellenar el email"); return; }
-      if (!form.password) { setError("Debes rellenar la contrase\u00f1a"); return; }
-      if (form.password.length < 6) { setError("La contrase\u00f1a debe tener al menos 6 caracteres"); return; }
-      if (form.password !== form.confirm) { setError("Las contrase\u00f1as no coinciden"); return; }
+      if (!form.password) { setError("Debes rellenar la contraseña"); return; }
+      if (form.password.length < 6) { setError("La contraseña debe tener al menos 6 caracteres"); return; }
+      if (form.password !== form.confirm) { setError("Las contraseñas no coinciden"); return; }
     } else {
       if (!form.email.trim()) { setError("Debes rellenar el email"); return; }
-      if (!form.password) { setError("Debes rellenar la contrase\u00f1a"); return; }
+      if (!form.password) { setError("Debes rellenar la contraseña"); return; }
     }
 
     setSubmitting(true);
@@ -57,13 +57,13 @@ export default function Login() {
     <div className="w-full max-w-[980px] mx-auto px-6">
       <div className="py-[60px]">
         <Link to="/" className="font-apple-body text-[17px] text-[#0066cc] hover:underline inline-flex items-center gap-1.5 mb-10">
-          &larr; Volver atr&aacute;s
+          &larr; Volver atrás
         </Link>
 
         <div className="flex flex-col lg:flex-row lg:gap-24">
           <div className="flex-1 mb-12 lg:mb-0">
             <h1 className="font-apple-display text-[48px] lg:text-[64px] font-semibold leading-[1.07] tracking-[-0.28px] text-[#1d1d1f] mb-3">
-              {mode === "login" ? "Iniciar Sesi\u00f3n" : "Crear Cuenta"}
+              {mode === "login" ? "Iniciar Sesión" : "Crear Cuenta"}
             </h1>
             <p className="font-apple-body text-[17px] text-[#7a7a7a] leading-[1.6]">
               {mode === "login"
@@ -84,7 +84,7 @@ export default function Login() {
                     : "text-[#7a7a7a] hover:text-[#1d1d1f]"
                 }`}
               >
-                Iniciar Sesi&oacute;n
+                Iniciar Sesión
               </button>
               <button
                 role="tab"
@@ -137,7 +137,7 @@ export default function Login() {
 
               <div>
                 <label htmlFor={`${mode}-password`} className="block font-apple-body text-[14px] font-normal leading-[1.43] tracking-[-0.224px] text-[#7a7a7a] mb-1.5">
-                  Contrase&ntilde;a
+                  Contraseña
                 </label>
                 <input
                   id={`${mode}-password`}
@@ -145,7 +145,7 @@ export default function Login() {
                   name="password"
                   value={form.password}
                   onChange={handleChange}
-                  placeholder={mode === "register" ? "M\u00ednimo 6 caracteres" : "Tu contrase\u00f1a"}
+                  placeholder={mode === "register" ? "Mínimo 6 caracteres" : "Tu contraseña"}
                   autoComplete={mode === "register" ? "new-password" : "current-password"}
                   className={inputClass}
                 />
@@ -162,7 +162,7 @@ export default function Login() {
                     name="confirm"
                     value={form.confirm}
                     onChange={handleChange}
-                    placeholder="Repite la contrase\u00f1a"
+                    placeholder="Repite la contraseña"
                     autoComplete="new-password"
                     className={inputClass}
                   />
@@ -183,21 +183,21 @@ export default function Login() {
                 {submitting
                   ? "Procesando\u2026"
                   : mode === "login"
-                    ? "Iniciar Sesi\u00f3n"
+                    ? "Iniciar Sesión"
                     : "Crear Cuenta"}
               </button>
 
               <p className="text-center font-apple-body text-[15px] text-[#7a7a7a] pt-2">
                 {mode === "login" ? (
                   <>
-                    &iquest;No tienes cuenta?{" "}
+                    {"¿No tienes cuenta? "}
                     <button type="button" onClick={() => switchMode("register")} className="text-[#0066cc] hover:underline font-medium">
-                      Reg&iacute;strate
+                      Regístrate
                     </button>
                   </>
                 ) : (
                   <>
-                    &iquest;Ya tienes cuenta?{" "}
+                    {"¿Ya tienes cuenta? "}
                     <button type="button" onClick={() => switchMode("login")} className="text-[#0066cc] hover:underline font-medium">
                       Inicia sesi&oacute;n
                     </button>

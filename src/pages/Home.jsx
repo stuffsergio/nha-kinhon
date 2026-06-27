@@ -33,7 +33,7 @@ export default function Home() {
             NHA KINHON
           </h1>
           <p className="font-apple-body text-[28px] font-normal leading-[1.14] tracking-[0.196px] text-[#1d1d1f] mb-8">
-            Servicio de env&iacute;o de comida desde la di&aacute;spora
+            Servicio de envío de comida desde la diáspora
           </p>
           <div className="flex gap-4 justify-center">
             <ButtonPrimary onClick={() => navigate("/buscar")}>
@@ -50,10 +50,10 @@ export default function Home() {
       <section className="bg-[#f5f5f7] py-[80px] px-6">
         <div className="max-w-[980px] mx-auto">
           <h2 className="font-apple-display text-[40px] font-semibold leading-[1.1] text-[#1d1d1f] mb-8">
-            Categor&iacute;as Populares
+            Categorías Populares
           </h2>
           {catLoading ? (
-            <p className="text-[#7a7a7a]" role="status" aria-live="polite">Cargando&hellip;</p>
+            <p className="text-[#7a7a7a]" role="status" aria-live="polite">Cargando…</p>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {popularCategories.map((category) => (
@@ -83,7 +83,7 @@ export default function Home() {
             Mercados y Tiendas
           </h2>
           {marketsLoading ? (
-            <p className="text-[#cccccc]" role="status" aria-live="polite">Cargando&hellip;</p>
+            <p className="text-[#cccccc]" role="status" aria-live="polite">Cargando…</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {markets.map((market) => (

@@ -15,7 +15,7 @@ export async function createCheckoutSession(req, res) {
   const session = await stripe.checkout.sessions.create({
     ui_mode: "elements",
     mode: "payment",
-    return_url: `${env.CLIENT_URL}/perfil?session_id={CHECKOUT_SESSION_ID}`,
+    return_url: `${env.CLIENT_URL}/perfil?payment=success`,
     line_items: [
       {
         price_data: {
@@ -46,7 +46,7 @@ export async function handleWebhook(req, res) {
   if (env.STRIPE_WEBHOOK_SECRET) {
     const sig = req.headers["stripe-signature"];
     try {
-      event = stripe.webhooks.constructEvent(req.body, sig, env.STRIPE_WEBHOOK_SECRET);
+      event = stripe.webhooks.constructEvent(req.rawBody, sig, env.STRIPE_WEBHOOK_SECRET);
     } catch {
       return res.status(400).json({ error: "Firma de webhook inválida" });
     }

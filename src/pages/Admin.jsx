@@ -39,8 +39,8 @@ const validTransitions = {
 };
 
 const tabs = [
-  { id: "assign", label: "Asignar Repartidores" },
   { id: "orders", label: "Todos los Pedidos" },
+  { id: "assign", label: "Asignar Repartidores" },
   { id: "delivery", label: "Repartidores" },
 ];
 

@@ -16,7 +16,7 @@ export async function create(req, res) {
     return res.status(400).json({ error: "El nombre es obligatorio" });
   }
   if (!phone?.trim()) {
-    return res.status(400).json({ error: "El tel\u00e9fono es obligatorio" });
+    return res.status(400).json({ error: "El teléfono es obligatorio" });
   }
 
   const contact = await prisma.contact.create({

@@ -96,13 +96,13 @@ export default function Map() {
       <div className="flex flex-col lg:flex-row gap-4 mb-5">
         <div className="relative flex-1">
           <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#7a7a7a] pointer-events-none" />
-          <label htmlFor="map-search" className="sr-only">Buscar por nombre o ubicaci&oacute;n</label>
+          <label htmlFor="map-search" className="sr-only">Buscar por nombre o ubicación</label>
           <input
             id="map-search"
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nombre o ubicaci\u00f3n\u2026"
+            placeholder="Buscar por nombre o ubicación…"
             autoComplete="off"
             spellCheck={false}
             className="w-full pl-11 pr-4 py-3 bg-white border border-[#e0e0e0] rounded-[12px] focus-visible:outline-2 focus-visible:outline-[#0071e3] focus-visible:outline-offset-2 focus:border-transparent font-apple-body text-[15px] text-[#1d1d1f] placeholder:text-[#7a7a7a] transition-shadow duration-150"

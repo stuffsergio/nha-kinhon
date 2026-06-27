@@ -10,12 +10,12 @@ export default function Footer() {
               NHA KINHON
             </h3>
             <p className="font-apple-body text-[14px] text-body-muted leading-relaxed">
-              Servicio de env&iacute;o de comida desde la di&aacute;spora para Guinea-Bissau.
+              Servicio de env&iacute;o de comida desde la diáspora para Guinea-Bissau.
             </p>
           </div>
           <div>
             <h4 className="font-apple-body text-[12px] font-semibold text-body-muted mb-4 uppercase tracking-[0.5px]">
-              Navegaci&oacute;n
+              Navegación
             </h4>
             <ul className="space-y-2.5">
               <li><Link to="/" className="font-apple-body text-[14px] text-body-muted hover:text-white transition-colors duration-150">Inicio</Link></li>

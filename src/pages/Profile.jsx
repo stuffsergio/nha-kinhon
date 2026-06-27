@@ -1,5 +1,17 @@
-import { useState } from "react";
-import { User, Heart, ShoppingBag, Users, Settings, Bell, Wallet, CreditCard, X, Truck, Plus } from "lucide-react";
+import { useState, useEffect } from "react";
+import {
+  User,
+  Heart,
+  ShoppingBag,
+  Users,
+  Settings,
+  Bell,
+  Wallet,
+  CreditCard,
+  X,
+  Truck,
+  Plus,
+} from "lucide-react";
 import OrderTimeline from "../components/OrderTimeline";
 import { useAuth } from "../context/AuthContext";
 import { useOrders } from "../hooks/useOrders";
@@ -9,21 +21,38 @@ import { useUnreadCount, useMarkAllAsRead } from "../hooks/useNotifications";
 import { api } from "../services/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "../context/ToastContext";
+import { useSearchParams } from "react-router-dom";
 
 export default function Profile() {
   const { user, updateUser } = useAuth();
   const qc = useQueryClient();
   const toast = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [showDetails, setShowDetails] = useState(false);
-  const [contactoToShow, setContactoToShow] = useState({ id: null, nombre: "", email: "" });
+  const [contactoToShow, setContactoToShow] = useState({
+    id: null,
+    nombre: "",
+    email: "",
+  });
   const [showAddContact, setShowAddContact] = useState(false);
-  const [newContact, setNewContact] = useState({ name: "", email: "", phone: "", address: "" });
+  const [newContact, setNewContact] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+  });
   const createContact = useCreateContact();
 
-  const { data: ordersRes, isLoading: ordersLoading } = useOrders({ enabled: !!user });
-  const { data: favoritesRes, isLoading: favLoading } = useFavorites({ enabled: !!user });
-  const { data: contactsRes, isLoading: contactsLoading } = useContacts({ enabled: !!user });
+  const { data: ordersRes, isLoading: ordersLoading } = useOrders({
+    enabled: !!user,
+  });
+  const { data: favoritesRes, isLoading: favLoading } = useFavorites({
+    enabled: !!user,
+  });
+  const { data: contactsRes, isLoading: contactsLoading } = useContacts({
+    enabled: !!user,
+  });
   const { data: unreadRes } = useUnreadCount({ enabled: !!user });
 
   const orders = ordersRes?.data || [];
@@ -53,6 +82,14 @@ export default function Profile() {
       toast("Error: " + e.message, "error");
     }
   };
+
+  useEffect(() => {
+    if (searchParams.get("payment") === "success") {
+      toast("Pago realizado con éxito", "success");
+      setSearchParams({}, { replace: true });
+      qc.invalidateQueries({ queryKey: ["orders"] });
+    }
+  }, []);
 
   const tabs = [
     { id: "dashboard", label: "Dashboard", icon: User },
@@ -170,7 +207,10 @@ export default function Profile() {
           {favLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow animate-pulse">
+                <div
+                  key={i}
+                  className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow animate-pulse"
+                >
                   <div className="h-7 bg-[#f5f5f7] rounded w-2/3 mb-3" />
                   <div className="h-5 bg-[#f5f5f7] rounded w-1/3" />
                 </div>
@@ -183,7 +223,10 @@ export default function Profile() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {favoriteProducts.map((product) => (
-                <div key={product.id} className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow">
+                <div
+                  key={product.id}
+                  className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow"
+                >
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="font-apple-display text-[28px] font-semibold leading-[1.14] tracking-[0.196px] text-[#1d1d1f] mb-2">
@@ -212,7 +255,10 @@ export default function Profile() {
           {ordersLoading ? (
             <div className="space-y-4">
               {[1, 2].map((i) => (
-                <div key={i} className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow animate-pulse">
+                <div
+                  key={i}
+                  className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow animate-pulse"
+                >
                   <div className="h-7 bg-[#f5f5f7] rounded w-1/3 mb-2" />
                   <div className="h-5 bg-[#f5f5f7] rounded w-1/4 mb-4" />
                   <div className="h-5 bg-[#f5f5f7] rounded w-full mb-2" />
@@ -247,45 +293,60 @@ export default function Profile() {
                 IN_TRANSIT: "En Camino",
               };
               return (
-              <div key={order.id} className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow space-y-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-apple-display text-[28px] font-semibold leading-[1.14] tracking-[0.196px] text-[#1d1d1f]">
-                      Pedido #{order.id.slice(0, 8)}
-                    </h3>
-                    <p className="font-apple-body text-[15px] text-[#7a7a7a]">
-                      {new Date(order.createdAt).toLocaleDateString()} &bull; {order.recipientName}
-                    </p>
-                  </div>
-                  <span className={`px-3 py-1 rounded-[9999px] font-apple-body text-[13px] font-medium ${badgeColors[order.status] || "bg-[#f5f5f7] text-[#1d1d1f]"}`}>
-                    {statusLabels[order.status] || order.status}
-                  </span>
-                </div>
-
-                <div className="bg-[#f5f5f7] rounded-[12px] p-4">
-                  <OrderTimeline status={order.status} />
-                </div>
-
-                {order.delivery && (
-                  <div className="flex items-center gap-2 text-[15px] text-[#1d1d1f]">
-                    <Truck size={16} className="text-[#059669]" />
-                    <span className="font-apple-body">Repartidor: <strong>{order.delivery.name}</strong></span>
-                  </div>
-                )}
-
-                <div className="border-t border-[#e0e0e0] pt-4 space-y-2 tabular-nums">
-                  {(order.items || []).map((item, index) => (
-                    <div key={index} className="flex justify-between font-apple-body text-[15px] text-[#7a7a7a]">
-                      <span>{item.name} x{item.quantity}</span>
-                      <span>{(item.price * item.quantity).toLocaleString()} FCFA</span>
+                <div
+                  key={order.id}
+                  className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow space-y-4"
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-apple-display text-[28px] font-semibold leading-[1.14] tracking-[0.196px] text-[#1d1d1f]">
+                        Pedido #{order.id.slice(0, 8)}
+                      </h3>
+                      <p className="font-apple-body text-[15px] text-[#7a7a7a]">
+                        {new Date(order.createdAt).toLocaleDateString()} &bull;{" "}
+                        {order.recipientName}
+                      </p>
                     </div>
-                  ))}
-                  <div className="border-t border-[#e0e0e0] pt-2 flex justify-between font-apple-display text-[24px] font-semibold leading-[1.14] text-[#1d1d1f]">
-                    <span>Total</span>
-                    <span>{order.total.toLocaleString()} FCFA</span>
+                    <span
+                      className={`px-3 py-1 rounded-[9999px] font-apple-body text-[13px] font-medium ${badgeColors[order.status] || "bg-[#f5f5f7] text-[#1d1d1f]"}`}
+                    >
+                      {statusLabels[order.status] || order.status}
+                    </span>
+                  </div>
+
+                  <div className="bg-[#f5f5f7] rounded-[12px] p-4">
+                    <OrderTimeline status={order.status} />
+                  </div>
+
+                  {order.delivery && (
+                    <div className="flex items-center gap-2 text-[15px] text-[#1d1d1f]">
+                      <Truck size={16} className="text-[#059669]" />
+                      <span className="font-apple-body">
+                        Repartidor: <strong>{order.delivery.name}</strong>
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="border-t border-[#e0e0e0] pt-4 space-y-2 tabular-nums">
+                    {(order.items || []).map((item, index) => (
+                      <div
+                        key={index}
+                        className="flex justify-between font-apple-body text-[15px] text-[#7a7a7a]"
+                      >
+                        <span>
+                          {item.name} x{item.quantity}
+                        </span>
+                        <span>
+                          {(item.price * item.quantity).toLocaleString()} FCFA
+                        </span>
+                      </div>
+                    ))}
+                    <div className="border-t border-[#e0e0e0] pt-2 flex justify-between font-apple-display text-[24px] font-semibold leading-[1.14] text-[#1d1d1f]">
+                      <span>Total</span>
+                      <span>{order.total.toLocaleString()} FCFA</span>
+                    </div>
                   </div>
                 </div>
-              </div>
               );
             })
           )}
@@ -310,7 +371,10 @@ export default function Profile() {
             {contactsLoading ? (
               <div className="space-y-3">
                 {[1, 2].map((i) => (
-                  <div key={i} className="animate-pulse p-4 border border-[#e0e0e0] rounded-[8px]">
+                  <div
+                    key={i}
+                    className="animate-pulse p-4 border border-[#e0e0e0] rounded-[8px]"
+                  >
                     <div className="h-6 bg-[#f5f5f7] rounded w-1/3 mb-2" />
                     <div className="h-5 bg-[#f5f5f7] rounded w-1/2" />
                   </div>
@@ -350,10 +414,18 @@ export default function Profile() {
       )}
 
       {showAddContact && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto" role="dialog" aria-modal="true" aria-label="A\u00f1adir contacto">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowAddContact(false)} />
+        <div
+          className="fixed inset-0 z-[9999] overflow-y-auto"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Añadir contacto"
+        >
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowAddContact(false)}
+          />
           <div className="relative min-h-full flex items-center justify-center p-6">
-            <div className="relative bg-[#ffffff] rounded-[18px] no-shadow w-full max-w-md p-6 animate-fade-in">
+            <div className="relative bg-[#ffffff] rounded-[18px] no-shadow w-full sm:w-[480px] p-6 animate-fade-in">
             <button
               onClick={() => setShowAddContact(false)}
               className="absolute top-4 right-4 p-2 hover:bg-[#f5f5f7] rounded-full transition-colors duration-150"
@@ -362,7 +434,7 @@ export default function Profile() {
               <X size={24} />
             </button>
             <h2 className="font-apple-display text-[34px] font-semibold leading-[1.47] tracking-[-0.374px] text-[#1d1d1f] mb-6">
-              A\u00f1adir Contacto
+              Añadir Contacto
             </h2>
             <form
               onSubmit={(e) => {
@@ -372,43 +444,58 @@ export default function Profile() {
                   return;
                 }
                 if (!newContact.phone.trim()) {
-                  toast("El tel\u00e9fono es obligatorio", "error");
+                  toast("El teléfono es obligatorio", "error");
                   return;
                 }
                 createContact.mutate(newContact, {
                   onSuccess: () => {
-                    toast("Contacto a\u00f1adido", "success");
-                    setNewContact({ name: "", email: "", phone: "", address: "" });
+                    toast("Contacto añadido", "success");
+                    setNewContact({
+                      name: "",
+                      email: "",
+                      phone: "",
+                      address: "",
+                    });
                     setShowAddContact(false);
                   },
                   onError: (err) => toast(err.message, "error"),
                 });
               }}
-              className="space-y-4"
+              className="space-y-4 w-full"
             >
               <div>
-                <label htmlFor="contact-name" className="block font-apple-body text-[14px] leading-[1.43] text-[#7a7a7a] mb-1">
+                <label
+                  htmlFor="contact-name"
+                  className="block font-apple-body text-[14px] leading-[1.43] text-[#7a7a7a] mb-1"
+                >
                   Nombre completo <span className="text-[#dc2626]">*</span>
                 </label>
                 <input
                   id="contact-name"
                   type="text"
                   value={newContact.name}
-                  onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
+                  onChange={(e) =>
+                    setNewContact({ ...newContact, name: e.target.value })
+                  }
                   placeholder="Nombre del contacto"
                   autoComplete="name"
                   className="w-full px-4 py-2.5 border border-[#e0e0e0] rounded-[10px] focus-visible:outline-2 focus-visible:outline-[#0071e3] focus-visible:outline-offset-2 font-apple-body text-[17px] transition-shadow duration-150"
                 />
               </div>
               <div>
-                <label htmlFor="contact-email" className="block font-apple-body text-[14px] leading-[1.43] text-[#7a7a7a] mb-1">
+                <label
+                  htmlFor="contact-email"
+                  className="block font-apple-body text-[14px] leading-[1.43] text-[#7a7a7a] mb-1"
+                >
                   Email
                 </label>
                 <input
                   id="contact-email"
                   type="email"
                   value={newContact.email}
-                  onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
+                  onChange={(e) =>
+                    setNewContact({ ...newContact, email: e.target.value })
+                  }
                   placeholder="correo@ejemplo.com"
                   autoComplete="email"
                   inputMode="email"
@@ -416,14 +503,19 @@ export default function Profile() {
                 />
               </div>
               <div>
-                <label htmlFor="contact-phone" className="block font-apple-body text-[14px] leading-[1.43] text-[#7a7a7a] mb-1">
-                  Tel\u00e9fono <span className="text-[#dc2626]">*</span>
+                <label
+                  htmlFor="contact-phone"
+                  className="block font-apple-body text-[14px] leading-[1.43] text-[#7a7a7a] mb-1"
+                >
+                  Teléfono <span className="text-[#dc2626]">*</span>
                 </label>
                 <input
                   id="contact-phone"
                   type="tel"
                   value={newContact.phone}
-                  onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
+                  onChange={(e) =>
+                    setNewContact({ ...newContact, phone: e.target.value })
+                  }
                   placeholder="+245 XXX XXX XXX"
                   autoComplete="tel"
                   inputMode="tel"
@@ -431,15 +523,20 @@ export default function Profile() {
                 />
               </div>
               <div>
-                <label htmlFor="contact-address" className="block font-apple-body text-[14px] leading-[1.43] text-[#7a7a7a] mb-1">
-                  Direcci\u00f3n
+                <label
+                  htmlFor="contact-address"
+                  className="block font-apple-body text-[14px] leading-[1.43] text-[#7a7a7a] mb-1"
+                >
+                  Dirección
                 </label>
                 <input
                   id="contact-address"
                   type="text"
                   value={newContact.address}
-                  onChange={(e) => setNewContact({ ...newContact, address: e.target.value })}
-                  placeholder="Direcci\u00f3n en Guinea-Bissau"
+                  onChange={(e) =>
+                    setNewContact({ ...newContact, address: e.target.value })
+                  }
+                  placeholder="Dirección en Guinea-Bissau"
                   autoComplete="street-address"
                   className="w-full px-4 py-2.5 border border-[#e0e0e0] rounded-[10px] focus-visible:outline-2 focus-visible:outline-[#0071e3] focus-visible:outline-offset-2 font-apple-body text-[17px] transition-shadow duration-150"
                 />
@@ -508,12 +605,13 @@ export default function Profile() {
       )}
 
       {showDetails && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 overflow-y-auto">
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setShowDetails(false)}
           />
-          <div className="relative bg-[#ffffff] rounded-[18px] no-shadow max-w-md w-full p-[24px]">
+          <div className="relative min-h-full flex items-center justify-center p-6">
+            <div className="relative bg-[#ffffff] rounded-[18px] no-shadow w-full sm:w-[480px] p-6">
             <button
               onClick={() => setShowDetails(false)}
               className="absolute top-4 right-4 p-2 hover:bg-[#f5f5f7] rounded-full"
@@ -542,7 +640,7 @@ export default function Profile() {
               </div>
               <div>
                 <p className="font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a]">
-                  Tel&eacute;fono
+                  Teléfono
                 </p>
                 <p className="font-apple-display text-[22px] font-semibold leading-[1.14] text-[#1d1d1f]">
                   {contactoToShow.phone || "—"}
@@ -550,7 +648,7 @@ export default function Profile() {
               </div>
               <div>
                 <p className="font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a]">
-                  Direcci&oacute;n
+                  Dirección
                 </p>
                 <p className="font-apple-display text-[22px] font-semibold leading-[1.14] text-[#1d1d1f]">
                   {contactoToShow.address || "—"}
@@ -559,6 +657,7 @@ export default function Profile() {
             </div>
           </div>
         </div>
+      </div>
       )}
     </div>
   );
