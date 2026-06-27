@@ -1,6 +1,6 @@
 # Plan de Despliegue a Producción
 
-Frontend → **Vercel** · Backend → **Render**
+Frontend → **Vercel** · Backend → **Railway** · Base de datos → **Supabase**
 
 ---
 
@@ -8,7 +8,8 @@ Frontend → **Vercel** · Backend → **Render**
 
 - Cuenta en [GitHub](https://github.com)
 - Cuenta en [Vercel](https://vercel.com) (login con GitHub)
-- Cuenta en [Render](https://render.com) (login con GitHub)
+- Cuenta en [Railway](https://railway.app) (login con GitHub)
+- Cuenta en [Supabase](https://supabase.com) (login con GitHub)
 - Node.js 20 instalado localmente
 - Git instalado localmente
 
@@ -32,56 +33,82 @@ git remote add origin https://github.com/tuusuario/nha-kinhon.git
 git push -u origin main
 ```
 
-## 3. Backend: Render
+---
 
-### 3.1 Crear base de datos PostgreSQL
+## 3. Base de datos: Supabase
 
-1. Ir a https://dashboard.render.com → **New** → **PostgreSQL**
+### 3.1 Crear proyecto
+
+1. Ir a https://supabase.com → **Start a project**
 2. Configurar:
-   - **Name**: `nha-kinhon-db`
-   - **Region**: `Frankfurt` (EU) o la más cercana a tu público
-   - **Plan**: Free
-3. Crear y **anotar la "Internal Database URL"** (se ve asi: `postgresql://user:password@host:5432/db`)
+   - **Organization**: tu organización personal
+   - **Name**: `nha-kinhon`
+   - **Database Password**: generarlo y **guardarlo**
+   - **Region**: `EU West` (la más cercana a Guinea-Bissau)
+   - **Pricing Plan**: Free
+3. Esperar a que termine la creación (~2 min)
 
-### 3.2 Crear Web Service
+### 3.2 Obtener connection string
 
-1. Dashboard → **New** → **Web Service**
-2. Conectar el repo de GitHub (`nha-kinhon`)
-3. Configurar:
-   - **Name**: `nha-kinhon-api`
+1. Ir a **Project Settings** → **Database**
+2. En **Connection string**, seleccionar **URI**
+3. Copiar la cadena que se ve así:
+   ```
+   postgresql://postgres:[PASSWORD]@db.[REF].supabase.co:5432/postgres
+   ```
+4. Añadir `?sslmode=require` al final:
+   ```
+   postgresql://postgres:[PASSWORD]@db.[REF].supabase.co:5432/postgres?sslmode=require
+   ```
+
+### 3.3 Configurar localmente
+
+En `backend/.env`, actualizar `DATABASE_URL` con la cadena del paso anterior.
+
+### 3.4 Ejecutar migraciones y seed
+
+```bash
+cd backend
+npx prisma migrate deploy
+node prisma/seed.js
+```
+
+---
+
+## 4. Backend: Railway
+
+### 4.1 Crear Web Service
+
+1. Ir a https://railway.app → **Dashboard** → **New Project**
+2. Seleccionar **Deploy from GitHub repo**
+3. Elegir el repo `nha-kinhon`
+4. Railway detectará automáticamente Node.js
+5. Configurar:
    - **Root Directory**: `backend`
-   - **Runtime**: `Node`
    - **Build Command**:
      ```
-     npm install && npx prisma migrate deploy
+     npm install && npx prisma generate && npx prisma migrate deploy
      ```
    - **Start Command**:
      ```
      node index.js
      ```
-   - **Plan**: Free (elige **Starter** ~$7/mo si no quieres que el servicio duerma tras 15 min de inactividad)
 
-### 3.3 Variables de entorno en Render
+### 4.2 Variables de entorno en Railway
 
-En la sección **Environment** del Web Service, añadir:
+Ir a la pestaña **Variables** del servicio y añadir:
 
 | Variable                | Valor                            | Notas                               |
 | ----------------------- | -------------------------------- | ----------------------------------- |
 | `NODE_ENV`              | `production`                     |                                     |
-| `DATABASE_URL`          | _(Internal DB URL del paso 3.1)_ | **Importante:** sin comillas        |
+| `DATABASE_URL`          | _(cadena de Supabase paso 3.2)_  | Con `?sslmode=require`             |
 | `JWT_SECRET`            | _(string generado abajo)_        |                                     |
 | `JWT_ACCESS_EXPIRES`    | `15m`                            |                                     |
 | `JWT_REFRESH_EXPIRES`   | `7d`                             |                                     |
 | `CLIENT_URL`            | _(se rellena tras crear Vercel)_ | Ej: `https://nha-kinhon.vercel.app` |
 | `STRIPE_SECRET_KEY`     | _(opcional)_                     | Cuando actives pagos                |
 | `STRIPE_WEBHOOK_SECRET` | _(opcional)_                     |                                     |
-| `CLOUDINARY_CLOUD_NAME` | _(opcional)_                     | Cuando actives subida de imágenes   |
-| `CLOUDINARY_API_KEY`    | _(opcional)_                     |                                     |
-| `CLOUDINARY_API_SECRET` | _(opcional)_                     |                                     |
-| `SMTP_HOST`             | _(opcional)_                     | Cuando actives emails               |
-| `SMTP_PORT`             | `587`                            |                                     |
-| `SMTP_USER`             | _(opcional)_                     |                                     |
-| `SMTP_PASS`             | _(opcional)_                     |                                     |
+| `CLIENT_URL`            | `http://localhost:5173`          | Temporal hasta tener Vercel         |
 
 **Generar JWT_SECRET** (ejecutar localmente):
 
@@ -91,37 +118,51 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 Copia el output y pégalo como valor de `JWT_SECRET`.
 
-### 3.4 Esperar el despliegue inicial
+### 4.3 Esperar el despliegue inicial
 
-Render tardará 2-5 min en el primer deploy. Verifica que termina con **"Live"** y sin errores en los logs.
+Railway tardará 2-5 min en el primer deploy. Verifica que termina con **"Deployed"** y sin errores en los logs.
 
-Has click en **"Manual Deploy" → "Clear build cache & deploy"** si ves errores de caché.
+Railway asigna un dominio tipo `https://nha-kinhon-api.up.railway.app`.
 
-### 3.5 Verificar health check
+### 4.4 Verificar health check
 
 ```bash
-curl https://nha-kinhon-api.onrender.com/api/health
-# Respuesta esperada: {"status":"ok","timestamp":"2026-06-20T..."}
+curl https://nha-kinhon-api.up.railway.app/api/health
+# Respuesta esperada: {"status":"ok","timestamp":"2026-06-27T..."}
 ```
 
-Si ves `Cannot GET /api/health`, el deploy no está usando la versión actualizada del código.
+### 4.5 Ejecutar seed de datos
 
-### 3.6 Ejecutar seed de datos
+Railway no tiene Shell integrado como Render. Para ejecutar el seed:
 
-1. Ir a Render Dashboard → `nha-kinhon-api` → **Shell**
-2. Ejecutar:
-   ```bash
-   node prisma/seed.js
-   ```
-3. Verificar que se crean: 2 usuarios, 6 mercados, 16 categorías, 48 productos
+**Opción A — Railway CLI:**
+
+```bash
+# Instalar Railway CLI
+npm install -g @railway/cli
+
+# Conectar
+railway login
+
+# Ejecutar seed en el entorno de producción
+railway run node prisma/seed.js
+```
+
+**Opción B — Ejecución local contra Supabase:**
+
+```bash
+# Asegurarse que backend/.env tiene la DATABASE_URL de Supabase
+cd backend
+node prisma/seed.js
+```
 
 ---
 
-## 4. Frontend: Vercel
+## 5. Frontend: Vercel
 
-### 4.1 Crear `vercel.json` en la raíz del proyecto
+### 5.1 El `vercel.json` ya existe
 
-Este archivo es necesario para que React Router funcione al recargar rutas directas:
+El archivo en la raíz del proyecto ya está configurado:
 
 ```json
 {
@@ -132,9 +173,7 @@ Este archivo es necesario para que React Router funcione al recargar rutas direc
 }
 ```
 
-> **Nota:** Si cambias el `buildCommand` o `outputDirectory` por defecto de Vite, ajusta los valores. Con la configuración actual del `package.json` no hace falta modificarlos.
-
-### 4.2 Importar proyecto en Vercel
+### 5.2 Importar proyecto en Vercel
 
 1. Ir a https://vercel.com → **Add New** → **Project**
 2. Importar el repo `nha-kinhon`
@@ -144,10 +183,10 @@ Este archivo es necesario para que React Router funcione al recargar rutas direc
    - **Build Command**: se deja vacío (usa el de `vercel.json`)
    - **Output Directory**: se deja vacío (usa el de `vercel.json`)
 4. **Environment Variables**:
-   - `VITE_API_URL` → `https://nha-kinhon-api.onrender.com/api`
+   - `VITE_API_URL` → `https://nha-kinhon-api.up.railway.app/api`
 5. Click **Deploy**
 
-### 4.3 Verificar frontend
+### 5.3 Verificar frontend
 
 Vercel asigna un dominio tipo `nha-kinhon.vercel.app`. Ábrelo y verifica:
 
@@ -158,27 +197,25 @@ Vercel asigna un dominio tipo `nha-kinhon.vercel.app`. Ábrelo y verifica:
 
 ---
 
-## 5. Ajustar CORS en Render
+## 6. Ajustar CORS
 
-Vercel asigna un dominio automático (ej: `nha-kinhon.vercel.app`).
-
-1. Ir a Render → Dashboard → `nha-kinhon-api` → **Environment**
-2. Editar `CLIENT_URL` → `https://nha-kinhon.vercel.app` (el dominio real de tu proyecto en Vercel)
-3. Guardar → Render redeploy automáticamente
+1. Ir a Railway → Dashboard → proyecto → **Variables**
+2. Actualizar `CLIENT_URL` → `https://nha-kinhon.vercel.app` (el dominio real de tu proyecto en Vercel)
+3. Railway redeploy automáticamente
 
 ---
 
-## 6. Post-despliegue: verificación completa
+## 7. Post-despliegue: verificación completa
 
-### 6.1 Backend
+### 7.1 Backend
 
 ```bash
-curl https://nha-kinhon-api.onrender.com/api/health
-curl https://nha-kinhon-api.onrender.com/api/markets
-curl https://nha-kinhon-api.onrender.com/api/categories
+curl https://nha-kinhon-api.up.railway.app/api/health
+curl https://nha-kinhon-api.up.railway.app/api/markets
+curl https://nha-kinhon-api.up.railway.app/api/categories
 ```
 
-### 6.2 Frontend (desde el navegador)
+### 7.2 Frontend (desde el navegador)
 
 | Paso | Acción                                     | Resultado esperado                                                   |
 | ---- | ------------------------------------------ | -------------------------------------------------------------------- |
@@ -195,16 +232,33 @@ curl https://nha-kinhon-api.onrender.com/api/categories
 | 11   | Navegar a `/perfil`                        | Perfil con tabs (dashboard, favoritos, pedidos, contactos, settings) |
 | 12   | Recarga directa en `/perfil`               | No debe dar 404                                                      |
 
-### 6.3 Verificar flujo de autenticación
+### 7.3 Verificar flujo de autenticación
 
 1. Abrir DevTools → **Application** → **Local Storage**
-2. Después de login deben existir: `accessToken` y `refreshToken`
-3. Recargar página → debe seguir existiendo al menos el `accessToken` (se refresca automáticamente si expiró)
-4. Si se borran los tokens manualmente y se recarga → la página debe mostrar el estado "no logueado"
+2. Después de login deben existir: `accessToken`
+3. Recargar página → la sesión debe persistir (el refresh token está en cookie HttpOnly)
+4. Si se borra el accessToken manualmente y se recarga → debe renovarse automáticamente
 
 ---
 
-## 7. Dominio personalizado (opcional)
+## 8. Stripe Webhook
+
+Para que los pagos funcionen en producción, el webhook de Stripe debe apuntar a Railway:
+
+```bash
+stripe listen --forward-to https://nha-kinhon-api.up.railway.app/api/stripe/webhook
+```
+
+O configurar el endpoint en el dashboard de Stripe:
+1. Ir a https://dashboard.stripe.com/webhooks
+2. **Add endpoint**
+3. Endpoint URL: `https://nha-kinhon-api.up.railway.app/api/stripe/webhook`
+4. Eventos: `checkout.session.completed`, `checkout.session.async_payment_failed`
+5. Copiar el **Signing secret** y ponerlo como `STRIPE_WEBHOOK_SECRET` en Railway
+
+---
+
+## 9. Dominio personalizado (opcional)
 
 ### Vercel
 
@@ -212,114 +266,106 @@ curl https://nha-kinhon-api.onrender.com/api/categories
 2. Añadir tu dominio (ej: `nhakinhon.com`)
 3. Seguir instrucciones de configuración DNS (registro CNAME apuntando a `cname.vercel-dns.com`)
 
-### Render
+### Railway
 
-1. Dashboard → `nha-kinhon-api` → **Settings** → **Custom Domain**
+1. Dashboard → proyecto → **Settings** → **Domains**
 2. Añadir dominio (ej: `api.nhakinhon.com`)
 3. Configurar registro CNAME en tu DNS
 
 ### Actualizar CORS
 
-Si usas dominio personalizado:
-
-1. Render → Environment → `CLIENT_URL` → `https://nhakinhon.com` (sin slash final)
-2. Vercel → Environment → `VITE_API_URL` → `https://api.nhakinhon.com/api`
+1. Railway → Variables → `CLIENT_URL` → `https://nhakinhon.com`
+2. Vercel → Variables → `VITE_API_URL` → `https://api.nhakinhon.com/api`
 3. Redeploy ambos servicios
 
 ---
 
-## 8. Redeploy después de cambios
+## 10. Redeploy después de cambios
 
 ### Frontend (Vercel)
 
-Cada push a `main` dispara deploy automático. También puedes hacerlo manual:
+Cada push a `main` dispara deploy automático.
 
-```
-Vercel Dashboard → Project → Deploy → Deploy Hooks → crear hook y invocar con curl
-```
+### Backend (Railway)
 
-### Backend (Render)
-
-Cada push a `main` dispara deploy automático. Manual:
-
-```
-Render Dashboard → nha-kinhon-api → Manual Deploy → Deploy latest commit
-```
+Cada push a `main` dispara deploy automático.
 
 Si hiciste cambios en el esquema de Prisma:
 
 1. Ejecutar `npx prisma migrate dev` localmente (crea nueva migración)
 2. Commitear y pushear la migración
-3. Render ejecutará `npx prisma migrate deploy` en el build
+3. Railway ejecutará `npx prisma migrate deploy` en el build
 
 ---
 
-## 9. Rollback
+## 11. Rollback
 
 ### Vercel
 
-Dashboard → Project → **Deployments** →找到 la última versión estable → **···** → **Promote to Production**
+Dashboard → Project → **Deployments** → última versión estable → **···** → **Promote to Production**
 
-### Render
+### Railway
 
-Dashboard → `nha-kinhon-api` → **Manual Deploy** → **Deploy existing image / Deploy prior commit**
+Dashboard → proyecto → **Deployments** → **Redeploy** (versión anterior)
 
 ---
 
-## 10. Solución de problemas comunes
+## 12. Solución de problemas comunes
 
 | Problema                                                  | Causa                                                   | Solución                                                                                 |
 | --------------------------------------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `401 Unauthorized` tras login exitoso                     | `JWT_SECRET` no coincide entre login y verificación     | Verificar que `JWT_SECRET` en Render no cambió                                           |
-| `CORS error` en consola del navegador                     | `CLIENT_URL` no coincide con el dominio de Vercel       | Actualizar env var en Render y redeploy                                                  |
-| Base de datos no responde (500 en cualquier endpoint)     | `DATABASE_URL` incorrecta o base no accesible           | Verificar Internal URL en Render PostgreSQL                                              |
-| `PrismaClientInitializationError` en logs de Render       | Migraciones no aplicadas                                | Build command debe ejecutar `prisma migrate deploy`                                      |
+| `401 Unauthorized` tras login exitoso                     | `JWT_SECRET` no coincide entre login y verificación     | Verificar que `JWT_SECRET` en Railway no cambió                                           |
+| `CORS error` en consola del navegador                     | `CLIENT_URL` no coincide con el dominio de Vercel       | Actualizar env var en Railway y redeploy                                                  |
+| Base de datos no responde (500 en cualquier endpoint)     | `DATABASE_URL` incorrecta o SSL no configurado          | Verificar que tiene `?sslmode=require` al final |
+| `PrismaClientInitializationError` en logs de Railway      | Migraciones no aplicadas                                | Build command debe ejecutar `prisma migrate deploy`                                      |
 | Frontend muestra 404 en rutas directas                    | Faltan rewrites en `vercel.json`                        | Asegurar que el archivo existe con la config correcta                                    |
-| Login no persiste al recargar                             | Refresh token no renovado o no se envía correctamente   | Verificar `localStorage` tiene ambos tokens después de login                             |
-| Error `Missing required environment variable: JWT_SECRET` | `JWT_SECRET` no configurado en Render                   | Añadirlo en Environment vars y redeploy                                                  |
+| Error `Missing required environment variable: JWT_SECRET` | `JWT_SECRET` no configurado en Railway                   | Añadirlo en Variables y redeploy                                                          |
 | Error `Cannot find module '@prisma/client'`               | `postinstall` no se ejecutó                             | Build command debe incluir `npx prisma generate`                                         |
-| Seed da error de conexión                                 | Seed ejecutado contra base local en vez de producción   | Ejecutar seed desde el Shell de Render                                                   |
-| El servicio en Render se duerme (Free plan)               | El Free plan de Render duerme tras 15 min sin actividad | Usar Starter ($7/mo) o usar [UptimeRobot](https://uptimerobot.com) para ping cada 10 min |
+| Seed da error de conexión                                 | Seed ejecutado contra base local en vez de producción   | Ejecutar seed con Railway CLI o localmente con DATABASE_URL de Supabase                  |
+| El servicio en Railway se duerme (Free plan)              | Railway tiene límite de horas gratis/mes                | Usar plan Hobby ($5/mes) o Developer ($20/mes)                                            |
 
 ---
 
-## 11. Costos estimados
+## 13. Costos estimados
 
 | Servicio           | Plan                        | Costo/mes  |
 | ------------------ | --------------------------- | ---------- |
-| Render Web Service | Free (con sleeps)           | $0         |
-| Render PostgreSQL  | Free (1GB, expira 90 días)  | $0         |
+| Railway            | Free ($5 crédito, 500h/mes) | $0         |
+| Supabase           | Free (500MB DB)             | $0         |
 | Vercel             | Free (100GB ancho de banda) | $0         |
 | **Total MVP**      |                             | **$0/mes** |
 
-Para evitar sleeps y tener mejor rendimiento:
+Para evitar límites y tener mejor rendimiento:
 
 | Servicio             | Plan                            | Costo/mes       |
 | -------------------- | ------------------------------- | --------------- |
-| Render Web Service   | Starter ($7, sin sleeps, 512MB) | $7              |
-| Render PostgreSQL    | Starter ($7, 1GB)               | $7              |
+| Railway              | Hobby ($5, sin sleeps)          | $5              |
+| Supabase             | Pro ($25, 8GB DB)               | $25             |
 | Vercel               | Pro ($20, opcional)             | $0-20           |
-| **Total producción** |                                 | **~$14-34/mes** |
+| **Total producción** |                                 | **~$30-50/mes** |
 
 ---
 
-## 12. Seguridad
+## 14. Seguridad
 
 - [ ] `JWT_SECRET` generado con `crypto.randomBytes(32)` — **nunca** usar el default
 - [ ] `.env` en `.gitignore` — confirmar que no se subió al repo
 - [ ] Stripe keys en modo `sk_live_*` solo en producción, `sk_test_*` en desarrollo
 - [ ] CORS limitado a `CLIENT_URL` — no usar `*` en producción
-- [ ] Base de datos solo accesible desde la red interna de Render (no pública)
+- [ ] Supabase: **Connection Pooling** desactivado para Prisma (usar directo, no pooled)
+- [ ] Supabase: SSL obligatorio (`sslmode=require`)
 
 ---
 
 ## Checklist final de pre-lanzamiento
 
-- [ ] Backend: health check responde 200
-- [ ] Backend: seed ejecutado con datos de prueba
+- [ ] Supabase: proyecto creado con DATABASE_URL anotada
+- [ ] Backend: migraciones aplicadas contra Supabase
+- [ ] Backend: seed ejecutado contra Supabase
+- [ ] Backend: health check responde 200 desde Railway
 - [ ] Frontend: build exitoso sin errores
 - [ ] Frontend: recarga en ruta anidada no da 404
-- [ ] Autenticación: login funciona contra Render
+- [ ] Autenticación: login funciona contra Railway
 - [ ] Autenticación: registro funciona
 - [ ] Autenticación: sesión persiste al recargar
 - [ ] CORS: frontend puede llamar al backend sin errores

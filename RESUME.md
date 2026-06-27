@@ -30,7 +30,7 @@ La diáspora guineana en Europa (Portugal, España, Francia, Reino Unido) y Áfr
 | **Iconos** | Lucide React | — |
 | **Animación** | Framer Motion | v12 |
 | **Lenguaje** | JavaScript (ESM, frontend y backend) | — |
-| **Hosting** | Vercel (frontend) + Render (backend + PostgreSQL) | — |
+| **Hosting** | Vercel (frontend) + Railway (backend) + Supabase (PostgreSQL) | — |
 
 ---
 
@@ -501,19 +501,15 @@ Todas las rutas dentro de `MainLayout` (NavBar + Footer + BottomNavBar comunes):
 
 ### Desarrollo Local
 ```bash
-# 1. Iniciar PostgreSQL (Docker)
-docker start nha-postgres
-#     Puerto: 5433, DB: nha_kinhon, User: postgres
-
-# 2. Backend
+# 1. Backend
 cd backend
-cp .env.example .env    # Configurar DATABASE_URL
+cp .env.example .env    # Configurar DATABASE_URL con Supabase
 npm install
 npx prisma migrate dev
 npm run db:seed
 npm run dev             # http://localhost:3000
 
-# 3. Frontend (otra terminal)
+# 2. Frontend (otra terminal)
 npm install
 npm run dev             # http://localhost:5173
 ```
@@ -544,16 +540,17 @@ VITE_API_URL=http://localhost:3000/api
 
 ### Producción
 - **Frontend**: Vercel (import desde GitHub, build automático, SPA rewrites en `vercel.json`)
-- **Backend**: Render Web Service + Render PostgreSQL
-- **Build**: `npm run build` (Vite) → carpeta `dist/` → servida por Express en producción
-- **Script postinstall**: `npx prisma generate`
-- **Migraciones**: `db:migrate:deploy` en deploy de Render
-- **Seed**: Ejecutar manualmente `npm run db:seed` tras el primer deploy
+- **Backend**: Railway (Node.js Web Service, autodeploy desde GitHub)
+- **Base de datos**: Supabase (PostgreSQL con SSL)
+- **Build**: `npm run build` (Vite) → carpeta `dist/`
+- **Build backend**: `npm install && npx prisma generate && npx prisma migrate deploy`
+- **Start**: `node index.js`
+- **Seed**: Ejecutar manualmente `node prisma/seed.js` tras el primer deploy
 
 ### URLs de Producción
 - Frontend: `https://nhakinhon.com` (o dominio personalizado)
-- Backend: `https://nha-kinhon-api.onrender.com`
-- Health check: `https://nha-kinhon-api.onrender.com/api/health`
+- Backend: `https://nha-kinhon-api.up.railway.app`
+- Health check: `https://nha-kinhon-api.up.railway.app/api/health`
 
 ---
 
