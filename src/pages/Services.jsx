@@ -48,7 +48,12 @@ export default function Services() {
           {services.map((service) => {
             const Icon = service.icon;
             return (
-              <div key={service.title} className="bg-[#ffffff] p-[32px] rounded-[18px] no-shadow">
+              <div key={service.title} className="bg-[#ffffff] p-[32px] rounded-[18px] no-shadow relative">
+                {(service.title === "Envío de Dinero" || service.title === "Asistencia Familiar") && (
+                  <span className="absolute top-3 right-3 font-apple-body text-[11px] font-semibold leading-[1.2] tracking-[0.06px] uppercase text-[#ffffff] bg-[#0066cc] rounded-[9999px] px-[10px] py-[4px]">
+                    Próximamente
+                  </span>
+                )}
                 <div className="w-12 h-12 bg-[#f5f5f7] rounded-full flex items-center justify-center mb-5">
                   <Icon size={24} className="text-[#0066cc]" />
                 </div>

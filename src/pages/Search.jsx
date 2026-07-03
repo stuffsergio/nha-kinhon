@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Apple } from "lucide-react";
 import SearchBar from "../components/SearchBar";
 import SearchResults from "../components/SearchResults";
@@ -15,6 +15,7 @@ import ButtonPrimary from "../components/ButtonPrimary";
 export default function Search() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { addToCart } = useCart();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
@@ -47,6 +48,16 @@ export default function Search() {
       }
     }
   }, [location.state, categories]);
+
+  useEffect(() => {
+    const categoryId = searchParams.get("categoryId");
+    if (categoryId && categories.length > 0) {
+      const category = categories.find((c) => c.id === categoryId);
+      if (category) {
+        handleCategoryClick(category);
+      }
+    }
+  }, [searchParams, categories]);
 
   useEffect(() => {
     if (!debouncedQuery.trim()) {
