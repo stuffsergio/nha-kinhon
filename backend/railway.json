@@ -1,0 +1,23 @@
+{
+  "build": {
+    "builder": "NIXPACKS",
+    "nixpacksConfig": {
+      "phases": {
+        "setup": {
+          "nixPackages": ["nodejs", "openssl"]
+        },
+        "install": {
+          "cmds": ["npm install", "npx prisma generate"]
+        },
+        "build": {
+          "cmds": ["npx prisma migrate deploy"]
+        }
+      }
+    }
+  },
+  "deploy": {
+    "startCommand": "node index.js",
+    "healthcheckPath": "/api/health",
+    "healthcheckTimeout": 60
+  }
+}
