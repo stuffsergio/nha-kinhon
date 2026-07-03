@@ -1,41 +1,46 @@
 import { useNavigate } from "react-router-dom";
-import { ShoppingCart, MapPin, Search } from "lucide-react";
+import { ShoppingCart, Users, Plus, MapPin } from "lucide-react";
 import ButtonPrimary from "../components/ButtonPrimary";
 import ButtonSecondary from "../components/ButtonSecondary";
 import { useCategories } from "../hooks/useCategories";
 import { useMarkets } from "../hooks/useMarkets";
+import { useContacts } from "../hooks/useContacts";
+import { useAuth } from "../context/AuthContext";
+
+const emojiMap = {
+  Apple: "\uD83C\uDF4E", Carrot: "\uD83E\uDD55", Beef: "\uD83E\uDD69", Fish: "\uD83D\uDC1F",
+  Milk: "\uD83E\uDD5B", Bread: "\uD83C\uDF5E", Wheat: "\uD83C\uDF3E", Potato: "\uD83E\uDD54",
+  Coffee: "\u2615", Droplet: "\uD83E\uDED2", Sparkles: "\u2728", Cookie: "\uD83C\uDF6A",
+  IceCream: "\uD83C\uDF66", Nut: "\uD83E\uDD5C", Sunrise: "\uD83C\uDF05", Candy: "\uD83C\uDF6C",
+};
+
+const getEmoji = (icon) => emojiMap[icon] || "\uD83D\uDCE6";
 
 export default function Home() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: categoriesRes, isLoading: catLoading } = useCategories();
   const { data: marketsRes, isLoading: marketsLoading } = useMarkets();
+  const { data: contactsRes, isLoading: contactsLoading } = useContacts({ enabled: !!user });
 
   const categories = categoriesRes?.data || [];
   const markets = marketsRes?.data || [];
+  const contacts = contactsRes?.data || [];
   const popularCategories = categories.slice(0, 6);
-
-  const getEmoji = (icon) => {
-      const map = {
-        Apple: "\uD83C\uDF4E", Carrot: "\uD83E\uDD55", Beef: "\uD83E\uDD69", Fish: "\uD83D\uDC1F",
-        Milk: "\uD83E\uDD5B", Bread: "\uD83C\uDF5E", Wheat: "\uD83C\uDF3E", Potato: "\uD83E\uDD54",
-        Coffee: "\u2615", Droplet: "\uD83E\uDED2", Sparkles: "\u2728", Cookie: "\uD83C\uDF6A",
-        IceCream: "\uD83C\uDF66", Nut: "\uD83E\uDD5C", Sunrise: "\uD83C\uDF05", Candy: "\uD83C\uDF6C",
-      };
-      return map[icon] || "\uD83D\uDCE6";
-  };
 
   return (
     <div className="w-full">
-      {/* Hero */}
-      <section className="bg-[#ffffff] py-[80px] px-6">
-        <div className="max-w-[980px] mx-auto text-center">
-          <h1 className="font-apple-display text-[56px] font-semibold leading-[1.07] tracking-[-0.28px] text-[#1d1d1f] mb-4">
-            NHA KINHON
-          </h1>
-          <p className="font-apple-body text-[28px] font-normal leading-[1.14] tracking-[0.196px] text-[#1d1d1f] mb-8">
-            Servicio de envío de comida desde la diáspora
-          </p>
-          <div className="flex gap-4 justify-center">
+      <section className="bg-[#ffffff] py-[40px] px-6">
+        <div className="max-w-[980px] mx-auto flex items-center justify-between gap-6">
+          <div>
+            <h1 className="font-apple-display text-[28px] font-semibold leading-[1.14] text-[#1d1d1f]">
+              NHA KINHON
+            </h1>
+            <p className="font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a] mt-1">
+              Servicio de envío de comida desde la diáspora
+            </p>
+          </div>
+          <div className="flex gap-3 shrink-0">
             <ButtonPrimary onClick={() => navigate("/buscar")}>
               Comenzar
             </ButtonPrimary>
@@ -46,12 +51,19 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Categories */}
-      <section className="bg-[#f5f5f7] py-[80px] px-6">
+      <section className="bg-[#f5f5f7] py-[60px] px-6">
         <div className="max-w-[980px] mx-auto">
-          <h2 className="font-apple-display text-[40px] font-semibold leading-[1.1] text-[#1d1d1f] mb-8">
-            Categorías Populares
-          </h2>
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="font-apple-display text-[32px] font-semibold leading-[1.1] text-[#1d1d1f]">
+              Categorías Populares
+            </h2>
+            <button
+              onClick={() => navigate("/buscar")}
+              className="font-apple-body text-[15px] text-[#0066cc] hover:underline"
+            >
+              Ver todo
+            </button>
+          </div>
           {catLoading ? (
             <p className="text-[#7a7a7a]" role="status" aria-live="polite">Cargando…</p>
           ) : (
@@ -76,12 +88,19 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Markets */}
-      <section className="bg-[#272729] py-[80px] px-6">
+      <section className="bg-[#272729] py-[60px] px-6">
         <div className="max-w-[980px] mx-auto">
-          <h2 className="font-apple-display text-[40px] font-semibold leading-[1.1] text-[#ffffff] mb-8">
-            Mercados y Tiendas
-          </h2>
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="font-apple-display text-[32px] font-semibold leading-[1.1] text-[#ffffff]">
+              Mercados y Tiendas
+            </h2>
+            <button
+              onClick={() => navigate("/mapa")}
+              className="font-apple-body text-[15px] text-[#2997ff] hover:underline"
+            >
+              Ver en mapa
+            </button>
+          </div>
           {marketsLoading ? (
             <p className="text-[#cccccc]" role="status" aria-live="polite">Cargando…</p>
           ) : (
@@ -91,15 +110,74 @@ export default function Home() {
                   key={market.id}
                   className="bg-[#2a2a2c] p-6 rounded-[18px] no-shadow"
                 >
-                  <h3 className="font-apple-display text-[28px] font-semibold leading-[1.14] tracking-[0.196px] text-[#ffffff] mb-2">
+                  <h3 className="font-apple-display text-[24px] font-semibold leading-[1.16] text-[#ffffff] mb-2">
                     {market.name}
                   </h3>
-                  <p className="font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#cccccc] mb-4">
+                  <p className="font-apple-body text-[15px] font-normal leading-[1.47] tracking-[-0.374px] text-[#cccccc] mb-4">
                     {market.location} &bull; {market.hours}
                   </p>
                   <ButtonSecondary onClick={() => navigate("/mapa")}>
                     Ver productos
                   </ButtonSecondary>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="bg-[#ffffff] py-[60px] px-6">
+        <div className="max-w-[980px] mx-auto">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="font-apple-display text-[32px] font-semibold leading-[1.1] text-[#1d1d1f]">
+              Mis Contactos
+            </h2>
+            <button
+              onClick={() => navigate("/perfil?tab=contacts")}
+              className="font-apple-body text-[15px] text-[#0066cc] hover:underline inline-flex items-center gap-1.5"
+            >
+              <Plus size={16} />
+              Añadir contacto
+            </button>
+          </div>
+          {contactsLoading ? (
+            <p className="text-[#7a7a7a]" role="status" aria-live="polite">Cargando…</p>
+          ) : contacts.length === 0 ? (
+            <div className="text-center py-16">
+              <Users size={48} className="text-[#d2d2d7] mx-auto mb-4" strokeWidth={1} />
+              <p className="font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a] mb-4">
+                No tienes contactos guardados
+              </p>
+              <ButtonPrimary onClick={() => navigate("/perfil?tab=contacts")}>
+                Añadir tu primer contacto
+              </ButtonPrimary>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {contacts.slice(0, 6).map((contact) => (
+                <div
+                  key={contact.id}
+                  className="bg-[#f5f5f7] p-6 rounded-[18px] no-shadow"
+                >
+                  <h3 className="font-apple-display text-[20px] font-semibold leading-[1.2] text-[#1d1d1f] mb-1">
+                    {contact.name}
+                  </h3>
+                  {contact.email && (
+                    <p className="font-apple-body text-[15px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a]">
+                      {contact.email}
+                    </p>
+                  )}
+                  {contact.phone && (
+                    <p className="font-apple-body text-[15px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a]">
+                      {contact.phone}
+                    </p>
+                  )}
+                  {contact.address && (
+                    <p className="font-apple-body text-[15px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a] flex items-center gap-1 mt-2">
+                      <MapPin size={14} />
+                      {contact.address}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>

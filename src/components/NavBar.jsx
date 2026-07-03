@@ -11,6 +11,8 @@ export default function NavBar() {
     navigate("/");
   };
 
+  const homeLink = user ? "/inicio" : "/";
+
   const linkClass = ({ isActive }) =>
     `font-apple-body text-[14px] transition-colors duration-150 ${
       isActive ? "text-[#1d1d1f] font-semibold" : "text-[#7a7a7a] hover:text-[#1d1d1f]"
@@ -22,7 +24,7 @@ export default function NavBar() {
 
   return (
     <nav className="w-full max-w-[980px] mx-auto flex items-center justify-between py-4 px-6">
-      <Link to="/" className="font-apple-display text-[24px] font-semibold tracking-[-0.36px] text-[#1d1d1f] hover:opacity-70 transition-opacity duration-150">
+      <Link to={homeLink} className="font-apple-display text-[24px] font-semibold tracking-[-0.36px] text-[#1d1d1f] hover:opacity-70 transition-opacity duration-150">
         Nha Kinhon
       </Link>
 

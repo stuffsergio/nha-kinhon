@@ -43,7 +43,7 @@ export default function Login() {
       } else {
         await login(form.email, form.password);
       }
-      navigate("/");
+      navigate("/inicio");
     } catch (err) {
       setError(err.message || "Error al procesar la solicitud");
     } finally {
