@@ -25,7 +25,20 @@ import adminDeliveryRoutes from "./src/routes/admin.delivery.routes.js";
 
 const app = express();
 
-app.use(cors({ origin: env.CLIENT_URL, credentials: true }));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const allowed = (env.CLIENT_URL || "").split(",").map((s) => s.trim()).filter(Boolean);
+      if (allowed.length === 0 || allowed.includes(origin) || origin.startsWith("exp://") || origin.startsWith("nhakinhon://")) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
+    credentials: true,
+  }),
+);
 app.use(express.json({
   verify: (req, res, buf) => { req.rawBody = buf; },
 }));
