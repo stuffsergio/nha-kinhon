@@ -1,5 +1,6 @@
 import prisma from "../config/db.js";
 import { AppError, NotFoundError } from "../utils/errors.js";
+import { createNotification } from "../services/notification.service.js";
 
 export async function listAvailable(req, res) {
   const { serviceArea } = req.query;
@@ -58,13 +59,11 @@ export async function pickupOrder(req, res) {
     data: { totalDeliveries: { increment: 1 } },
   });
 
-  await prisma.notification.create({
-    data: {
-      userId: order.userId,
-      type: "ORDER_PICKED_UP",
-      title: "Pedido recogido",
-      message: `Tu pedido #${id.slice(0, 8)} ha sido recogido por un repartidor.`,
-    },
+  await createNotification({
+    userId: order.userId,
+    type: "ORDER_PICKED_UP",
+    title: "Pedido recogido",
+    message: `Tu pedido #${id.slice(0, 8)} ha sido recogido por un repartidor.`,
   });
 
   res.json({ order: updated });
@@ -97,13 +96,11 @@ export async function updateDeliveryStatus(req, res) {
   });
 
   if (status === "DELIVERED") {
-    await prisma.notification.create({
-      data: {
-        userId: order.userId,
-        type: "ORDER_DELIVERED",
-        title: "Pedido entregado",
-        message: `Tu pedido #${id.slice(0, 8)} ha sido entregado.`,
-      },
+    await createNotification({
+      userId: order.userId,
+      type: "ORDER_DELIVERED",
+      title: "Pedido entregado",
+      message: `Tu pedido #${id.slice(0, 8)} ha sido entregado.`,
     });
   }
 

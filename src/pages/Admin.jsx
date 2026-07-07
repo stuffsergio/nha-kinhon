@@ -8,8 +8,6 @@ import { useToast } from "../context/ToastContext";
 const statusLabels = {
   PENDING: "Pendiente",
   CONFIRMED: "Confirmado",
-  PROCESSING: "En Preparación",
-  SHIPPED: "Enviado",
   PICKED_UP: "Recogido",
   IN_TRANSIT: "En camino",
   DELIVERED: "Entregado",
@@ -19,23 +17,10 @@ const statusLabels = {
 const statusColors = {
   PENDING: "bg-[#f5f5f7] text-[#7a7a7a]",
   CONFIRMED: "bg-[#0066cc]/10 text-[#0066cc]",
-  PROCESSING: "bg-[#f59e0b]/10 text-[#f59e0b]",
-  SHIPPED: "bg-[#3b82f6]/10 text-[#3b82f6]",
   PICKED_UP: "bg-[#8b5cf6]/10 text-[#8b5cf6]",
   IN_TRANSIT: "bg-[#f59e0b]/10 text-[#f59e0b]",
   DELIVERED: "bg-[#059669]/10 text-[#059669]",
   CANCELLED: "bg-[#dc2626]/10 text-[#dc2626]",
-};
-
-const validTransitions = {
-  PENDING: ["CONFIRMED", "CANCELLED"],
-  CONFIRMED: ["PROCESSING", "CANCELLED"],
-  PROCESSING: ["SHIPPED"],
-  SHIPPED: ["DELIVERED"],
-  PICKED_UP: [],
-  IN_TRANSIT: [],
-  DELIVERED: [],
-  CANCELLED: [],
 };
 
 const tabs = [
@@ -47,13 +32,13 @@ const tabs = [
 export default function Admin() {
   const { user } = useAuth();
   const toast = useToast();
-  const [activeTab, setActiveTab] = useState("assign");
+  const [activeTab, setActiveTab] = useState("orders");
 
   const qc = useQueryClient();
   const { data: ordersData, isLoading } = useAdminOrders();
   const { data: deliveryData, isLoading: delLoading } = useDeliveryPeople();
-  const updateStatus = useUpdateOrderStatus();
   const assignDelivery = useAssignDelivery();
+  const updateStatus = useUpdateOrderStatus();
 
   const orders = ordersData?.data || [];
   const deliveryPeople = deliveryData?.data || [];
@@ -202,25 +187,23 @@ export default function Admin() {
                   </div>
                 </div>
 
-                {validTransitions[order.status]?.length > 0 && (
-                  <div className="border-t border-[#e0e0e0] pt-4 flex flex-wrap gap-2">
-                    {validTransitions[order.status].map((nextStatus) => (
-                      <button
-                        key={nextStatus}
-                        onClick={() => {
-                          updateStatus.mutate({ orderId: order.id, status: nextStatus }, {
-                            onSuccess: () => toast(`Pedido actualizado a ${statusLabels[nextStatus]}`, "success"),
-                            onError: (e) => toast("Error: " + e.message, "error"),
-                          });
-                        }}
-                        disabled={updateStatus.isPending}
-                        className="px-4 py-2 border border-[#e0e0e0] rounded-[9999px] font-apple-body text-[14px] text-[#1d1d1f] hover:bg-[#f5f5f7] transition-colors disabled:opacity-50"
-                      >
-                        Marcar como {statusLabels[nextStatus]}
-                      </button>
-                    ))}
+                {!["DELIVERED", "CANCELLED"].includes(order.status) && (
+                  <div className="border-t border-[#e0e0e0] pt-4">
+                    <button
+                      onClick={() => {
+                        updateStatus.mutate({ orderId: order.id, status: "CANCELLED" }, {
+                          onSuccess: () => toast("Pedido cancelado", "success"),
+                          onError: (e) => toast("Error: " + e.message, "error"),
+                        });
+                      }}
+                      disabled={updateStatus.isPending}
+                      className="px-4 py-2 border border-[#dc2626] rounded-[9999px] font-apple-body text-[14px] text-[#dc2626] hover:bg-[#dc2626]/5 transition-colors disabled:opacity-50"
+                    >
+                      Cancelar pedido
+                    </button>
                   </div>
                 )}
+
               </div>
             ))
           )}

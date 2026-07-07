@@ -1,5 +1,6 @@
 import prisma from "../config/db.js";
 import { AppError, NotFoundError } from "../utils/errors.js";
+import { createNotification } from "../services/notification.service.js";
 
 export async function listMyOrders(req, res) {
   const { page = 1, limit = 20, status } = req.query;
@@ -109,12 +110,10 @@ export async function confirmAfterPayment(req, res) {
 
 export async function updateStatus(req, res) {
   const { status } = req.body;
-  const validStatuses = ["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED"];
+
   const validTransitions = {
     PENDING: ["CONFIRMED", "CANCELLED"],
-    CONFIRMED: ["PROCESSING", "CANCELLED"],
-    PROCESSING: ["SHIPPED"],
-    SHIPPED: ["DELIVERED"],
+    CONFIRMED: ["CANCELLED"],
     DELIVERED: [],
     CANCELLED: [],
   };
@@ -137,20 +136,17 @@ export async function updateStatus(req, res) {
 
   const statusLabels = {
     CONFIRMED: "confirmado",
-    PROCESSING: "en preparación",
-    SHIPPED: "enviado",
-    DELIVERED: "entregado",
     CANCELLED: "cancelado",
   };
 
-  await prisma.notification.create({
-    data: {
+  if (status === "CONFIRMED" || status === "CANCELLED") {
+    await createNotification({
       userId: order.userId,
       type: `ORDER_${status}`,
       title: "Pedido actualizado",
       message: `Tu pedido #${order.id.slice(0, 8)} está ${statusLabels[status] || status}.`,
-    },
-  });
+    });
+  }
 
   res.json({ order: updated });
 }
