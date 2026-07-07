@@ -10,6 +10,16 @@ export async function list(req, res) {
   res.json({ data: contacts });
 }
 
+export async function getById(req, res) {
+  const contact = await prisma.contact.findFirst({
+    where: { id: req.params.id, userId: req.user.id },
+  });
+
+  if (!contact) throw new NotFoundError("Contacto");
+
+  res.json({ contact });
+}
+
 export async function create(req, res) {
   const { name, phone } = req.body;
   if (!name?.trim()) {

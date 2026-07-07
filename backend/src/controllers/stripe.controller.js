@@ -5,6 +5,33 @@ import { NotFoundError, ForbiddenError } from "../utils/errors.js";
 
 const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
+export async function createPaymentSheet(req, res) {
+  const { amount } = req.body;
+
+  const customer = await stripe.customers.create({
+    metadata: { userId: req.user.id },
+  });
+
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: Math.round(amount),
+    currency: "xof",
+    customer: customer.id,
+    automatic_payment_methods: { enabled: true },
+    metadata: { userId: req.user.id },
+  });
+
+  const ephemeralKey = await stripe.ephemeralKeys.create(
+    { customer: customer.id },
+    { apiVersion: "2025-02-24.acacia" },
+  );
+
+  res.json({
+    paymentIntent: paymentIntent.client_secret,
+    ephemeralKey: ephemeralKey.secret,
+    customer: customer.id,
+  });
+}
+
 export async function createCheckoutSession(req, res) {
   const { orderId } = req.body;
 
