@@ -29,6 +29,7 @@ export async function createPaymentSheet(req, res) {
     paymentIntent: paymentIntent.client_secret,
     ephemeralKey: ephemeralKey.secret,
     customer: customer.id,
+    publishableKey: env.STRIPE_PUBLISHABLE_KEY,
   });
 }
 
@@ -64,7 +65,7 @@ export async function createCheckoutSession(req, res) {
     data: { stripePaymentId: session.id },
   });
 
-  res.json({ clientSecret: session.client_secret, status: session.status });
+  res.json({ clientSecret: session.client_secret, status: session.status, publishableKey: env.STRIPE_PUBLISHABLE_KEY });
 }
 
 export async function handleWebhook(req, res) {
