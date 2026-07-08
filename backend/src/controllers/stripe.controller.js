@@ -5,6 +5,10 @@ import { NotFoundError, ForbiddenError } from "../utils/errors.js";
 
 const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
+export async function getConfig(req, res) {
+  res.json({ publishableKey: env.STRIPE_PUBLISHABLE_KEY });
+}
+
 export async function createPaymentSheet(req, res) {
   const { amount } = req.body;
 
