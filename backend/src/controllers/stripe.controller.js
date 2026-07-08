@@ -8,27 +8,39 @@ const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 export async function createPaymentSheet(req, res) {
   const { amount } = req.body;
 
-  const customer = await stripe.customers.create({
-    metadata: { userId: req.user.id },
-  });
+  const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+  if (!user) throw new NotFoundError("Usuario");
+
+  let customerId = user.stripeCustomerId;
+
+  if (!customerId) {
+    const customer = await stripe.customers.create({
+      metadata: { userId: user.id },
+    });
+    customerId = customer.id;
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { stripeCustomerId: customerId },
+    });
+  }
 
   const paymentIntent = await stripe.paymentIntents.create({
     amount: Math.round(amount),
     currency: "xof",
-    customer: customer.id,
+    customer: customerId,
     automatic_payment_methods: { enabled: true },
-    metadata: { userId: req.user.id },
+    metadata: { userId: user.id },
   });
 
   const ephemeralKey = await stripe.ephemeralKeys.create(
-    { customer: customer.id },
+    { customer: customerId },
     { apiVersion: "2025-02-24.acacia" },
   );
 
   res.json({
     paymentIntent: paymentIntent.client_secret,
     ephemeralKey: ephemeralKey.secret,
-    customer: customer.id,
+    customer: customerId,
     publishableKey: env.STRIPE_PUBLISHABLE_KEY,
   });
 }
