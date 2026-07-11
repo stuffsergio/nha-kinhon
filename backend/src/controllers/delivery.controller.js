@@ -71,7 +71,7 @@ export async function pickupOrder(req, res) {
 
 export async function updateDeliveryStatus(req, res) {
   const { id } = req.params;
-  const { status } = req.body;
+  const { status, deliveryPhoto } = req.body;
 
   const validTransitions = {
     PICKED_UP: ["IN_TRANSIT"],
@@ -87,7 +87,10 @@ export async function updateDeliveryStatus(req, res) {
   }
 
   const updateData = { status };
-  if (status === "DELIVERED") updateData.deliveredAt = new Date();
+  if (status === "DELIVERED") {
+    updateData.deliveredAt = new Date();
+    if (deliveryPhoto) updateData.deliveryPhoto = deliveryPhoto;
+  }
 
   const updated = await prisma.order.update({
     where: { id },
