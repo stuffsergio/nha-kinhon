@@ -36,7 +36,7 @@ export async function getById(req, res) {
 }
 
 export async function checkout(req, res) {
-  const { recipientName, recipientPhone, recipientAddress, notes, paymentMethodId } = req.body;
+  const { recipientName, recipientPhone, recipientAddress, notes } = req.body;
 
   const cartItems = await prisma.cartItem.findMany({
     where: { userId: req.user.id },
@@ -165,6 +165,13 @@ export async function cancel(req, res) {
   const updated = await prisma.order.update({
     where: { id: req.params.id },
     data: { status: "CANCELLED" },
+  });
+
+  await createNotification({
+    userId: order.userId,
+    type: "ORDER_CANCELLED",
+    title: "Pedido cancelado",
+    message: `Tu pedido #${order.id.slice(0, 8)} ha sido cancelado.`,
   });
 
   res.json({ order: updated });

@@ -23,7 +23,7 @@ function createMockDelegate() {
 }
 
 export function createMockPrisma() {
-  return {
+  const mock = {
     user: createMockDelegate(),
     market: createMockDelegate(),
     product: createMockDelegate(),
@@ -38,9 +38,12 @@ export function createMockPrisma() {
     supporter: createMockDelegate(),
     paymentMethod: createMockDelegate(),
     deliveryProfile: createMockDelegate(),
-    $transaction: vi.fn((fn) => fn(prisma)),
     $disconnect: vi.fn(),
   };
+
+  mock.$transaction = vi.fn((fn) => fn(mock));
+
+  return mock;
 }
 
 export function mockReset(prisma) {

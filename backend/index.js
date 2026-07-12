@@ -5,7 +5,6 @@ import path from "path";
 import { existsSync } from "fs";
 import { fileURLToPath } from "url";
 import env from "./src/config/env.js";
-import { AppError } from "./src/utils/errors.js";
 import authRoutes from "./src/routes/auth.routes.js";
 import marketsRoutes from "./src/routes/markets.routes.js";
 import categoriesRoutes from "./src/routes/categories.routes.js";
@@ -71,16 +70,21 @@ if (process.env.NODE_ENV === "production") {
 
   if (existsSync(distPath)) {
     app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      if (!req.path.startsWith("/api")) {
-        res.sendFile(path.join(distPath, "index.html"));
+    app.get("*", (req, res, next) => {
+      if (req.path.startsWith("/api")) {
+        return next();
       }
+      res.sendFile(path.join(distPath, "index.html"));
     });
     console.log(`Sirviendo frontend desde ${distPath}`);
   }
 }
 
-app.use((err, req, res, next) => {
+app.use((req, res) => {
+  res.status(404).json({ error: "Ruta no encontrada" });
+});
+
+app.use((err, req, res, _next) => {
   const status = err.statusCode || 500;
   const message = err.message || "Error interno del servidor";
   console.error(`[${status}] ${message}`);
