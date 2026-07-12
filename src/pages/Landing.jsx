@@ -10,6 +10,7 @@ import {
   Globe,
   ArrowRight,
   CheckCircle2,
+  Download,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
@@ -88,6 +89,39 @@ export default function Landing() {
 
   return (
     <div className="w-full overflow-hidden">
+      {/* FLOATING NAV */}
+      <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-[900px] bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl shadow-lg shadow-black/5 flex items-center justify-between px-5 py-3">
+        <Link to="/" className="font-apple-display text-[18px] font-semibold text-ink tracking-tight">
+          Nha Kinhon
+        </Link>
+        <div className="hidden md:flex items-center gap-6">
+          {[
+            { label: "Cómo funciona", href: "#como-funciona" },
+            { label: "Ventajas", href: "#ventajas" },
+            { label: "App", href: "#app" },
+          ].map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              className="font-apple-body text-[14px] text-ink-muted-48 hover:text-ink transition-colors duration-200"
+            >
+              {link.label}
+            </a>
+          ))}
+        </div>
+        <div className="relative group">
+          <button className="inline-flex items-center gap-1.5 font-apple-body text-[13px] font-medium text-white bg-primary/80 rounded-full px-4 py-2 cursor-default">
+            <Download size={14} />
+            Descargar app
+          </button>
+          <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+            <span className="font-apple-body text-[11px] text-white bg-ink/90 px-2 py-1 rounded-md whitespace-nowrap">
+              Próximamente
+            </span>
+          </div>
+        </div>
+      </nav>
+
       {/* HERO */}
       <section className="relative min-h-[90vh] flex items-center justify-center px-6 py-24">
         <div className="absolute inset-0 bg-gradient-to-b from-[#f5f5f7] via-white to-white" />
@@ -146,7 +180,7 @@ export default function Landing() {
       </motion.section>
 
       {/* HOW IT WORKS */}
-      <section className="py-24 px-6 bg-[#f5f5f7]/40">
+      <section id="como-funciona" className="py-24 px-6 bg-[#f5f5f7]/40">
         <div className="max-w-[980px] mx-auto">
           <motion.div className="text-center mb-16" {...FADE_UP}>
             <span className="font-apple-body text-[13px] font-semibold uppercase tracking-widest text-primary">
@@ -188,7 +222,7 @@ export default function Landing() {
       </section>
 
       {/* WHY NHA KINHON */}
-      <section className="py-24 px-6 bg-white">
+      <section id="ventajas" className="py-24 px-6 bg-white">
         <div className="max-w-[980px] mx-auto">
           <motion.div className="text-center mb-16" {...FADE_UP}>
             <span className="font-apple-body text-[13px] font-semibold uppercase tracking-widest text-primary">
@@ -224,7 +258,7 @@ export default function Landing() {
       </section>
 
       {/* APP DOWNLOAD */}
-      <section className="py-24 px-6 bg-[#f5f5f7]/40">
+      <section id="app" className="py-24 px-6 bg-[#f5f5f7]/40">
         <div className="max-w-[980px] mx-auto">
           <motion.div className="flex flex-col md:flex-row items-center gap-12" {...FADE_UP}>
             <div className="flex-1">

@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
+import PublicLayout from "./layouts/PublicLayout";
 
 const Landing = lazy(() => import("./pages/Landing"));
 const Home = lazy(() => import("./pages/Home"));
@@ -51,14 +52,16 @@ export default function App() {
   return (
     <Suspense fallback={<PageLoading />}>
       <Routes>
-        <Route element={<MainLayout />}>
+        <Route element={<PublicLayout />}>
           <Route index element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+        </Route>
+        <Route element={<MainLayout />}>
           <Route path="/inicio" element={<Home />} />
           <Route path="/mapa" element={<Map />} />
           <Route path="/buscar" element={<Search />} />
           <Route path="/carrito" element={<Cart />} />
           <Route path="/perfil" element={<Profile />} />
-          <Route path="/login" element={<Login />} />
           <Route path="/servicios" element={<Services />} />
           <Route path="/supporters" element={<Support />} />
           <Route path="/admin" element={<Admin />} />
