@@ -5,10 +5,10 @@ import * as notificationsController from "../controllers/notifications.controlle
 const router = Router();
 
 router.get("/", authenticate, notificationsController.list);
-router.put("/:id/read", authenticate, notificationsController.markAsRead);
 router.put("/read-all", authenticate, notificationsController.markAllAsRead);
 router.get("/unread-count", authenticate, notificationsController.unreadCount);
 router.post("/push-token", authenticate, notificationsController.registerPushTokenController);
 router.delete("/push-token", authenticate, notificationsController.unregisterPushTokenController);
+router.put("/:id/read", authenticate, notificationsController.markAsRead);
 
 export default router;

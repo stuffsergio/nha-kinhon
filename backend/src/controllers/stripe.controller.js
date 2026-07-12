@@ -1,9 +1,19 @@
 import Stripe from "stripe";
 import prisma from "../config/db.js";
 import env from "../config/env.js";
-import { NotFoundError, ForbiddenError } from "../utils/errors.js";
+import { AppError, NotFoundError, ForbiddenError } from "../utils/errors.js";
 
-const stripe = new Stripe(env.STRIPE_SECRET_KEY);
+let stripeClient = null;
+
+function getStripe() {
+  if (!env.STRIPE_SECRET_KEY) {
+    throw new AppError("Stripe no está configurado", 503);
+  }
+  if (!stripeClient) {
+    stripeClient = new Stripe(env.STRIPE_SECRET_KEY);
+  }
+  return stripeClient;
+}
 
 export async function getConfig(req, res) {
   res.json({ publishableKey: env.STRIPE_PUBLISHABLE_KEY });
@@ -18,7 +28,7 @@ export async function createPaymentSheet(req, res) {
   let customerId = user.stripeCustomerId;
 
   if (!customerId) {
-    const customer = await stripe.customers.create({
+    const customer = await getStripe().customers.create({
       metadata: { userId: user.id },
     });
     customerId = customer.id;
@@ -28,7 +38,7 @@ export async function createPaymentSheet(req, res) {
     });
   }
 
-  const paymentIntent = await stripe.paymentIntents.create({
+  const paymentIntent = await getStripe().paymentIntents.create({
     amount: Math.round(amount),
     currency: "xof",
     customer: customerId,
@@ -36,7 +46,7 @@ export async function createPaymentSheet(req, res) {
     metadata: { userId: user.id },
   });
 
-  const ephemeralKey = await stripe.ephemeralKeys.create(
+  const ephemeralKey = await getStripe().ephemeralKeys.create(
     { customer: customerId },
     { apiVersion: "2025-02-24.acacia" },
   );
@@ -56,7 +66,7 @@ export async function createCheckoutSession(req, res) {
   if (!order) throw new NotFoundError("Pedido");
   if (order.userId !== req.user.id) throw new ForbiddenError("No tienes permiso");
 
-  const session = await stripe.checkout.sessions.create({
+  const session = await getStripe().checkout.sessions.create({
     ui_mode: "elements",
     mode: "payment",
     return_url: `${env.CLIENT_URL}/perfil?payment=success`,
@@ -90,7 +100,7 @@ export async function handleWebhook(req, res) {
   if (env.STRIPE_WEBHOOK_SECRET) {
     const sig = req.headers["stripe-signature"];
     try {
-      event = stripe.webhooks.constructEvent(req.rawBody, sig, env.STRIPE_WEBHOOK_SECRET);
+      event = getStripe().webhooks.constructEvent(req.rawBody, sig, env.STRIPE_WEBHOOK_SECRET);
     } catch {
       return res.status(400).json({ error: "Firma de webhook inválida" });
     }

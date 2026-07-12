@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import prisma from "../config/db.js";
-import { signAccessToken, signRefreshToken, verifyToken } from "../utils/jwt.js";
+import { signAccessToken, signRefreshToken } from "../utils/jwt.js";
 import { AppError, UnauthorizedError } from "../utils/errors.js";
 
 const REFRESH_COOKIE_OPTS = {
