@@ -34,7 +34,7 @@ export default function Home() {
   return (
     <div className="w-full">
       <section className="bg-[#ffffff] py-[40px] px-6">
-        <div className="max-w-[980px] mx-auto flex items-center justify-between gap-6">
+        <div className="max-w-[980px] mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
           <div>
             <h1 className="font-apple-display text-[28px] font-semibold leading-[1.14] text-[#1d1d1f]">
               NHA KINHON
@@ -43,7 +43,7 @@ export default function Home() {
               Servicio de envío de comida desde la diáspora
             </p>
           </div>
-          <div className="flex gap-3 shrink-0">
+          <div className="flex flex-wrap gap-3 sm:shrink-0">
             <ButtonPrimary onClick={() => navigate("/buscar")}>
               Comenzar
             </ButtonPrimary>

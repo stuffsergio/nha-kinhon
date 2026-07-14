@@ -68,16 +68,16 @@ export default function SearchResults({ results, searchQuery, onProductClick }) 
           return (
             <div
               key={`${result.type}-${result.id}`}
-              className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow"
+              className="bg-[#ffffff] border border-[#e0e0e0] p-[20px] sm:p-[24px] rounded-[18px] no-shadow"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-[#f5f5f7] rounded-full flex items-center justify-center">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                <div className="flex items-start gap-4 min-w-0">
+                  <div className="w-12 h-12 bg-[#f5f5f7] rounded-full flex items-center justify-center shrink-0">
                     <Icon size={24} className="text-[#1d1d1f]" />
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-apple-display text-[28px] font-semibold leading-[1.14] tracking-[0.196px] text-[#1d1d1f]">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <h3 className="font-apple-display text-[22px] sm:text-[28px] font-semibold leading-[1.14] tracking-[0.196px] text-[#1d1d1f]">
                         {result.name}
                       </h3>
                       <span className="font-apple-body text-[14px] font-normal leading-[1.43] tracking-[-0.224px] text-[#7a7a7a]">

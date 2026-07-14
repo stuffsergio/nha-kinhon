@@ -145,8 +145,8 @@ export default function Search() {
   const categoryProducts = categoryProductsRes?.data || [];
 
   return (
-    <div className="w-full max-w-[980px] mx-auto py-[80px] px-6 space-y-6">
-      <h1 className="font-apple-display text-[56px] font-semibold leading-[1.07] tracking-[-0.28px] text-[#1d1d1f] mb-6">
+    <div className="w-full max-w-[980px] mx-auto py-[48px] md:py-[80px] px-6 space-y-6">
+      <h1 className="font-apple-display text-[34px] sm:text-[44px] md:text-[56px] font-semibold leading-[1.07] tracking-[-0.28px] text-[#1d1d1f] mb-6">
         Buscar
       </h1>
 
@@ -181,14 +181,14 @@ export default function Search() {
               {categoryProducts.map((product) => (
                 <div
                   key={product.id}
-                  className="bg-white border border-[#e0e0e0] p-[20px] rounded-[18px] flex items-center justify-between"
+                  className="bg-white border border-[#e0e0e0] p-[20px] rounded-[18px] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-[#f5f5f7] rounded-full flex items-center justify-center">
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="w-12 h-12 bg-[#f5f5f7] rounded-full flex items-center justify-center shrink-0">
                       <Apple size={24} className="text-[#1d1d1f]" />
                     </div>
-                    <div>
-                      <h3 className="font-apple-display text-[22px] font-semibold leading-[1.14] tracking-[0.154px] text-[#1d1d1f]">
+                    <div className="min-w-0">
+                      <h3 className="font-apple-display text-[20px] sm:text-[22px] font-semibold leading-[1.14] tracking-[0.154px] text-[#1d1d1f]">
                         {product.name}
                       </h3>
                       <p className="font-apple-body text-[15px] text-[#7a7a7a]">

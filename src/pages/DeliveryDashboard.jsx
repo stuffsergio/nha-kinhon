@@ -123,10 +123,10 @@ export default function DeliveryDashboard() {
   const historyOrders = myOrders.filter((o) => ["DELIVERED", "CANCELLED"].includes(o.status));
 
   return (
-    <div className="w-full max-w-[980px] mx-auto py-[80px] px-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="w-full max-w-[980px] mx-auto py-[48px] md:py-[80px] px-6 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="font-apple-display text-[40px] font-semibold leading-[1.1] text-[#1d1d1f]">
+          <h1 className="font-apple-display text-[30px] sm:text-[40px] font-semibold leading-[1.1] text-[#1d1d1f]">
             Panel Repartidor
           </h1>
           <p className="font-apple-body text-[17px] text-[#7a7a7a]">
