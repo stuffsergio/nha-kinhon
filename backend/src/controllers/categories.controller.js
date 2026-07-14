@@ -1,10 +1,11 @@
 import prisma from "../config/db.js";
 import { NotFoundError } from "../utils/errors.js";
+import { categoryProductCountSelect } from "../utils/search.js";
 
 export async function list(req, res) {
   const categories = await prisma.category.findMany({
     where: { active: true },
-    include: { _count: { select: { products: true } } },
+    include: categoryProductCountSelect,
   });
 
   res.json({ data: categories });
