@@ -10,7 +10,7 @@ const typeConfig = {
 
 export default function MarketModal({ market, onClose }) {
   const navigate = useNavigate();
-  const { data: marketRes } = useMarket(market.id);
+  const { data: marketRes, isLoading } = useMarket(market.id);
   const marketProducts = marketRes?.market?.products || [];
   const cfg = typeConfig[market.type] || typeConfig.MERCADO_LOCAL;
 
@@ -68,12 +68,24 @@ export default function MarketModal({ market, onClose }) {
               <div className="flex items-center gap-2">
                 <Package size={18} className="text-[#1d1d1f]" />
                 <h3 className="font-apple-display text-[20px] font-semibold leading-[1.2] text-[#1d1d1f]">
-                  Productos ({marketProducts.length})
+                  Productos{isLoading ? "" : ` (${marketProducts.length})`}
                 </h3>
               </div>
             </div>
 
-            {marketProducts.length === 0 ? (
+            {isLoading ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex justify-between items-center px-4 py-3 bg-[#f5f5f7] rounded-[12px] animate-pulse">
+                    <div className="space-y-1.5">
+                      <div className="h-4 w-32 bg-[#e8e8ed] rounded" />
+                      <div className="h-3 w-20 bg-[#e8e8ed] rounded" />
+                    </div>
+                    <div className="h-4 w-14 bg-[#e8e8ed] rounded" />
+                  </div>
+                ))}
+              </div>
+            ) : marketProducts.length === 0 ? (
               <div className="text-center py-8">
                 <ShoppingCart size={40} className="mx-auto mb-3 text-[#7a7a7a]" />
                 <p className="font-apple-body text-[15px] text-[#7a7a7a]">

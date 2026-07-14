@@ -173,7 +173,20 @@ export default function Map() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-        {filteredMarkets.length === 0 ? (
+        {isLoading ? (
+          [1, 2, 3].map((i) => (
+            <div key={i} className="bg-white border border-[#e0e0e0] p-4 rounded-[14px] no-shadow animate-pulse">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-3 h-3 rounded-full bg-[#f5f5f7]" />
+                <div className="flex-1 space-y-1.5">
+                  <div className="h-4 bg-[#f5f5f7] rounded w-2/3" />
+                  <div className="h-3 bg-[#f5f5f7] rounded w-1/2" />
+                </div>
+              </div>
+              <div className="h-3 bg-[#f5f5f7] rounded w-1/3" />
+            </div>
+          ))
+        ) : filteredMarkets.length === 0 ? (
           <p className="font-apple-body text-[15px] text-[#7a7a7a] col-span-full text-center py-12">
             No se encontraron mercados con los filtros actuales.
           </p>

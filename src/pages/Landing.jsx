@@ -80,7 +80,15 @@ const stats = [
 
 export default function Landing() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center" role="status" aria-live="polite">
+        <div className="w-8 h-8 border-4 border-[#e0e0e0] border-t-[#0066cc] rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (user) {
     navigate("/inicio", { replace: true });

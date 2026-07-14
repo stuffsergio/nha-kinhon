@@ -4,7 +4,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function NavBar() {
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -71,7 +71,7 @@ export default function NavBar() {
             </Link>
           )}
 
-          {user && user.role !== "DELIVERY" ? (
+          {loading ? null : user && user.role !== "DELIVERY" ? (
             <div className="flex items-center gap-4">
               <Link to="/perfil" className="font-apple-body text-[14px] text-[#0066cc] hover:underline">
                 {user.name}
@@ -136,7 +136,7 @@ export default function NavBar() {
           )}
 
           <div className="mt-4 pt-4 border-t border-[#e0e0e0] flex items-center gap-4">
-            {user && user.role !== "DELIVERY" ? (
+            {loading ? null : user && user.role !== "DELIVERY" ? (
               <>
                 <Link to="/perfil" className="font-apple-body text-[15px] text-[#0066cc] hover:underline">
                   {user.name}

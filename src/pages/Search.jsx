@@ -23,7 +23,7 @@ export default function Search() {
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [addingId, setAddingId] = useState(null);
-  const { data: categoriesRes } = useCategories();
+  const { data: categoriesRes, isLoading: categoriesLoading } = useCategories();
   const categories = categoriesRes?.data || [];
 
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -224,6 +224,7 @@ export default function Search() {
               )}
               <CategorySuggestion
                 categories={categories}
+                loading={categoriesLoading}
                 onCategoryClick={handleCategoryClick}
                 onSearchClick={handleSearch}
               />

@@ -52,7 +52,7 @@ export default function DeliveryDashboard() {
   const { data: availableRes, isLoading: availLoading } = useAvailableOrders();
   const { data: myOrdersRes, isLoading: myLoading } = useMyDeliveryOrders();
   const { data: profileRes, isLoading: profLoading } = useDeliveryProfile();
-  const { data: statsRes } = useDeliveryStats();
+  const { data: statsRes, isLoading: statsLoading } = useDeliveryStats();
 
   const pickupOrder = usePickupOrder();
   const updateStatus = useUpdateDeliveryStatus();
@@ -130,7 +130,8 @@ export default function DeliveryDashboard() {
             Panel Repartidor
           </h1>
           <p className="font-apple-body text-[17px] text-[#7a7a7a]">
-            {user.name} &bull; {profile?.vehicle || "—"} &bull; {profile?.serviceArea || "Sin zona"}
+            {user.name}
+            {profLoading ? " • …" : ` • ${profile?.vehicle || "—"} • ${profile?.serviceArea || "Sin zona"}`}
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -150,7 +151,7 @@ export default function DeliveryDashboard() {
           </div>
           <div>
             <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px]">Ganado hoy</p>
-            <p className="font-apple-body text-[17px] font-semibold text-[#1d1d1f]">{stats?.earningsThisWeek?.toLocaleString() || 0} FCFA</p>
+            <p className="font-apple-body text-[17px] font-semibold text-[#1d1d1f]">{statsLoading ? "…" : `${stats?.earningsThisWeek?.toLocaleString() || 0} FCFA`}</p>
           </div>
         </div>
         <div className="bg-[#ffffff] border border-[#e0e0e0] p-4 rounded-[14px] no-shadow flex items-center gap-3">
@@ -159,7 +160,7 @@ export default function DeliveryDashboard() {
           </div>
           <div>
             <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px]">Entregas hoy</p>
-            <p className="font-apple-body text-[17px] font-semibold text-[#1d1d1f]">{stats?.deliveriesToday || 0}</p>
+            <p className="font-apple-body text-[17px] font-semibold text-[#1d1d1f]">{statsLoading ? "…" : (stats?.deliveriesToday || 0)}</p>
           </div>
         </div>
         <div className="bg-[#ffffff] border border-[#e0e0e0] p-4 rounded-[14px] no-shadow flex items-center gap-3">
@@ -168,7 +169,7 @@ export default function DeliveryDashboard() {
           </div>
           <div>
             <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px]">Semana</p>
-            <p className="font-apple-body text-[17px] font-semibold text-[#1d1d1f]">{stats?.deliveriesThisWeek || 0} entregas</p>
+            <p className="font-apple-body text-[17px] font-semibold text-[#1d1d1f]">{statsLoading ? "…" : `${stats?.deliveriesThisWeek || 0} entregas`}</p>
           </div>
         </div>
         <div className="bg-[#ffffff] border border-[#e0e0e0] p-4 rounded-[14px] no-shadow flex items-center gap-3">
@@ -177,7 +178,7 @@ export default function DeliveryDashboard() {
           </div>
           <div>
             <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px]">Rating</p>
-            <p className="font-apple-body text-[17px] font-semibold text-[#1d1d1f]">{stats?.rating?.toFixed(1) || "5.0"}</p>
+            <p className="font-apple-body text-[17px] font-semibold text-[#1d1d1f]">{statsLoading ? "…" : (stats?.rating?.toFixed(1) || "5.0")}</p>
           </div>
         </div>
       </div>
@@ -315,20 +316,20 @@ export default function DeliveryDashboard() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow">
               <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-1">Total entregas</p>
-              <p className="font-apple-display text-[40px] font-semibold leading-[1.1] text-[#1d1d1f]">{stats?.totalDeliveries || 0}</p>
+              <p className="font-apple-display text-[40px] font-semibold leading-[1.1] text-[#1d1d1f]">{statsLoading ? "…" : (stats?.totalDeliveries || 0)}</p>
             </div>
             <div className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow">
               <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-1">Entregas hoy</p>
-              <p className="font-apple-display text-[40px] font-semibold leading-[1.1] text-[#1d1d1f]">{stats?.deliveriesToday || 0}</p>
+              <p className="font-apple-display text-[40px] font-semibold leading-[1.1] text-[#1d1d1f]">{statsLoading ? "…" : (stats?.deliveriesToday || 0)}</p>
             </div>
             <div className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow">
               <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-1">Ganancias totales</p>
-              <p className="font-apple-display text-[28px] font-semibold leading-[1.1] text-[#1d1d1f]">{stats?.totalEarnings?.toLocaleString() || 0} FCFA</p>
+              <p className="font-apple-display text-[28px] font-semibold leading-[1.1] text-[#1d1d1f]">{statsLoading ? "…" : `${stats?.totalEarnings?.toLocaleString() || 0} FCFA`}</p>
             </div>
             <div className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow">
               <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-1">Rating</p>
               <div className="flex items-center gap-1">
-                <p className="font-apple-display text-[40px] font-semibold leading-[1.1] text-[#1d1d1f]">{stats?.rating?.toFixed(1) || "5.0"}</p>
+                <p className="font-apple-display text-[40px] font-semibold leading-[1.1] text-[#1d1d1f]">{statsLoading ? "…" : (stats?.rating?.toFixed(1) || "5.0")}</p>
                 <Star size={20} className="text-[#f59e0b]" />
               </div>
             </div>

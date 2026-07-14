@@ -1,6 +1,6 @@
 import * as LucideIcons from "lucide-react";
 
-export default function CategorySuggestion({ categories, onCategoryClick, onSearchClick }) {
+export default function CategorySuggestion({ categories, loading, onCategoryClick, onSearchClick }) {
   const sampleProducts = [
     { name: "Arroz", icon: "Wheat" },
     { name: "Tomates", icon: "Carrot" },
@@ -17,7 +17,15 @@ export default function CategorySuggestion({ categories, onCategoryClick, onSear
           Categorías
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {categories.slice(0, 8).map((category) => {
+          {loading && categories.length === 0 ? (
+            [1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow flex flex-col items-center gap-4 animate-pulse">
+                <div className="w-12 h-12 bg-[#f5f5f7] rounded-full" />
+                <div className="h-5 w-20 bg-[#f5f5f7] rounded" />
+              </div>
+            ))
+          ) : (
+          categories.slice(0, 8).map((category) => {
             const Icon = LucideIcons[category.icon] || LucideIcons.Circle;
             return (
               <button
@@ -33,7 +41,8 @@ export default function CategorySuggestion({ categories, onCategoryClick, onSear
                 </span>
               </button>
             );
-          })}
+          })
+          )}
         </div>
       </section>
 

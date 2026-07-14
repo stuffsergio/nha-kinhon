@@ -87,7 +87,16 @@ export default function Admin() {
             </div>
           </div>
 
-          {availableOrders.length === 0 ? (
+          {isLoading || delLoading ? (
+            <div className="space-y-4">
+              {[1, 2].map((i) => (
+                <div key={i} className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow animate-pulse">
+                  <div className="h-6 bg-[#f5f5f7] rounded w-1/3 mb-3" />
+                  <div className="h-5 bg-[#f5f5f7] rounded w-1/2" />
+                </div>
+              ))}
+            </div>
+          ) : availableOrders.length === 0 ? (
             <p className="font-apple-body text-[17px] text-[#7a7a7a] py-12 text-center">No hay pedidos pendientes de asignar.</p>
           ) : (
             <div className="space-y-4">

@@ -37,6 +37,7 @@ export default function Profile() {
   });
   const [showAddContact, setShowAddContact] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
   const [newContact, setNewContact] = useState({
     name: "",
     email: "",
@@ -74,6 +75,7 @@ export default function Profile() {
   const handleSaveProfile = async () => {
     const nameInput = document.getElementById("profile-name");
     const emailInput = document.getElementById("profile-email");
+    setSavingProfile(true);
     try {
       const data = await api.put("/auth/me", {
         name: nameInput?.value,
@@ -83,6 +85,8 @@ export default function Profile() {
       toast("Perfil actualizado", "success");
     } catch (e) {
       toast("Error: " + e.message, "error");
+    } finally {
+      setSavingProfile(false);
     }
   };
 
@@ -233,7 +237,7 @@ export default function Profile() {
                 </h3>
               </div>
               <p className="font-apple-display text-[40px] font-semibold leading-[1.1] text-[#1d1d1f] tabular-nums">
-                {orders.length}
+                {ordersLoading ? "…" : orders.length}
               </p>
             </div>
             <div className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow">
@@ -244,7 +248,7 @@ export default function Profile() {
                 </h3>
               </div>
               <p className="font-apple-display text-[40px] font-semibold leading-[1.1] text-[#1d1d1f] tabular-nums">
-                {favoriteProducts.length}
+                {favLoading ? "…" : favoriteProducts.length}
               </p>
             </div>
           </div>
@@ -287,9 +291,10 @@ export default function Profile() {
                     </div>
                     <button
                       onClick={() => removeFavorite.mutate(product.id)}
-                      className="text-[#0066cc] font-apple-body text-[14px] hover:underline"
+                      disabled={removeFavorite.isPending && removeFavorite.variables === product.id}
+                      className="text-[#0066cc] font-apple-body text-[14px] hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Quitar
+                      {removeFavorite.isPending && removeFavorite.variables === product.id ? "Quitando…" : "Quitar"}
                     </button>
                   </div>
                 </div>
@@ -655,9 +660,10 @@ export default function Profile() {
               </div>
               <button
                 onClick={handleSaveProfile}
-                className="bg-[#0066cc] text-white font-apple-body text-[17px] px-6 py-2 rounded-[9999px] hover:bg-[#0071e3] transition-colors"
+                disabled={savingProfile}
+                className="bg-[#0066cc] text-white font-apple-body text-[17px] px-6 py-2 rounded-[9999px] hover:bg-[#0071e3] transition-colors disabled:bg-[#d2d2d7] disabled:cursor-not-allowed"
               >
-                Guardar cambios
+                {savingProfile ? "Guardando…" : "Guardar cambios"}
               </button>
             </div>
           </div>

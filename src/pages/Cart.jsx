@@ -5,7 +5,7 @@ import CartSummary from "../components/CartSummary";
 import EmptyCart from "../components/EmptyCart";
 
 export default function Cart() {
-  const { cart, cartTotal } = useCart();
+  const { cart, cartTotal, loading } = useCart();
 
   return (
     <div className="w-full max-w-245 mx-auto py-[48px] md:py-[80px] px-6 space-y-6">
@@ -21,7 +21,27 @@ export default function Cart() {
         </Link>
       </div>
 
-      {cart.length === 0 ? (
+      {loading && cart.length === 0 ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-4">
+            {[1, 2].map((i) => (
+              <div key={i} className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow animate-pulse">
+                <div className="h-7 bg-[#f5f5f7] rounded w-1/2 mb-3" />
+                <div className="h-5 bg-[#f5f5f7] rounded w-1/3 mb-4" />
+                <div className="h-9 bg-[#f5f5f7] rounded w-32" />
+              </div>
+            ))}
+          </div>
+          <div>
+            <div className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow animate-pulse space-y-4">
+              <div className="h-8 bg-[#f5f5f7] rounded w-2/3" />
+              <div className="h-5 bg-[#f5f5f7] rounded w-full" />
+              <div className="h-5 bg-[#f5f5f7] rounded w-full" />
+              <div className="h-11 bg-[#f5f5f7] rounded-full w-full" />
+            </div>
+          </div>
+        </div>
+      ) : cart.length === 0 ? (
         <EmptyCart />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
