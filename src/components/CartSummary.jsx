@@ -7,6 +7,8 @@ import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
 import ButtonPrimary from "./ButtonPrimary";
 
+const STRIPE_ENABLED = !!import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+
 export default function CartSummary({ cartTotal }) {
   const { cart, clearCart } = useCart();
   const checkout = useCheckout();
@@ -40,11 +42,19 @@ export default function CartSummary({ cartTotal }) {
         paymentMethodId: null,
       });
       const orderId = data.order?.id || data.id;
-      const session = await api.post("/stripe/create-checkout-session", { orderId });
-      navigate("/checkout", {
-        state: { clientSecret: session.clientSecret, orderId, cartTotal, userEmail: user?.email },
-        replace: true,
-      });
+
+      if (STRIPE_ENABLED) {
+        const session = await api.post("/stripe/create-checkout-session", { orderId });
+        navigate("/checkout", {
+          state: { clientSecret: session.clientSecret, orderId, cartTotal, userEmail: user?.email },
+          replace: true,
+        });
+      } else {
+        // Sin Stripe configurado: se confirma el pedido directamente.
+        await api.post(`/orders/${orderId}/confirm-payment`);
+        await clearCart();
+        navigate("/perfil?payment=success", { replace: true });
+      }
     } catch (e) {
       toast("Error al crear el pedido: " + e.message, "error");
       setCheckingOut(false);

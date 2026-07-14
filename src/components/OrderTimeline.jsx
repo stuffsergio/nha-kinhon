@@ -1,3 +1,5 @@
+import { Check } from "lucide-react";
+
 const fullOrder = [
   { key: "PENDING", label: "Pendiente" },
   { key: "CONFIRMED", label: "Confirmado" },
@@ -28,12 +30,13 @@ export default function OrderTimeline({ status }) {
   }
 
   const relevantSteps = fullOrder.slice(0, Math.max(currentIdx + 1, 1));
+  const isDelivered = status === "DELIVERED";
 
   return (
     <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
       {relevantSteps.map((step, idx) => {
-        const isCompleted = idx < currentIdx;
-        const isCurrent = idx === currentIdx;
+        const isCompleted = idx < currentIdx || (isDelivered && idx === currentIdx);
+        const isCurrent = idx === currentIdx && !isDelivered;
 
         return (
           <div key={step.key} className="flex items-center shrink-0">
@@ -47,7 +50,7 @@ export default function OrderTimeline({ status }) {
                     : "bg-[#f5f5f7] text-[#7a7a7a]"
                 }`}
               >
-                {isCompleted ? "✓" : idx + 1}
+                {isCompleted ? <Check size={14} strokeWidth={3} /> : idx + 1}
               </div>
               <span className={`font-apple-body text-[10px] whitespace-nowrap ${isCompleted || isCurrent ? "text-[#1d1d1f] font-medium" : "text-[#7a7a7a]"}`}>
                 {step.label}

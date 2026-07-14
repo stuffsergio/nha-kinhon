@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Package, ClipboardList, User, Clock, Truck, DollarSign, Star, TrendingUp, ArrowLeft, MapPin } from "lucide-react";
+import { Package, ClipboardList, User, Clock, Truck, DollarSign, Star, TrendingUp, ArrowLeft, MapPin, Camera, X } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
 import { useToast } from "../context/ToastContext";
 import { useAvailableOrders, useMyDeliveryOrders, usePickupOrder, useUpdateDeliveryStatus } from "../hooks/useDeliveryOrders";
 import { useDeliveryProfile, useToggleActive, useDeliveryStats } from "../hooks/useDeliveryProfile";
+import { fileToCompressedDataUrl } from "../utils/image";
 import DeliveryOrderCard from "../components/DeliveryOrderCard";
 import ButtonPrimary from "../components/ButtonPrimary";
 
@@ -33,6 +34,10 @@ export default function DeliveryDashboard() {
   const toast = useToast();
   const [activeTab, setActiveTab] = useState("available");
   const [fetchingUser, setFetchingUser] = useState(false);
+  const [deliverOrder, setDeliverOrder] = useState(null);
+  const [deliveryPhoto, setDeliveryPhoto] = useState(null);
+  const [photoLoading, setPhotoLoading] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (!user) {
@@ -266,8 +271,13 @@ export default function DeliveryDashboard() {
                     nextStatus ? (
                       <button
                         onClick={() => {
+                          if (nextStatus === "DELIVERED") {
+                            setDeliverOrder(order);
+                            setDeliveryPhoto(null);
+                            return;
+                          }
                           updateStatus.mutate({ orderId: order.id, status: nextStatus }, {
-                            onSuccess: () => toast(nextStatus === "DELIVERED" ? "Pedido entregado con éxito" : "Estado actualizado", "success"),
+                            onSuccess: () => toast("Estado actualizado", "success"),
                             onError: (e) => toast("Error: " + e.message, "error"),
                           });
                         }}
@@ -365,6 +375,101 @@ export default function DeliveryDashboard() {
                   className={`ml-auto px-5 py-2 rounded-[9999px] font-apple-body text-[15px] transition-colors disabled:opacity-50 ${profile?.isActive ? "bg-[#dc2626] text-white hover:bg-[#b91c1c]" : "bg-[#059669] text-white hover:bg-[#047857]"}`}
                 >
                   {profile?.isActive ? "Desactivar" : "Activar"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deliverOrder && (
+        <div className="fixed inset-0 z-[9999] overflow-y-auto" role="dialog" aria-modal="true" aria-label="Confirmar entrega">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !updateStatus.isPending && setDeliverOrder(null)} />
+          <div className="relative min-h-full flex items-center justify-center p-6">
+            <div className="relative bg-[#ffffff] rounded-[18px] no-shadow w-full max-w-[420px] p-8 animate-fade-in">
+              <button
+                onClick={() => setDeliverOrder(null)}
+                disabled={updateStatus.isPending}
+                className="absolute top-4 right-4 p-2 hover:bg-[#f5f5f7] rounded-full transition-colors disabled:opacity-50"
+                aria-label="Cerrar"
+              >
+                <X size={22} />
+              </button>
+              <h3 className="font-apple-display text-[28px] font-semibold leading-[1.14] tracking-[0.196px] text-[#1d1d1f] mb-2">
+                Confirmar Entrega
+              </h3>
+              <p className="font-apple-body text-[15px] text-[#7a7a7a] mb-5">
+                Pedido #{deliverOrder.id.slice(0, 8)} &bull; {deliverOrder.recipientName}. Adjunta una foto como prueba de entrega.
+              </p>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setPhotoLoading(true);
+                  try {
+                    const dataUrl = await fileToCompressedDataUrl(file);
+                    setDeliveryPhoto(dataUrl);
+                  } catch (err) {
+                    toast("Error al procesar la foto: " + err.message, "error");
+                  } finally {
+                    setPhotoLoading(false);
+                    e.target.value = "";
+                  }
+                }}
+              />
+
+              {deliveryPhoto ? (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="block w-full rounded-[14px] overflow-hidden border border-[#e0e0e0] mb-5"
+                >
+                  <img src={deliveryPhoto} alt="Foto de entrega" className="w-full h-[220px] object-cover" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={photoLoading}
+                  className="w-full h-[220px] mb-5 rounded-[14px] border-2 border-dashed border-[#d2d2d7] flex flex-col items-center justify-center gap-3 text-[#7a7a7a] hover:border-[#0066cc] hover:text-[#0066cc] transition-colors disabled:opacity-50"
+                >
+                  <Camera size={40} strokeWidth={1.5} />
+                  <span className="font-apple-body text-[15px]">{photoLoading ? "Procesando…" : "Tomar / subir foto"}</span>
+                </button>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setDeliverOrder(null)}
+                  disabled={updateStatus.isPending}
+                  className="flex-1 px-4 py-3 border border-[#e0e0e0] rounded-[9999px] font-apple-body text-[17px] text-[#1d1d1f] hover:bg-[#f5f5f7] transition-colors disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    updateStatus.mutate(
+                      { orderId: deliverOrder.id, status: "DELIVERED", deliveryPhoto },
+                      {
+                        onSuccess: () => {
+                          toast("Pedido entregado con éxito", "success");
+                          setDeliverOrder(null);
+                          setDeliveryPhoto(null);
+                        },
+                        onError: (e) => toast("Error: " + e.message, "error"),
+                      },
+                    );
+                  }}
+                  disabled={updateStatus.isPending || !deliveryPhoto}
+                  className="flex-1 px-4 py-3 bg-[#059669] text-white rounded-[9999px] font-apple-body text-[17px] hover:bg-[#047857] transition-colors disabled:bg-[#d2d2d7] disabled:cursor-not-allowed"
+                >
+                  {updateStatus.isPending ? "Entregando…" : "Marcar entregado"}
                 </button>
               </div>
             </div>
