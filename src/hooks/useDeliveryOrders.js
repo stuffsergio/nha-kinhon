@@ -28,7 +28,8 @@ export function usePickupOrder() {
 export function useUpdateDeliveryStatus() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ orderId, status }) => api.put(`/delivery/orders/${orderId}/status`, { status }),
+    mutationFn: ({ orderId, status, deliveryPhoto }) =>
+      api.put(`/delivery/orders/${orderId}/status`, { status, deliveryPhoto }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["delivery", "orders"] });
     },

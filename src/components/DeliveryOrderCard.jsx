@@ -105,6 +105,17 @@ export default function DeliveryOrderCard({ order, actions, showTimeAgo }) {
         </div>
       )}
 
+      {order.deliveryPhoto && (
+        <div>
+          <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-2">Prueba de entrega</p>
+          <img
+            src={order.deliveryPhoto}
+            alt={`Prueba de entrega del pedido ${order.id.slice(0, 8)}`}
+            className="w-full max-h-[240px] object-cover rounded-[12px] border border-[#e0e0e0]"
+          />
+        </div>
+      )}
+
       {actions && <div className="border-t border-[#e0e0e0] pt-4 flex flex-wrap gap-2">{actions}</div>}
     </div>
   );

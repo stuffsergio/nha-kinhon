@@ -327,6 +327,17 @@ export default function Profile() {
                     </div>
                   )}
 
+                  {order.deliveryPhoto && (
+                    <div>
+                      <p className="font-apple-body text-[13px] text-[#7a7a7a] mb-2">Prueba de entrega</p>
+                      <img
+                        src={order.deliveryPhoto}
+                        alt={`Prueba de entrega del pedido ${order.id.slice(0, 8)}`}
+                        className="w-full max-h-[260px] object-cover rounded-[12px] border border-[#e0e0e0]"
+                      />
+                    </div>
+                  )}
+
                   <div className="border-t border-[#e0e0e0] pt-4 space-y-2 tabular-nums">
                     {(order.items || []).map((item, index) => (
                       <div
