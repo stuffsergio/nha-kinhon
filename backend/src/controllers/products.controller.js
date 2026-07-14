@@ -1,19 +1,33 @@
 import prisma from "../config/db.js";
 import { NotFoundError } from "../utils/errors.js";
+import { parseProductSort } from "../utils/search.js";
 
 export async function list(req, res) {
   const {
     page = 1, limit = 20, categoryId, marketId,
-    search, minPrice, maxPrice, available,
+    search, q, minPrice, maxPrice, available, sort,
   } = req.query;
 
   const where = {};
   if (categoryId) where.categoryId = categoryId;
   if (marketId) where.marketId = marketId;
-  if (search) where.name = { contains: search, mode: "insensitive" };
+
+  const searchTerm = search || q;
+  if (searchTerm) {
+    where.OR = [
+      { name: { contains: searchTerm, mode: "insensitive" } },
+      { description: { contains: searchTerm, mode: "insensitive" } },
+    ];
+  }
+
   if (minPrice) where.price = { ...where.price, gte: Number(minPrice) };
   if (maxPrice) where.price = { ...where.price, lte: Number(maxPrice) };
-  if (available !== undefined) where.available = available === "true";
+
+  if (available === "false") {
+    where.available = false;
+  } else if (available !== "all") {
+    where.available = true;
+  }
 
   const [data, total] = await Promise.all([
     prisma.product.findMany({
@@ -21,7 +35,7 @@ export async function list(req, res) {
       skip: (page - 1) * limit,
       take: Number(limit),
       include: { category: true, market: true },
-      orderBy: { name: "asc" },
+      orderBy: parseProductSort(sort),
     }),
     prisma.product.count({ where }),
   ]);
