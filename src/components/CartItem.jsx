@@ -1,11 +1,23 @@
+import { useState } from "react";
 import { Plus, Minus, Trash2 } from "lucide-react";
 import { useCart } from "../context/CartContext";
 
 export default function CartItem({ item }) {
   const { updateQuantity, removeFromCart } = useCart();
+  const [busy, setBusy] = useState(false);
   const product = item.product || item;
   const productId = item.productId || item.id;
   const lineTotal = (product.price * item.quantity).toLocaleString();
+
+  const run = async (action) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await action();
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow">
@@ -22,18 +34,20 @@ export default function CartItem({ item }) {
           </p>
         </div>
         <button
-          onClick={() => removeFromCart(productId)}
-          className="p-2 text-[#0066cc] hover:bg-[#f5f5f7] rounded-[8px] transition-colors"
+          onClick={() => run(() => removeFromCart(productId))}
+          disabled={busy}
+          className="p-2 text-[#0066cc] hover:bg-[#f5f5f7] rounded-[8px] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Trash2 size={20} />
         </button>
       </div>
 
       <div className="flex items-center gap-4 mt-4">
-        <div className="flex items-center gap-2 bg-[#f5f5f7] rounded-[8px]">
+        <div className={`flex items-center gap-2 bg-[#f5f5f7] rounded-[8px] ${busy ? "opacity-60" : ""}`}>
           <button
-            onClick={() => updateQuantity(productId, item.quantity - 1)}
-            className="p-2 hover:bg-[#e0e0e0] rounded-l-[8px] transition-colors btn-apple-active"
+            onClick={() => run(() => updateQuantity(productId, item.quantity - 1))}
+            disabled={busy}
+            className="p-2 hover:bg-[#e0e0e0] rounded-l-[8px] transition-colors btn-apple-active disabled:cursor-not-allowed"
           >
             <Minus size={18} />
           </button>
@@ -41,8 +55,9 @@ export default function CartItem({ item }) {
             {item.quantity}
           </span>
           <button
-            onClick={() => updateQuantity(productId, item.quantity + 1)}
-            className="p-2 hover:bg-[#e0e0e0] rounded-r-[8px] transition-colors btn-apple-active"
+            onClick={() => run(() => updateQuantity(productId, item.quantity + 1))}
+            disabled={busy}
+            className="p-2 hover:bg-[#e0e0e0] rounded-r-[8px] transition-colors btn-apple-active disabled:cursor-not-allowed"
           >
             <Plus size={18} />
           </button>
