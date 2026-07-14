@@ -21,7 +21,7 @@ export default function Cart() {
         </Link>
       </div>
 
-      {loading && cart.length === 0 ? (
+      {loading ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
             {[1, 2].map((i) => (

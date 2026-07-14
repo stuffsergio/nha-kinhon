@@ -132,7 +132,7 @@ export default function Map() {
           );
         })}
         <div className="ml-auto flex items-center gap-2 font-apple-body text-[13px] text-[#7a7a7a]">
-          <span>{filteredMarkets.length} mercados</span>
+          <span>{isLoading ? "Cargando…" : `${filteredMarkets.length} mercados`}</span>
         </div>
       </div>
 

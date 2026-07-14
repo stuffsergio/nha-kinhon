@@ -5,11 +5,13 @@ import { useAuth } from "./AuthContext";
 export const CartContext = createContext();
 
 export function CartProvider({ children }) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [cart, setCart] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Esperar a que la sesión se resuelva antes de decidir el estado del carrito.
+    if (authLoading) return;
     if (user) {
       setLoading(true);
       api
@@ -19,8 +21,9 @@ export function CartProvider({ children }) {
         .finally(() => setLoading(false));
     } else {
       setCart([]);
+      setLoading(false);
     }
-  }, [user]);
+  }, [user, authLoading]);
 
   const addToCart = useCallback(async (product) => {
     if (!user) throw new Error("Debes iniciar sesión para agregar productos al carrito");

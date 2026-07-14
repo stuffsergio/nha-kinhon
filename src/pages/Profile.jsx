@@ -24,7 +24,7 @@ import { useToast } from "../context/ToastContext";
 import { useSearchParams } from "react-router-dom";
 
 export default function Profile() {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, loading: authLoading } = useAuth();
   const qc = useQueryClient();
   const toast = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -105,6 +105,14 @@ export default function Profile() {
     { id: "contacts", label: "Contactos", icon: Users },
     { id: "settings", label: "Configuración", icon: Settings },
   ];
+
+  if (authLoading) {
+    return (
+      <div className="w-full max-w-[980px] mx-auto py-[80px] px-6 flex justify-center" role="status" aria-live="polite">
+        <div className="w-8 h-8 border-4 border-[#e0e0e0] border-t-[#0066cc] rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!user) {
     return (

@@ -30,7 +30,7 @@ const tabs = [
 ];
 
 export default function Admin() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const toast = useToast();
   const [activeTab, setActiveTab] = useState("orders");
 
@@ -44,6 +44,14 @@ export default function Admin() {
   const deliveryPeople = deliveryData?.data || [];
   const availableOrders = orders.filter((o) => o.status === "CONFIRMED" && !o.deliveryId);
   const activeDeliveries = deliveryPeople.filter((dp) => dp.isActive);
+
+  if (authLoading) {
+    return (
+      <div className="w-full max-w-[980px] mx-auto py-[80px] px-6 flex justify-center" role="status" aria-live="polite">
+        <div className="w-8 h-8 border-4 border-[#e0e0e0] border-t-[#0066cc] rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!user || user.role !== "ADMIN") {
     return (
