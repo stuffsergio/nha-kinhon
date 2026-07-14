@@ -1,17 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Truck, Menu, X } from "lucide-react";
-import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function NavBar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
-
-  useEffect(() => {
-    setMenuOpen(false);
-  }, [location.pathname]);
 
   const safeLogout = () => {
     setMenuOpen(false);
@@ -113,7 +108,10 @@ export default function NavBar() {
 
       {/* Mobile menu panel */}
       {menuOpen && (
-        <div className="md:hidden border-t border-[#e0e0e0] py-3 flex flex-col animate-fade-in">
+        <div
+          className="md:hidden border-t border-[#e0e0e0] py-3 flex flex-col animate-fade-in"
+          onClick={() => setMenuOpen(false)}
+        >
           {navLinks.map((l) => (
             <NavLink key={l.to} to={l.to} className={mobileLinkClass}>
               {l.label}
