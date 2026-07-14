@@ -1,3 +1,5 @@
+import { Check } from "lucide-react";
+
 const steps = [
   { key: "PICKED_UP",  label: "Recogido" },
   { key: "IN_TRANSIT", label: "En camino" },
@@ -25,7 +27,7 @@ export default function DeliveryTimeline({ currentStatus }) {
                     : "bg-[#f5f5f7] text-[#7a7a7a]"
                 } ${isCurrent ? "ring-2 ring-[#0066cc] ring-offset-2" : ""}`}
               >
-                {isActive && currentIndex > stepIndex ? "✓" : idx + 1}
+                {isActive && currentIndex > stepIndex ? <Check size={16} strokeWidth={3} /> : idx + 1}
               </div>
               <span className={`font-apple-body text-[11px] whitespace-nowrap ${isActive ? "text-[#1d1d1f] font-medium" : "text-[#7a7a7a]"}`}>
                 {step.label}

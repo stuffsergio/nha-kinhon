@@ -17,7 +17,7 @@ import { useAuth } from "../context/AuthContext";
 import { useOrders } from "../hooks/useOrders";
 import { useFavorites, useRemoveFavorite } from "../hooks/useFavorites";
 import { useContacts, useCreateContact } from "../hooks/useContacts";
-import { useUnreadCount, useMarkAllAsRead } from "../hooks/useNotifications";
+import { useNotifications, useUnreadCount, useMarkAllAsRead } from "../hooks/useNotifications";
 import { api } from "../services/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "../context/ToastContext";
@@ -36,6 +36,7 @@ export default function Profile() {
     email: "",
   });
   const [showAddContact, setShowAddContact] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [newContact, setNewContact] = useState({
     name: "",
     email: "",
@@ -54,11 +55,13 @@ export default function Profile() {
     enabled: !!user,
   });
   const { data: unreadRes } = useUnreadCount({ enabled: !!user });
+  const { data: notificationsRes, isLoading: notificationsLoading } = useNotifications({ enabled: !!user });
 
   const orders = ordersRes?.data || [];
   const favoriteProducts = favoritesRes?.data || [];
   const contacts = contactsRes?.data || [];
   const unreadCount = unreadRes?.count || 0;
+  const notifications = notificationsRes?.data || [];
 
   const removeFavorite = useRemoveFavorite();
   const markAllRead = useMarkAllAsRead();
@@ -149,7 +152,8 @@ export default function Profile() {
               </div>
               <div className="relative">
                 <button
-                  onClick={() => markAllRead.mutate()}
+                  onClick={() => setShowNotifications((v) => !v)}
+                  aria-expanded={showNotifications}
                   className="px-3 py-2 bg-[#1d1d1f] text-[#ffffff] rounded-[8px] flex items-center gap-2 font-apple-body text-[14px] font-normal leading-[1.29] tracking-[-0.224px]"
                 >
                   <Bell size={18} />
@@ -159,6 +163,51 @@ export default function Profile() {
                   <span className="absolute -top-2 -right-2 w-6 h-6 bg-[#0066cc] text-white rounded-full text-xs flex items-center justify-center">
                     {unreadCount}
                   </span>
+                )}
+
+                {showNotifications && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
+                    <div className="absolute right-0 mt-2 w-[340px] max-w-[90vw] bg-[#ffffff] border border-[#e0e0e0] rounded-[14px] shadow-lg z-50 overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-[#e0e0e0]">
+                        <span className="font-apple-body text-[15px] font-semibold text-[#1d1d1f]">Notificaciones</span>
+                        {unreadCount > 0 && (
+                          <button
+                            onClick={() => markAllRead.mutate()}
+                            disabled={markAllRead.isPending}
+                            className="font-apple-body text-[13px] text-[#0066cc] hover:underline disabled:opacity-50"
+                          >
+                            Marcar todas como leídas
+                          </button>
+                        )}
+                      </div>
+                      <div className="max-h-[360px] overflow-y-auto">
+                        {notificationsLoading ? (
+                          <p className="px-4 py-6 text-center font-apple-body text-[14px] text-[#7a7a7a]">Cargando…</p>
+                        ) : notifications.length === 0 ? (
+                          <p className="px-4 py-6 text-center font-apple-body text-[14px] text-[#7a7a7a]">No tienes notificaciones</p>
+                        ) : (
+                          notifications.map((n) => (
+                            <div
+                              key={n.id}
+                              className={`px-4 py-3 border-b border-[#f0f0f0] last:border-b-0 ${n.read ? "" : "bg-[#eff6ff]"}`}
+                            >
+                              <div className="flex items-start gap-2">
+                                {!n.read && <span className="mt-1.5 w-2 h-2 rounded-full bg-[#0066cc] shrink-0" />}
+                                <div className="min-w-0">
+                                  <p className="font-apple-body text-[14px] font-semibold text-[#1d1d1f]">{n.title}</p>
+                                  <p className="font-apple-body text-[13px] text-[#7a7a7a] break-words">{n.message}</p>
+                                  <p className="font-apple-body text-[11px] text-[#a0a0a0] mt-1">
+                                    {new Date(n.createdAt).toLocaleString()}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             </div>
