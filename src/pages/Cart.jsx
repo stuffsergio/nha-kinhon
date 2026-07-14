@@ -8,9 +8,9 @@ export default function Cart() {
   const { cart, cartTotal } = useCart();
 
   return (
-    <div className="w-full max-w-245 mx-auto py-[80px] px-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="font-apple-display text-[56px] font-semibold leading-[1.07] tracking-[-0.28px] text-[#1d1d1f]">
+    <div className="w-full max-w-245 mx-auto py-[48px] md:py-[80px] px-6 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <h1 className="font-apple-display text-[34px] sm:text-[44px] md:text-[56px] font-semibold leading-[1.07] tracking-[-0.28px] text-[#1d1d1f]">
           Carrito
         </h1>
         <Link

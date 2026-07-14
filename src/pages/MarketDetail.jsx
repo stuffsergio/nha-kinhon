@@ -71,7 +71,7 @@ export default function MarketDetail() {
   const grouped = groupByCategory(products);
 
   return (
-    <div className="w-full max-w-[980px] mx-auto py-[60px] px-6 space-y-8">
+    <div className="w-full max-w-[980px] mx-auto py-[40px] md:py-[60px] px-6 space-y-8">
       <button
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 font-apple-body text-[15px] text-[#0066cc] hover:underline"
@@ -80,19 +80,19 @@ export default function MarketDetail() {
       </button>
 
       <div
-        className="rounded-[18px] p-8 text-white"
+        className="rounded-[18px] p-6 md:p-8 text-white"
         style={{ background: `linear-gradient(135deg, ${cfg.color}, ${cfg.color}cc)` }}
       >
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div className="space-y-1">
             <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur rounded-full text-white font-apple-body text-[12px] font-semibold uppercase tracking-[0.5px]">
               {cfg.label}
             </span>
-            <h1 className="font-apple-display text-[40px] font-semibold leading-[1.07] tracking-[-0.28px] text-white mt-2">
+            <h1 className="font-apple-display text-[30px] sm:text-[40px] font-semibold leading-[1.07] tracking-[-0.28px] text-white mt-2">
               {market.name}
             </h1>
           </div>
-          <span className="font-apple-display text-[28px] font-semibold text-white/90">{products.length} productos</span>
+          <span className="font-apple-display text-[20px] sm:text-[28px] font-semibold text-white/90 shrink-0">{products.length} productos</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">

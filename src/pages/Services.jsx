@@ -32,18 +32,18 @@ const services = [
 export default function Services() {
   return (
     <div className="w-full">
-      <section className="bg-[#ffffff] py-[80px] px-6">
+      <section className="bg-[#ffffff] py-[48px] md:py-[80px] px-6">
         <div className="max-w-[980px] mx-auto text-center">
-          <h1 className="font-apple-display text-[56px] font-semibold leading-[1.07] tracking-[-0.28px] text-[#1d1d1f] mb-4">
+          <h1 className="font-apple-display text-[34px] sm:text-[44px] md:text-[56px] font-semibold leading-[1.07] tracking-[-0.28px] text-[#1d1d1f] mb-4">
             Servicios
           </h1>
-          <p className="font-apple-body text-[24px] font-normal leading-[1.17] tracking-[0.168px] text-[#7a7a7a] max-w-[680px] mx-auto">
+          <p className="font-apple-body text-[18px] md:text-[24px] font-normal leading-[1.3] md:leading-[1.17] tracking-[0.168px] text-[#7a7a7a] max-w-[680px] mx-auto">
             Todo lo que necesitas para hacer llegar tu apoyo a Guinea-Bissau
           </p>
         </div>
       </section>
 
-      <section className="bg-[#f5f5f7] py-[80px] px-6">
+      <section className="bg-[#f5f5f7] py-[48px] md:py-[80px] px-6">
         <div className="max-w-[980px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
           {services.map((service) => {
             const Icon = service.icon;
@@ -77,9 +77,9 @@ export default function Services() {
         </div>
       </section>
 
-      <section className="bg-[#ffffff] py-[80px] px-6 text-center">
+      <section className="bg-[#ffffff] py-[48px] md:py-[80px] px-6 text-center">
         <div className="max-w-[980px] mx-auto">
-          <h2 className="font-apple-display text-[40px] font-semibold leading-[1.1] text-[#1d1d1f] mb-4">
+          <h2 className="font-apple-display text-[28px] sm:text-[34px] md:text-[40px] font-semibold leading-[1.1] text-[#1d1d1f] mb-4">
             ¿Listo para empezar?
           </h2>
           <p className="font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a] mb-8">
