@@ -160,6 +160,51 @@ async function seed() {
   });
   console.log(`  ✅ Delivery: joao@example.com (DELIVERY)`);
 
+  const demoUser = await prisma.user.findUnique({ where: { email: "carlos@example.com" } });
+  if (demoUser && products.length > 0) {
+    const sampleOrders = [
+      {
+        status: "CONFIRMED",
+        recipientName: "Maria Mendes",
+        recipientPhone: "+245 955 111 222",
+        recipientAddress: "Bissau Centro, Av. Amílcar Cabral 12",
+        items: [{ product: products[0], quantity: 2 }],
+      },
+      {
+        status: "PROCESSING",
+        recipientName: "António Silva",
+        recipientPhone: "+245 966 333 444",
+        recipientAddress: "Bissau, Bairro de Ajuda",
+        items: [{ product: products[1] || products[0], quantity: 1 }],
+      },
+    ];
+
+    for (const sample of sampleOrders) {
+      const subtotal = sample.items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+      await prisma.order.create({
+        data: {
+          userId: demoUser.id,
+          status: sample.status,
+          subtotal,
+          shipping: 0,
+          total: subtotal,
+          recipientName: sample.recipientName,
+          recipientPhone: sample.recipientPhone,
+          recipientAddress: sample.recipientAddress,
+          items: {
+            create: sample.items.map((item) => ({
+              productId: item.product.id,
+              name: item.product.name,
+              price: item.product.price,
+              quantity: item.quantity,
+            })),
+          },
+        },
+      });
+    }
+    console.log(`  ✅ ${sampleOrders.length} pedidos disponibles para reparto`);
+  }
+
   console.log("🎉 Seed completado!");
 }
 

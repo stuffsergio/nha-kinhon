@@ -101,9 +101,17 @@ export async function confirmAfterPayment(req, res) {
   const updated = await prisma.order.update({
     where: { id },
     data: { status: "CONFIRMED" },
+    include: { items: true },
   });
 
   await prisma.cartItem.deleteMany({ where: { userId: req.user.id } });
+
+  await createNotification({
+    userId: order.userId,
+    type: "ORDER_CONFIRMED",
+    title: "Pago confirmado",
+    message: `Tu pedido #${id.slice(0, 8)} está confirmado y listo para reparto.`,
+  });
 
   res.json({ order: updated });
 }
