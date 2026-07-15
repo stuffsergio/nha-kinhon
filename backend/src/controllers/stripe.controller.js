@@ -114,17 +114,17 @@ export async function handleWebhook(req, res) {
     const userId = session.metadata?.userId;
 
     if (orderId) {
-      await prisma.order.update({
-        where: { id: orderId },
-        data: { status: "CONFIRMED" },
-      });
-
-      if (userId) {
-        await prisma.cartItem.deleteMany({ where: { userId } });
-      }
-
       const order = await prisma.order.findUnique({ where: { id: orderId } });
-      if (order) {
+      if (order && order.status === "PENDING") {
+        await prisma.order.update({
+          where: { id: orderId },
+          data: { status: "CONFIRMED" },
+        });
+
+        if (userId) {
+          await prisma.cartItem.deleteMany({ where: { userId } });
+        }
+
         await prisma.notification.create({
           data: {
             userId: order.userId,

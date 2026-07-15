@@ -1,29 +1,30 @@
 import prisma from "../config/db.js";
 import { AppError, NotFoundError } from "../utils/errors.js";
 import { createNotification } from "../services/notification.service.js";
+import {
+  buildAvailableOrdersWhere,
+  formatDeliveryOrder,
+  isPickupEligible,
+} from "../utils/deliveryOrders.js";
 
 export async function listAvailable(req, res) {
   const { serviceArea } = req.query;
 
-  const where = {
-    status: "CONFIRMED",
-    deliveryId: null,
-  };
-
+  let serviceAreaFilter;
   if (serviceArea) {
     const profile = await prisma.deliveryProfile.findUnique({ where: { userId: req.user.id } });
     if (profile?.serviceArea) {
-      where.recipientAddress = { contains: profile.serviceArea, mode: "insensitive" };
+      serviceAreaFilter = profile.serviceArea;
     }
   }
 
   const orders = await prisma.order.findMany({
-    where,
+    where: buildAvailableOrdersWhere({ serviceAreaFilter }),
     include: { items: true },
     orderBy: { createdAt: "desc" },
   });
 
-  res.json({ data: orders });
+  res.json({ data: orders.map((order) => formatDeliveryOrder(order)) });
 }
 
 export async function listMyOrders(req, res) {
@@ -33,7 +34,7 @@ export async function listMyOrders(req, res) {
     orderBy: { createdAt: "desc" },
   });
 
-  res.json({ data: orders });
+  res.json({ data: orders.map((order) => formatDeliveryOrder(order)) });
 }
 
 export async function pickupOrder(req, res) {
@@ -41,7 +42,9 @@ export async function pickupOrder(req, res) {
 
   const order = await prisma.order.findUnique({ where: { id } });
   if (!order) throw new NotFoundError("Pedido");
-  if (order.status !== "CONFIRMED") throw new AppError("El pedido no está disponible para recoger", 400);
+  if (!isPickupEligible(order.status)) {
+    throw new AppError("El pedido no está disponible para recoger", 400);
+  }
   if (order.deliveryId) throw new AppError("El pedido ya tiene un repartidor asignado", 400);
 
   const updated = await prisma.order.update({
@@ -66,7 +69,7 @@ export async function pickupOrder(req, res) {
     message: `Tu pedido #${id.slice(0, 8)} ha sido recogido por un repartidor.`,
   });
 
-  res.json({ order: updated });
+  res.json({ order: formatDeliveryOrder(updated) });
 }
 
 export async function updateDeliveryStatus(req, res) {
