@@ -1,11 +1,14 @@
 import prisma from "../config/db.js";
 import { AppError, NotFoundError } from "../utils/errors.js";
 import { createNotification } from "../services/notification.service.js";
+import {
+  applyDefaultOrderListFilter,
+  isUnpaidOrderStatus,
+} from "../utils/orderPayment.js";
 
 export async function listMyOrders(req, res) {
   const { page = 1, limit = 20, status } = req.query;
-  const where = { userId: req.user.id };
-  if (status) where.status = status;
+  const where = applyDefaultOrderListFilter({ userId: req.user.id }, status);
 
   const [data, total] = await Promise.all([
     prisma.order.findMany({
@@ -62,10 +65,11 @@ export async function checkout(req, res) {
   const shipping = 0;
   const total = subtotal + shipping;
 
+  // Borrador: no vaciar carrito ni exponer en listados hasta pago confirmado
   const order = await prisma.order.create({
     data: {
       userId: req.user.id,
-      status: "PENDING",
+      status: "PENDING_PAYMENT",
       subtotal,
       shipping,
       total,
@@ -78,25 +82,22 @@ export async function checkout(req, res) {
     include: { items: true },
   });
 
-  await prisma.notification.create({
-    data: {
-      userId: req.user.id,
-      type: "ORDER_CONFIRMED",
-      title: "Pedido recibido",
-      message: `Tu pedido #${order.id.slice(0, 8)} está pendiente de confirmación.`,
-    },
-  });
-
   res.status(201).json({ order });
 }
 
+/**
+ * Confirma un pedido tras pago exitoso (cliente o fallback sin webhook).
+ * Preferible: webhook Stripe payment_intent.succeeded / checkout.session.completed.
+ */
 export async function confirmAfterPayment(req, res) {
   const { id } = req.params;
 
   const order = await prisma.order.findUnique({ where: { id } });
   if (!order) throw new NotFoundError("Pedido");
   if (order.userId !== req.user.id) throw new AppError("No tienes permiso", 403);
-  if (order.status !== "PENDING") throw new AppError("El pedido no está pendiente", 400);
+  if (!isUnpaidOrderStatus(order.status)) {
+    throw new AppError("El pedido no está pendiente de pago", 400);
+  }
 
   const updated = await prisma.order.update({
     where: { id },
@@ -120,6 +121,7 @@ export async function updateStatus(req, res) {
   const { status } = req.body;
 
   const validTransitions = {
+    PENDING_PAYMENT: ["CONFIRMED", "CANCELLED"],
     PENDING: ["CONFIRMED", "CANCELLED"],
     CONFIRMED: ["CANCELLED"],
     DELIVERED: [],
@@ -156,6 +158,10 @@ export async function updateStatus(req, res) {
     });
   }
 
+  if (status === "CONFIRMED") {
+    await prisma.cartItem.deleteMany({ where: { userId: order.userId } });
+  }
+
   res.json({ order: updated });
 }
 
@@ -166,8 +172,8 @@ export async function cancel(req, res) {
   if (order.userId !== req.user.id) {
     throw new AppError("No puedes cancelar un pedido que no te pertenece", 403);
   }
-  if (order.status !== "PENDING") {
-    throw new AppError("Solo se pueden cancelar pedidos pendientes", 400);
+  if (!isUnpaidOrderStatus(order.status)) {
+    throw new AppError("Solo se pueden cancelar pedidos pendientes de pago", 400);
   }
 
   const updated = await prisma.order.update({
@@ -187,9 +193,8 @@ export async function cancel(req, res) {
 
 export async function listAll(req, res) {
   const { page = 1, limit = 20, status, userId, dateFrom, dateTo } = req.query;
-  const where = {};
+  const where = applyDefaultOrderListFilter({}, status);
 
-  if (status) where.status = status;
   if (userId) where.userId = userId;
   if (dateFrom || dateTo) {
     where.createdAt = {};

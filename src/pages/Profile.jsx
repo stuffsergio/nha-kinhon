@@ -329,6 +329,7 @@ export default function Profile() {
               const badgeColors = {
                 DELIVERED: "bg-[#ecfdf5] text-[#059669]",
                 CANCELLED: "bg-[#fef2f2] text-[#dc2626]",
+                PENDING_PAYMENT: "bg-[#fffbeb] text-[#d97706]",
                 PENDING: "bg-[#fffbeb] text-[#d97706]",
                 CONFIRMED: "bg-[#eff6ff] text-[#0066cc]",
                 PROCESSING: "bg-[#f5f3ff] text-[#7c3aed]",
@@ -339,6 +340,7 @@ export default function Profile() {
               const statusLabels = {
                 DELIVERED: "Entregado",
                 CANCELLED: "Cancelado",
+                PENDING_PAYMENT: "Pendiente de pago",
                 PENDING: "Pendiente",
                 CONFIRMED: "Confirmado",
                 PROCESSING: "En Preparación",

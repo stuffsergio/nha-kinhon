@@ -6,8 +6,11 @@ import { useDeliveryPeople, useAssignDelivery } from "../hooks/useAdminDelivery"
 import { useToast } from "../context/ToastContext";
 
 const statusLabels = {
+  PENDING_PAYMENT: "Pendiente de pago",
   PENDING: "Pendiente",
   CONFIRMED: "Confirmado",
+  PROCESSING: "En preparación",
+  SHIPPED: "Enviado",
   PICKED_UP: "Recogido",
   IN_TRANSIT: "En camino",
   DELIVERED: "Entregado",
@@ -15,8 +18,11 @@ const statusLabels = {
 };
 
 const statusColors = {
+  PENDING_PAYMENT: "bg-[#fffbeb] text-[#d97706]",
   PENDING: "bg-[#f5f5f7] text-[#7a7a7a]",
   CONFIRMED: "bg-[#0066cc]/10 text-[#0066cc]",
+  PROCESSING: "bg-[#f5f3ff] text-[#7c3aed]",
+  SHIPPED: "bg-[#ecfdf5] text-[#059669]",
   PICKED_UP: "bg-[#8b5cf6]/10 text-[#8b5cf6]",
   IN_TRANSIT: "bg-[#f59e0b]/10 text-[#f59e0b]",
   DELIVERED: "bg-[#059669]/10 text-[#059669]",

@@ -5,6 +5,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import { ArrowLeft, CreditCard } from "lucide-react";
 import { useToast } from "../context/ToastContext";
 import { useCart } from "../context/CartContext";
+import { api } from "../services/api";
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 const stripePromise = PUBLISHABLE_KEY ? loadStripe(PUBLISHABLE_KEY) : null;
@@ -96,10 +97,17 @@ export default function CheckoutPage() {
   }
 
   const handleSuccess = async () => {
+    // El carrito se vacía en backend vía webhook / confirm-payment;
+    // aquí solo limpiamos UI tras pago exitoso en el cliente.
     await clearCart();
   };
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
+    try {
+      await api.post(`/orders/${orderId}/cancel`);
+    } catch {
+      // Si ya estaba cancelado o el pago llegó entre medias, volver al carrito igual
+    }
     navigate("/carrito", { replace: true });
   };
 
