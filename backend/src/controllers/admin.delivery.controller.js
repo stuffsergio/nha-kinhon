@@ -31,7 +31,7 @@ export async function assignDelivery(req, res) {
 
   const order = await prisma.order.findUnique({ where: { id } });
   if (!order) throw new NotFoundError("Pedido");
-  if (!["CONFIRMED", "PENDING"].includes(order.status)) {
+  if (!["CONFIRMED", "PROCESSING", "SHIPPED"].includes(order.status)) {
     throw new AppError("El pedido no está disponible para asignar", 400);
   }
   if (order.deliveryId) {

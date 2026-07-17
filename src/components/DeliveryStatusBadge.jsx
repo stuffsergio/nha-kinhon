@@ -1,4 +1,5 @@
 const statusConfig = {
+  PENDING_PAYMENT: { label: "Pendiente de pago", color: "bg-[#fffbeb] text-[#d97706]" },
   PENDING:    { label: "Pendiente",      color: "bg-[#f5f5f7] text-[#7a7a7a]" },
   CONFIRMED:  { label: "Confirmado",     color: "bg-[#0066cc]/10 text-[#0066cc]" },
   PROCESSING: { label: "Preparando",     color: "bg-[#f59e0b]/10 text-[#f59e0b]" },

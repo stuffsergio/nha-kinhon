@@ -124,7 +124,7 @@ model CartItem {
 model Order {
   id               String       @id @default(cuid())
   userId           String
-  status           OrderStatus  @default(PENDING)
+  status           OrderStatus  @default(PENDING_PAYMENT)
   subtotal         Float
   shipping         Float        @default(0)
   total            Float
@@ -132,6 +132,7 @@ model Order {
   recipientName    String
   recipientPhone   String?
   recipientAddress String?
+  /// Stripe PaymentIntent id (Payment Sheet) o Checkout Session id (web)
   stripePaymentId  String?
   deliveryId       String?
   pickedUpAt       DateTime?
@@ -147,10 +148,14 @@ model Order {
   @@index([userId])
   @@index([status])
   @@index([deliveryId])
+  @@index([stripePaymentId])
   @@map("orders")
 }
 
 enum OrderStatus {
+  /// Borrador: creado en checkout, aún sin pago Stripe confirmado
+  PENDING_PAYMENT
+  /// Legacy: tratado como unpaid igual que PENDING_PAYMENT
   PENDING
   CONFIRMED
   PROCESSING

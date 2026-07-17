@@ -1,7 +1,7 @@
 import { Check } from "lucide-react";
 
 const fullOrder = [
-  { key: "PENDING", label: "Pendiente" },
+  { key: "PENDING_PAYMENT", label: "Pago" },
   { key: "CONFIRMED", label: "Confirmado" },
   { key: "PROCESSING", label: "Preparando" },
   { key: "SHIPPED", label: "Enviado" },
@@ -11,8 +11,15 @@ const fullOrder = [
 ];
 
 const orderIndex = {
-  PENDING: 0, CONFIRMED: 1, PROCESSING: 2, SHIPPED: 3,
-  PICKED_UP: 4, IN_TRANSIT: 5, DELIVERED: 6, CANCELLED: -1,
+  PENDING_PAYMENT: 0,
+  PENDING: 0,
+  CONFIRMED: 1,
+  PROCESSING: 2,
+  SHIPPED: 3,
+  PICKED_UP: 4,
+  IN_TRANSIT: 5,
+  DELIVERED: 6,
+  CANCELLED: -1,
 };
 
 export default function OrderTimeline({ status }) {
