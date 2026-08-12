@@ -6,6 +6,7 @@ vi.mock("../../../config/db.js", () => ({
       findUnique: vi.fn(),
       findMany: vi.fn(),
       update: vi.fn(),
+      count: vi.fn(),
     },
     deliveryProfile: {
       findUnique: vi.fn(),
@@ -92,6 +93,7 @@ describe("delivery controller", () => {
         total: 2500,
         createdAt: new Date("2026-07-15T10:00:00.000Z"),
       });
+      prisma.order.count.mockResolvedValue(0);
       prisma.order.update.mockResolvedValue({
         id: "order-1",
         status: "PICKED_UP",
@@ -124,6 +126,24 @@ describe("delivery controller", () => {
           contactName: "Maria",
         }),
       });
+    });
+
+    it("rejects pickup when delivery already has 2 active orders", async () => {
+      const req = { user: { id: "delivery-1" }, params: { id: "order-1" } };
+      const res = mockRes();
+
+      prisma.order.findUnique.mockResolvedValue({
+        id: "order-1",
+        status: "CONFIRMED",
+        deliveryId: null,
+        userId: "user-1",
+      });
+      prisma.order.count.mockResolvedValue(2);
+
+      await expect(deliveryController.pickupOrder(req, res)).rejects.toThrow(
+        /2 pedidos activos/,
+      );
+      expect(prisma.order.update).not.toHaveBeenCalled();
     });
 
     it("rejects pickup for pending orders", async () => {

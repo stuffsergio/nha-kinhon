@@ -3,6 +3,7 @@ import prisma from "../config/db.js";
 import env from "../config/env.js";
 import { AppError, NotFoundError, ForbiddenError } from "../utils/errors.js";
 import { isUnpaidOrderStatus } from "../utils/orderPayment.js";
+import { createNotification } from "../services/notification.service.js";
 
 let stripeClient = null;
 
@@ -33,13 +34,12 @@ async function markOrderPaid({ orderId, userId, stripePaymentId }) {
   const ownerId = userId || order.userId;
   await prisma.cartItem.deleteMany({ where: { userId: ownerId } });
 
-  await prisma.notification.create({
-    data: {
-      userId: order.userId,
-      type: "ORDER_CONFIRMED",
-      title: "Pago recibido",
-      message: `El pago del pedido #${orderId.slice(0, 8)} se ha confirmado.`,
-    },
+  await createNotification({
+    userId: order.userId,
+    type: "ORDER_CONFIRMED",
+    title: "Pago recibido",
+    message: `El pago del pedido #${orderId.slice(0, 8)} se ha confirmado.`,
+    orderId,
   });
 
   return updated;

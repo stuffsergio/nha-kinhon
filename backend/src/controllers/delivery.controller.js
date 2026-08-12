@@ -6,6 +6,29 @@ import {
   formatDeliveryOrder,
   isPickupEligible,
 } from "../utils/deliveryOrders.js";
+import {
+  ACTIVE_DELIVERY_STATUSES,
+  MAX_ACTIVE_DELIVERY_ORDERS,
+} from "../utils/deliveryCapacity.js";
+
+async function countActiveOrdersForDelivery(deliveryUserId) {
+  return prisma.order.count({
+    where: {
+      deliveryId: deliveryUserId,
+      status: { in: ACTIVE_DELIVERY_STATUSES },
+    },
+  });
+}
+
+async function assertDeliveryHasCapacity(deliveryUserId) {
+  const active = await countActiveOrdersForDelivery(deliveryUserId);
+  if (active >= MAX_ACTIVE_DELIVERY_ORDERS) {
+    throw new AppError(
+      `Solo puedes tener ${MAX_ACTIVE_DELIVERY_ORDERS} pedidos activos. Completa una entrega antes de recoger otro.`,
+      409,
+    );
+  }
+}
 
 export async function listAvailable(req, res) {
   const { serviceArea } = req.query;
@@ -47,6 +70,8 @@ export async function pickupOrder(req, res) {
   }
   if (order.deliveryId) throw new AppError("El pedido ya tiene un repartidor asignado", 400);
 
+  await assertDeliveryHasCapacity(req.user.id);
+
   const updated = await prisma.order.update({
     where: { id },
     data: {
@@ -67,6 +92,7 @@ export async function pickupOrder(req, res) {
     type: "ORDER_PICKED_UP",
     title: "Pedido recogido",
     message: `Tu pedido #${id.slice(0, 8)} ha sido recogido por un repartidor.`,
+    orderId: order.id,
   });
 
   res.json({ order: formatDeliveryOrder(updated) });
@@ -101,12 +127,23 @@ export async function updateDeliveryStatus(req, res) {
     include: { items: true },
   });
 
+  if (status === "IN_TRANSIT") {
+    await createNotification({
+      userId: order.userId,
+      type: "ORDER_IN_TRANSIT",
+      title: "Pedido en camino",
+      message: `Tu pedido #${id.slice(0, 8)} está en camino hacia ti.`,
+      orderId: order.id,
+    });
+  }
+
   if (status === "DELIVERED") {
     await createNotification({
       userId: order.userId,
       type: "ORDER_DELIVERED",
       title: "Pedido entregado",
       message: `Tu pedido #${id.slice(0, 8)} ha sido entregado.`,
+      orderId: order.id,
     });
   }
 

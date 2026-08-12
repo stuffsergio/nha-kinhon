@@ -52,6 +52,10 @@ vi.mock("../../../config/db.js", () => ({
   },
 }));
 
+vi.mock("../../../services/notification.service.js", () => ({
+  createNotification: vi.fn(),
+}));
+
 import prisma from "../../../config/db.js";
 import * as stripeController from "../../../controllers/stripe.controller.js";
 import { AppError } from "../../../utils/errors.js";

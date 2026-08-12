@@ -112,6 +112,7 @@ export async function confirmAfterPayment(req, res) {
     type: "ORDER_CONFIRMED",
     title: "Pago confirmado",
     message: `Tu pedido #${id.slice(0, 8)} está confirmado y listo para reparto.`,
+    orderId: order.id,
   });
 
   res.json({ order: updated });
