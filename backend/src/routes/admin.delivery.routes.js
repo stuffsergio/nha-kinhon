@@ -7,5 +7,6 @@ const router = Router();
 
 router.get("/delivery-people", authenticate, requireAdmin, adminDeliveryController.listDeliveryPeople);
 router.post("/orders/:id/assign-delivery", authenticate, requireAdmin, adminDeliveryController.assignDelivery);
+router.get("/orders/:id/tracking", authenticate, requireAdmin, adminDeliveryController.getOrderTracking);
 
 export default router;

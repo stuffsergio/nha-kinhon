@@ -1,13 +1,25 @@
 import prisma from "../config/db.js";
 
-export async function createNotification({ userId, type, title, message }) {
+export async function createNotification({
+  userId,
+  type,
+  title,
+  message,
+  orderId,
+}) {
   const notification = await prisma.notification.create({
     data: { userId, type, title, message },
   });
 
   console.log(`[NOTIFICATION] User: ${userId} | ${title}: ${message}`);
 
-  await sendPushToUser(userId, title, message, { type, notificationId: notification.id });
+  const data = {
+    type,
+    notificationId: notification.id,
+    ...(orderId ? { orderId, url: `/pedido/${orderId}` } : { url: "/notificaciones" }),
+  };
+
+  await sendPushToUser(userId, title, message, data);
 
   return notification;
 }
