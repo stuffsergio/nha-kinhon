@@ -162,4 +162,66 @@ describe("delivery controller", () => {
       );
     });
   });
+
+  describe("updateLocation", () => {
+    it("rejects non-numeric coordinates with 400", async () => {
+      const req = { user: { id: "delivery-1" }, body: { lat: "x", lng: -15.59 } };
+      const res = mockRes();
+
+      await expect(deliveryController.updateLocation(req, res)).rejects.toMatchObject({
+        statusCode: 400,
+        message: "Se requieren lat y lng numéricos",
+      });
+      expect(prisma.deliveryProfile.update).not.toHaveBeenCalled();
+    });
+
+    it("rejects out-of-range coordinates with 400", async () => {
+      const req = { user: { id: "delivery-1" }, body: { lat: 11.86, lng: -200 } };
+      const res = mockRes();
+
+      await expect(deliveryController.updateLocation(req, res)).rejects.toMatchObject({
+        statusCode: 400,
+        message: "Coordenadas fuera de rango",
+      });
+      expect(prisma.deliveryProfile.update).not.toHaveBeenCalled();
+    });
+
+    it("updates Prisma currentLocation with ISO updatedAt", async () => {
+      const req = { user: { id: "delivery-1" }, body: { lat: 11.86, lng: -15.59 } };
+      const res = mockRes();
+
+      prisma.deliveryProfile.findUnique.mockResolvedValue({ id: "profile-1", userId: "delivery-1" });
+      prisma.deliveryProfile.update.mockResolvedValue({});
+
+      await deliveryController.updateLocation(req, res);
+
+      expect(prisma.deliveryProfile.update).toHaveBeenCalledWith({
+        where: { userId: "delivery-1" },
+        data: {
+          currentLocation: {
+            lat: 11.86,
+            lng: -15.59,
+            updatedAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
+          },
+        },
+      });
+      expect(res.json).toHaveBeenCalledWith({
+        message: "Ubicación actualizada",
+        location: { lat: 11.86, lng: -15.59 },
+      });
+    });
+
+    it("returns 404 when the delivery profile does not exist", async () => {
+      const req = { user: { id: "delivery-1" }, body: { lat: 11.86, lng: -15.59 } };
+      const res = mockRes();
+
+      prisma.deliveryProfile.findUnique.mockResolvedValue(null);
+
+      await expect(deliveryController.updateLocation(req, res)).rejects.toMatchObject({
+        statusCode: 404,
+        message: "Perfil de repartidor no encontrado",
+      });
+      expect(prisma.deliveryProfile.update).not.toHaveBeenCalled();
+    });
+  });
 });

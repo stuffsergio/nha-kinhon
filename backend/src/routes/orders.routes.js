@@ -8,6 +8,7 @@ const router = Router();
 router.get("/", authenticate, ordersController.listMyOrders);
 router.get("/admin/all", authenticate, requireAdmin, ordersController.listAll);
 router.post("/checkout", authenticate, ordersController.checkout);
+router.get("/:id/tracking", authenticate, ordersController.getTracking);
 router.get("/:id", authenticate, ordersController.getById);
 router.post("/:id/confirm-payment", authenticate, ordersController.confirmAfterPayment);
 router.put("/:id/status", authenticate, requireAdmin, ordersController.updateStatus);

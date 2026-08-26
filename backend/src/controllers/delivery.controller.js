@@ -231,11 +231,34 @@ export async function getStats(req, res) {
 
 export async function updateLocation(req, res) {
   const { lat, lng } = req.body;
+  const latitude = Number(lat);
+  const longitude = Number(lng);
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    throw new AppError("Se requieren lat y lng numéricos", 400);
+  }
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+    throw new AppError("Coordenadas fuera de rango", 400);
+  }
+
+  const profile = await prisma.deliveryProfile.findUnique({
+    where: { userId: req.user.id },
+  });
+  if (!profile) throw new NotFoundError("Perfil de repartidor");
 
   await prisma.deliveryProfile.update({
     where: { userId: req.user.id },
-    data: { currentLocation: { lat, lng } },
+    data: {
+      currentLocation: {
+        lat: latitude,
+        lng: longitude,
+        updatedAt: new Date().toISOString(),
+      },
+    },
   });
 
-  res.json({ message: "Ubicación actualizada" });
+  res.json({
+    message: "Ubicación actualizada",
+    location: { lat: latitude, lng: longitude },
+  });
 }

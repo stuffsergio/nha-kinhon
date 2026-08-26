@@ -5,6 +5,7 @@ import {
   ACTIVE_DELIVERY_STATUSES,
   MAX_ACTIVE_DELIVERY_ORDERS,
 } from "../utils/deliveryCapacity.js";
+import { getOrderTrackingPayload, toPublicTracking } from "../utils/orderTracking.js";
 
 export async function listDeliveryPeople(req, res) {
   const profiles = await prisma.deliveryProfile.findMany({
@@ -88,4 +89,11 @@ export async function assignDelivery(req, res) {
   });
 
   res.json({ order: updated });
+}
+
+/** Admin: seguimiento en mapa siempre disponible para cualquier pedido. */
+export async function getOrderTracking(req, res) {
+  const tracking = await getOrderTrackingPayload(req.params.id);
+  if (!tracking) throw new NotFoundError("Pedido");
+  res.json({ tracking: toPublicTracking(tracking) });
 }

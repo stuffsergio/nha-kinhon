@@ -5,6 +5,7 @@ import {
   applyDefaultOrderListFilter,
   isUnpaidOrderStatus,
 } from "../utils/orderPayment.js";
+import { getOrderTrackingPayload, toPublicTracking } from "../utils/orderTracking.js";
 
 export async function listMyOrders(req, res) {
   const { page = 1, limit = 20, status } = req.query;
@@ -36,6 +37,22 @@ export async function getById(req, res) {
   }
 
   res.json({ order });
+}
+
+/** Mapa de seguimiento: el dueño del pedido (o admin) puede consultar la ubicación del repartidor. */
+export async function getTracking(req, res) {
+  const tracking = await getOrderTrackingPayload(req.params.id);
+  if (!tracking) throw new NotFoundError("Pedido");
+
+  if (tracking.userId !== req.user.id && req.user.role !== "ADMIN") {
+    throw new AppError("No tienes permiso para ver el seguimiento", 403);
+  }
+
+  if (req.user.role !== "ADMIN" && isUnpaidOrderStatus(tracking.status)) {
+    throw new AppError("El seguimiento estará disponible tras confirmar el pago", 400);
+  }
+
+  res.json({ tracking: toPublicTracking(tracking) });
 }
 
 export async function checkout(req, res) {

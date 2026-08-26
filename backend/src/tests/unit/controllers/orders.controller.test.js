@@ -23,8 +23,17 @@ vi.mock("../../../services/notification.service.js", () => ({
   createNotification: vi.fn(),
 }));
 
+vi.mock("../../../utils/orderTracking.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    getOrderTrackingPayload: vi.fn(),
+  };
+});
+
 import prisma from "../../../config/db.js";
 import { createNotification } from "../../../services/notification.service.js";
+import { getOrderTrackingPayload } from "../../../utils/orderTracking.js";
 import * as ordersController from "../../../controllers/orders.controller.js";
 import { AppError } from "../../../utils/errors.js";
 
@@ -183,6 +192,90 @@ describe("orders controller payment flow", () => {
           },
         }),
       );
+    });
+  });
+
+  describe("getTracking", () => {
+    const liveTracking = {
+      orderId: "order-1",
+      userId: "user-1",
+      status: "IN_TRANSIT",
+      deliveryId: "delivery-1",
+      deliveryName: "Joao",
+      deliveryPhone: "+245 111",
+      destination: { name: "Ana", address: "Bissau", lat: null, lng: null },
+      courierLocation: { lat: 11.86, lng: -15.59, updatedAt: "2026-08-26T10:00:00.000Z" },
+      isLive: true,
+    };
+
+    it("throws 404 when the order does not exist", async () => {
+      const req = { user: { id: "user-1", role: "USER" }, params: { id: "missing" } };
+      const res = mockRes();
+      getOrderTrackingPayload.mockResolvedValue(null);
+
+      await expect(ordersController.getTracking(req, res)).rejects.toMatchObject({
+        statusCode: 404,
+      });
+    });
+
+    it("returns tracking without userId for the order owner", async () => {
+      const req = { user: { id: "user-1", role: "USER" }, params: { id: "order-1" } };
+      const res = mockRes();
+      getOrderTrackingPayload.mockResolvedValue(liveTracking);
+
+      await ordersController.getTracking(req, res);
+
+      expect(res.json).toHaveBeenCalledWith({
+        tracking: expect.objectContaining({
+          orderId: "order-1",
+          status: "IN_TRANSIT",
+          isLive: true,
+        }),
+      });
+      expect(res.json.mock.calls[0][0].tracking).not.toHaveProperty("userId");
+    });
+
+    it("forbids another user from viewing tracking", async () => {
+      const req = { user: { id: "user-2", role: "USER" }, params: { id: "order-1" } };
+      const res = mockRes();
+      getOrderTrackingPayload.mockResolvedValue(liveTracking);
+
+      await expect(ordersController.getTracking(req, res)).rejects.toMatchObject({
+        statusCode: 403,
+      });
+    });
+
+    it("rejects unpaid orders for the owner", async () => {
+      const req = { user: { id: "user-1", role: "USER" }, params: { id: "order-1" } };
+      const res = mockRes();
+      getOrderTrackingPayload.mockResolvedValue({
+        ...liveTracking,
+        status: "PENDING_PAYMENT",
+        isLive: false,
+        courierLocation: null,
+      });
+
+      await expect(ordersController.getTracking(req, res)).rejects.toMatchObject({
+        statusCode: 400,
+        message: "El seguimiento estará disponible tras confirmar el pago",
+      });
+    });
+
+    it("allows admin to view tracking of any order including unpaid", async () => {
+      const req = { user: { id: "admin-1", role: "ADMIN" }, params: { id: "order-1" } };
+      const res = mockRes();
+      getOrderTrackingPayload.mockResolvedValue({
+        ...liveTracking,
+        status: "PENDING",
+        isLive: false,
+      });
+
+      await ordersController.getTracking(req, res);
+
+      expect(res.json).toHaveBeenCalledWith({
+        tracking: expect.objectContaining({ orderId: "order-1", status: "PENDING" }),
+      });
+      expect(res.json.mock.calls[0][0].tracking).not.toHaveProperty("userId");
     });
   });
 });
