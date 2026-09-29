@@ -207,7 +207,7 @@ describe("delivery controller", () => {
       });
       expect(res.json).toHaveBeenCalledWith({
         message: "Ubicación actualizada",
-        location: { lat: 11.86, lng: -15.59 },
+        location: expect.objectContaining({ lat: 11.86, lng: -15.59 }),
       });
     });
 

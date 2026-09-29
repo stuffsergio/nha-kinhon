@@ -13,6 +13,7 @@ import {
   Plus,
 } from "lucide-react";
 import OrderTimeline from "../components/OrderTimeline";
+import OrderTrackingPanel from "../components/OrderTrackingPanel";
 import { useAuth } from "../context/AuthContext";
 import { useOrders } from "../hooks/useOrders";
 import { useFavorites, useRemoveFavorite } from "../hooks/useFavorites";
@@ -373,6 +374,8 @@ export default function Profile() {
                   <div className="bg-[#f5f5f7] rounded-[12px] p-4">
                     <OrderTimeline status={order.status} />
                   </div>
+
+                  <OrderTrackingPanel orderId={order.id} orderStatus={order.status} />
 
                   {order.delivery && (
                     <div className="flex items-center gap-2 text-[15px] text-[#1d1d1f]">

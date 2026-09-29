@@ -6,6 +6,7 @@ import { api } from "../services/api";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
 import ButtonPrimary from "./ButtonPrimary";
+import RecipientMapPicker from "./RecipientMapPicker";
 
 const STRIPE_ENABLED = !!import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 
@@ -21,6 +22,8 @@ export default function CartSummary({ cartTotal }) {
   const [recipientName, setRecipientName] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
   const [recipientAddress, setRecipientAddress] = useState("");
+  const [recipientLat, setRecipientLat] = useState(null);
+  const [recipientLng, setRecipientLng] = useState(null);
   const [notes, setNotes] = useState("");
 
   const handleCheckout = () => {
@@ -34,13 +37,18 @@ export default function CartSummary({ cartTotal }) {
     setShowConfirm(false);
     setCheckingOut(true);
     try {
-      const data = await checkout.mutateAsync({
+      const payload = {
         recipientName: recipientName.trim(),
         recipientPhone: recipientPhone.trim(),
         recipientAddress: recipientAddress.trim(),
         notes: notes.trim(),
         paymentMethodId: null,
-      });
+      };
+      if (recipientLat != null && recipientLng != null) {
+        payload.recipientLat = recipientLat;
+        payload.recipientLng = recipientLng;
+      }
+      const data = await checkout.mutateAsync(payload);
       const orderId = data.order?.id || data.id;
 
       if (STRIPE_ENABLED) {
@@ -109,6 +117,16 @@ export default function CartSummary({ cartTotal }) {
             autoComplete="street-address"
             className={inputClass}
           />
+          <div className="mt-3">
+            <RecipientMapPicker
+              lat={recipientLat}
+              lng={recipientLng}
+              onChange={({ lat, lng }) => {
+                setRecipientLat(lat);
+                setRecipientLng(lng);
+              }}
+            />
+          </div>
         </div>
         <div>
           <label htmlFor="recipient-notes" className="block font-apple-body text-[14px] text-[#7a7a7a] mb-1">Notas (opcional)</label>

@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useAdminOrders, useUpdateOrderStatus } from "../hooks/useAdminOrders";
 import { useDeliveryPeople, useAssignDelivery } from "../hooks/useAdminDelivery";
 import { useToast } from "../context/ToastContext";
+import AdminOrderTrackingPanel from "../components/AdminOrderTrackingPanel";
 
 const statusLabels = {
   PENDING_PAYMENT: "Pendiente de pago",
@@ -202,8 +203,10 @@ export default function Admin() {
                   </div>
                 </div>
 
+                <AdminOrderTrackingPanel orderId={order.id} orderStatus={order.status} />
+
                 {!["DELIVERED", "CANCELLED"].includes(order.status) && (
-                  <div className="border-t border-[#e0e0e0] pt-4">
+                  <div className="border-t border-[#e0e0e0] pt-4 mt-4">
                     <button
                       onClick={() => {
                         updateStatus.mutate({ orderId: order.id, status: "CANCELLED" }, {

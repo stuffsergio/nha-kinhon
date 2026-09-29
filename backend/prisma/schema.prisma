@@ -132,6 +132,8 @@ model Order {
   recipientName    String
   recipientPhone   String?
   recipientAddress String?
+  recipientLat     Float?
+  recipientLng     Float?
   /// Stripe PaymentIntent id (Payment Sheet) o Checkout Session id (web)
   stripePaymentId  String?
   deliveryId       String?
