@@ -2,10 +2,42 @@ import prisma from "../config/db.js";
 
 const LIVE_TRACKING_STATUSES = ["PICKED_UP", "IN_TRANSIT"];
 
+/** Courier GPS older than this is not considered live. */
+export const LIVE_LOCATION_MAX_AGE_MS = 2 * 60 * 1000;
+
 function isIsoDateString(value) {
   if (typeof value !== "string" || !value) return false;
   if (!Number.isFinite(Date.parse(value))) return false;
   return /^\d{4}-\d{2}-\d{2}T/.test(value);
+}
+
+function parseOptionalMetric(value, { min = null, max = null } = {}) {
+  if (value === undefined || value === null || value === "") return null;
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  if (min != null && n < min) return null;
+  if (max != null && n > max) return null;
+  return n;
+}
+
+export function parseDestinationCoordinates(lat, lng) {
+  if (lat == null || lng == null) return { lat: null, lng: null };
+  const parsedLat = Number(lat);
+  const parsedLng = Number(lng);
+  if (!Number.isFinite(parsedLat) || !Number.isFinite(parsedLng)) {
+    return { lat: null, lng: null };
+  }
+  if (parsedLat < -90 || parsedLat > 90 || parsedLng < -180 || parsedLng > 180) {
+    return { lat: null, lng: null };
+  }
+  return { lat: parsedLat, lng: parsedLng };
+}
+
+export function isCourierLocationFresh(location, nowMs = Date.now()) {
+  if (!location?.updatedAt) return false;
+  const updatedMs = Date.parse(location.updatedAt);
+  if (!Number.isFinite(updatedMs)) return false;
+  return nowMs - updatedMs <= LIVE_LOCATION_MAX_AGE_MS;
 }
 
 export function parseDeliveryLocation(raw) {
@@ -14,18 +46,29 @@ export function parseDeliveryLocation(raw) {
   const lng = Number(raw.lng);
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
-  return {
+
+  const heading = parseOptionalMetric(raw.heading, { min: 0, max: 360 });
+  const accuracy = parseOptionalMetric(raw.accuracy, { min: 0 });
+  const speed = parseOptionalMetric(raw.speed, { min: 0 });
+
+  const location = {
     lat,
     lng,
     updatedAt: isIsoDateString(raw.updatedAt) ? raw.updatedAt : null,
   };
+  if (heading != null) location.heading = heading;
+  if (accuracy != null) location.accuracy = accuracy;
+  if (speed != null) location.speed = speed;
+  return location;
 }
 
 /**
  * Shared tracking payload for customer + admin map UIs.
  * Returns null if the order does not exist.
  */
-export async function getOrderTrackingPayload(orderId) {
+export async function getOrderTrackingPayload(orderId, options = {}) {
+  const nowMs = options.nowMs ?? Date.now();
+
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     select: {
@@ -35,6 +78,8 @@ export async function getOrderTrackingPayload(orderId) {
       deliveryId: true,
       recipientName: true,
       recipientAddress: true,
+      recipientLat: true,
+      recipientLng: true,
       delivery: {
         select: {
           id: true,
@@ -53,6 +98,15 @@ export async function getOrderTrackingPayload(orderId) {
     order.delivery?.deliveryProfile?.currentLocation,
   );
 
+  const destinationCoords = parseDestinationCoordinates(
+    order.recipientLat,
+    order.recipientLng,
+  );
+
+  const inLiveStatus = LIVE_TRACKING_STATUSES.includes(order.status);
+  const locationFresh =
+    courierLocation != null && isCourierLocationFresh(courierLocation, nowMs);
+
   return {
     orderId: order.id,
     userId: order.userId,
@@ -63,11 +117,12 @@ export async function getOrderTrackingPayload(orderId) {
     destination: {
       name: order.recipientName || null,
       address: order.recipientAddress || null,
-      lat: null,
-      lng: null,
+      lat: destinationCoords.lat,
+      lng: destinationCoords.lng,
     },
     courierLocation,
-    isLive: LIVE_TRACKING_STATUSES.includes(order.status) && courierLocation != null,
+    isLive: inLiveStatus && locationFresh,
+    courierLocationStale: inLiveStatus && courierLocation != null && !locationFresh,
   };
 }
 

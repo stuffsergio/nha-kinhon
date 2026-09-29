@@ -177,6 +177,16 @@ async function seed() {
         recipientAddress: "Bissau, Bairro de Ajuda",
         items: [{ product: products[1] || products[0], quantity: 1 }],
       },
+      {
+        status: "IN_TRANSIT",
+        deliveryId: deliveryUser.id,
+        recipientName: "Fátima Djau",
+        recipientPhone: "+245 955 777 888",
+        recipientAddress: "Bissau, Bandim",
+        recipientLat: 11.872,
+        recipientLng: -15.592,
+        items: [{ product: products[0], quantity: 1 }],
+      },
     ];
 
     for (const sample of sampleOrders) {
@@ -188,9 +198,12 @@ async function seed() {
           subtotal,
           shipping: 0,
           total: subtotal,
+          deliveryId: sample.deliveryId ?? undefined,
           recipientName: sample.recipientName,
           recipientPhone: sample.recipientPhone,
           recipientAddress: sample.recipientAddress,
+          recipientLat: sample.recipientLat ?? undefined,
+          recipientLng: sample.recipientLng ?? undefined,
           items: {
             create: sample.items.map((item) => ({
               productId: item.product.id,
@@ -202,6 +215,18 @@ async function seed() {
         },
       });
     }
+    await prisma.deliveryProfile.update({
+      where: { userId: deliveryUser.id },
+      data: {
+        currentLocation: {
+          lat: 11.858,
+          lng: -15.605,
+          updatedAt: new Date().toISOString(),
+          heading: 45,
+          speed: 6,
+        },
+      },
+    });
     console.log(`  ✅ ${sampleOrders.length} pedidos disponibles para reparto`);
   }
 

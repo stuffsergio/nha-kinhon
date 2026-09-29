@@ -230,7 +230,7 @@ export async function getStats(req, res) {
 }
 
 export async function updateLocation(req, res) {
-  const { lat, lng } = req.body;
+  const { lat, lng, heading, accuracy, speed } = req.body;
   const latitude = Number(lat);
   const longitude = Number(lng);
 
@@ -246,19 +246,31 @@ export async function updateLocation(req, res) {
   });
   if (!profile) throw new NotFoundError("Perfil de repartidor");
 
+  const currentLocation = {
+    lat: latitude,
+    lng: longitude,
+    updatedAt: new Date().toISOString(),
+  };
+  if (heading !== undefined && heading !== null && heading !== "") {
+    const h = Number(heading);
+    if (Number.isFinite(h) && h >= 0 && h <= 360) currentLocation.heading = h;
+  }
+  if (accuracy !== undefined && accuracy !== null && accuracy !== "") {
+    const a = Number(accuracy);
+    if (Number.isFinite(a) && a >= 0) currentLocation.accuracy = a;
+  }
+  if (speed !== undefined && speed !== null && speed !== "") {
+    const s = Number(speed);
+    if (Number.isFinite(s) && s >= 0) currentLocation.speed = s;
+  }
+
   await prisma.deliveryProfile.update({
     where: { userId: req.user.id },
-    data: {
-      currentLocation: {
-        lat: latitude,
-        lng: longitude,
-        updatedAt: new Date().toISOString(),
-      },
-    },
+    data: { currentLocation },
   });
 
   res.json({
     message: "Ubicación actualizada",
-    location: { lat: latitude, lng: longitude },
+    location: currentLocation,
   });
 }

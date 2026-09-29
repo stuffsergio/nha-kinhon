@@ -6,6 +6,7 @@ import {
   isUnpaidOrderStatus,
 } from "../utils/orderPayment.js";
 import { getOrderTrackingPayload, toPublicTracking } from "../utils/orderTracking.js";
+import { parseRecipientCoordinatesFromBody } from "../utils/recipientCoordinates.js";
 
 export async function listMyOrders(req, res) {
   const { page = 1, limit = 20, status } = req.query;
@@ -57,6 +58,7 @@ export async function getTracking(req, res) {
 
 export async function checkout(req, res) {
   const { recipientName, recipientPhone, recipientAddress, notes } = req.body;
+  const recipientCoords = parseRecipientCoordinatesFromBody(req.body);
 
   const cartItems = await prisma.cartItem.findMany({
     where: { userId: req.user.id },
@@ -83,19 +85,25 @@ export async function checkout(req, res) {
   const total = subtotal + shipping;
 
   // Borrador: no vaciar carrito ni exponer en listados hasta pago confirmado
+  const orderData = {
+    userId: req.user.id,
+    status: "PENDING_PAYMENT",
+    subtotal,
+    shipping,
+    total,
+    notes,
+    recipientName,
+    recipientPhone,
+    recipientAddress,
+    items: { createMany: { data: orderItemsData } },
+  };
+  if (recipientCoords.recipientLat != null) {
+    orderData.recipientLat = recipientCoords.recipientLat;
+    orderData.recipientLng = recipientCoords.recipientLng;
+  }
+
   const order = await prisma.order.create({
-    data: {
-      userId: req.user.id,
-      status: "PENDING_PAYMENT",
-      subtotal,
-      shipping,
-      total,
-      notes,
-      recipientName,
-      recipientPhone,
-      recipientAddress,
-      items: { createMany: { data: orderItemsData } },
-    },
+    data: orderData,
     include: { items: true },
   });
 

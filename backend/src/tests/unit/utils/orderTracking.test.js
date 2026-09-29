@@ -11,6 +11,9 @@ vi.mock("../../../config/db.js", () => ({
 import prisma from "../../../config/db.js";
 import {
   parseDeliveryLocation,
+  parseDestinationCoordinates,
+  isCourierLocationFresh,
+  LIVE_LOCATION_MAX_AGE_MS,
   getOrderTrackingPayload,
   toPublicTracking,
 } from "../../../utils/orderTracking.js";
@@ -27,6 +30,41 @@ describe("parseDeliveryLocation", () => {
       lat: 14.7,
       lng: -17.4,
       updatedAt: "2026-08-26T10:00:00.000Z",
+    });
+  });
+
+  it("includes heading, accuracy and speed when valid", () => {
+    expect(
+      parseDeliveryLocation({
+        lat: 11.86,
+        lng: -15.59,
+        updatedAt: "2026-08-26T10:00:00.000Z",
+        heading: 90,
+        accuracy: 12.5,
+        speed: 8,
+      }),
+    ).toEqual({
+      lat: 11.86,
+      lng: -15.59,
+      updatedAt: "2026-08-26T10:00:00.000Z",
+      heading: 90,
+      accuracy: 12.5,
+      speed: 8,
+    });
+  });
+
+  it("omits invalid optional motion fields", () => {
+    expect(
+      parseDeliveryLocation({
+        lat: 11.86,
+        lng: -15.59,
+        heading: 400,
+        accuracy: -1,
+      }),
+    ).toEqual({
+      lat: 11.86,
+      lng: -15.59,
+      updatedAt: null,
     });
   });
 
@@ -72,6 +110,35 @@ describe("parseDeliveryLocation", () => {
   });
 });
 
+describe("parseDestinationCoordinates", () => {
+  it("parses stored order coordinates", () => {
+    expect(parseDestinationCoordinates(11.863, -15.598)).toEqual({
+      lat: 11.863,
+      lng: -15.598,
+    });
+  });
+
+  it("returns null pair when missing", () => {
+    expect(parseDestinationCoordinates(null, null)).toEqual({ lat: null, lng: null });
+  });
+});
+
+describe("isCourierLocationFresh", () => {
+  it("is fresh within the max age window", () => {
+    const now = Date.parse("2026-09-29T12:00:00.000Z");
+    const location = { updatedAt: "2026-09-29T11:59:00.000Z" };
+    expect(isCourierLocationFresh(location, now)).toBe(true);
+  });
+
+  it("is stale when older than max age", () => {
+    const now = Date.parse("2026-09-29T12:00:00.000Z");
+    const location = {
+      updatedAt: new Date(now - LIVE_LOCATION_MAX_AGE_MS - 1).toISOString(),
+    };
+    expect(isCourierLocationFresh(location, now)).toBe(false);
+  });
+});
+
 describe("toPublicTracking", () => {
   it("omits userId from the payload", () => {
     const publicTracking = toPublicTracking({
@@ -89,6 +156,9 @@ describe("getOrderTrackingPayload", () => {
     vi.clearAllMocks();
   });
 
+  const nowMs = Date.parse("2026-09-29T12:00:00.000Z");
+  const freshUpdatedAt = new Date(nowMs - 30_000).toISOString();
+
   const baseOrder = {
     id: "order-1",
     userId: "user-1",
@@ -96,6 +166,8 @@ describe("getOrderTrackingPayload", () => {
     deliveryId: "delivery-1",
     recipientName: "Ana",
     recipientAddress: "Bissau Centro",
+    recipientLat: 11.865,
+    recipientLng: -15.597,
     delivery: {
       id: "delivery-1",
       name: "Joao",
@@ -104,7 +176,7 @@ describe("getOrderTrackingPayload", () => {
         currentLocation: {
           lat: 11.86,
           lng: -15.59,
-          updatedAt: "2026-08-26T10:00:00.000Z",
+          updatedAt: freshUpdatedAt,
         },
       },
     },
@@ -115,18 +187,44 @@ describe("getOrderTrackingPayload", () => {
     expect(await getOrderTrackingPayload("missing")).toBeNull();
   });
 
-  it("marks isLive when status is in transit and GPS exists", async () => {
+  it("marks isLive when status is in transit and GPS is fresh", async () => {
     prisma.order.findUnique.mockResolvedValue(baseOrder);
-    const payload = await getOrderTrackingPayload("order-1");
+    const payload = await getOrderTrackingPayload("order-1", { nowMs });
     expect(payload).toMatchObject({
       orderId: "order-1",
       userId: "user-1",
       deliveryName: "Joao",
       deliveryPhone: "+245 111",
-      destination: { name: "Ana", address: "Bissau Centro", lat: null, lng: null },
-      courierLocation: { lat: 11.86, lng: -15.59, updatedAt: "2026-08-26T10:00:00.000Z" },
+      destination: {
+        name: "Ana",
+        address: "Bissau Centro",
+        lat: 11.865,
+        lng: -15.597,
+      },
+      courierLocation: { lat: 11.86, lng: -15.59, updatedAt: freshUpdatedAt },
       isLive: true,
+      courierLocationStale: false,
     });
+  });
+
+  it("is not live when GPS timestamp is stale", async () => {
+    prisma.order.findUnique.mockResolvedValue({
+      ...baseOrder,
+      delivery: {
+        ...baseOrder.delivery,
+        deliveryProfile: {
+          phone: "+245 111",
+          currentLocation: {
+            lat: 11.86,
+            lng: -15.59,
+            updatedAt: "2026-08-26T10:00:00.000Z",
+          },
+        },
+      },
+    });
+    const payload = await getOrderTrackingPayload("order-1", { nowMs });
+    expect(payload.isLive).toBe(false);
+    expect(payload.courierLocationStale).toBe(true);
   });
 
   it("is not live when GPS is missing even if picked up", async () => {
@@ -138,9 +236,10 @@ describe("getOrderTrackingPayload", () => {
         deliveryProfile: { phone: "+245 111", currentLocation: null },
       },
     });
-    const payload = await getOrderTrackingPayload("order-1");
+    const payload = await getOrderTrackingPayload("order-1", { nowMs });
     expect(payload.courierLocation).toBeNull();
     expect(payload.isLive).toBe(false);
+    expect(payload.courierLocationStale).toBe(false);
   });
 
   it("does not crash when the courier has no deliveryProfile", async () => {
@@ -148,7 +247,7 @@ describe("getOrderTrackingPayload", () => {
       ...baseOrder,
       delivery: { id: "delivery-1", name: "Joao", deliveryProfile: null },
     });
-    const payload = await getOrderTrackingPayload("order-1");
+    const payload = await getOrderTrackingPayload("order-1", { nowMs });
     expect(payload.courierLocation).toBeNull();
     expect(payload.deliveryPhone).toBeNull();
     expect(payload.isLive).toBe(false);
@@ -159,8 +258,9 @@ describe("getOrderTrackingPayload", () => {
       ...baseOrder,
       status: "CONFIRMED",
     });
-    const payload = await getOrderTrackingPayload("order-1");
+    const payload = await getOrderTrackingPayload("order-1", { nowMs });
     expect(payload.courierLocation).not.toBeNull();
     expect(payload.isLive).toBe(false);
+    expect(payload.courierLocationStale).toBe(false);
   });
 });
