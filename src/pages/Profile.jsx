@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import OrderTimeline from "../components/OrderTimeline";
 import OrderTrackingPanel from "../components/OrderTrackingPanel";
+import OrderReceiptShare from "../components/OrderReceiptShare";
+import DeliveryProofGallery from "../components/DeliveryProofGallery";
 import { useAuth } from "../context/AuthContext";
 import { useOrders } from "../hooks/useOrders";
 import { useFavorites, useRemoveFavorite } from "../hooks/useFavorites";
@@ -106,6 +108,25 @@ export default function Profile() {
     { id: "contacts", label: "Contactos", icon: Users },
     { id: "settings", label: "Configuración", icon: Settings },
   ];
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab && tabs.some((t) => t.id === tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const orderId = searchParams.get("orderId");
+    if (!orderId || activeTab !== "orders" || ordersLoading) return;
+    const el = document.getElementById(`order-card-${orderId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      el.classList.add("ring-2", "ring-[#0066cc]", "ring-offset-2");
+      const t = setTimeout(() => el.classList.remove("ring-2", "ring-[#0066cc]", "ring-offset-2"), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [searchParams, activeTab, ordersLoading, orders]);
 
   if (!user) {
     return (
@@ -352,7 +373,8 @@ export default function Profile() {
               return (
                 <div
                   key={order.id}
-                  className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow space-y-4"
+                  id={`order-card-${order.id}`}
+                  className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow space-y-4 scroll-mt-24"
                 >
                   <div className="flex justify-between items-start">
                     <div>
@@ -377,6 +399,8 @@ export default function Profile() {
 
                   <OrderTrackingPanel orderId={order.id} orderStatus={order.status} />
 
+                  <OrderReceiptShare orderId={order.id} />
+
                   {order.delivery && (
                     <div className="flex items-center gap-2 text-[15px] text-[#1d1d1f]">
                       <Truck size={16} className="text-[#059669]" />
@@ -386,16 +410,10 @@ export default function Profile() {
                     </div>
                   )}
 
-                  {order.deliveryPhoto && (
-                    <div>
-                      <p className="font-apple-body text-[13px] text-[#7a7a7a] mb-2">Prueba de entrega</p>
-                      <img
-                        src={order.deliveryPhoto}
-                        alt={`Prueba de entrega del pedido ${order.id.slice(0, 8)}`}
-                        className="w-full max-h-[260px] object-cover rounded-[12px] border border-[#e0e0e0]"
-                      />
-                    </div>
-                  )}
+                  <DeliveryProofGallery
+                    photos={order.deliveryPhotos}
+                    legacyPhoto={order.deliveryPhoto}
+                  />
 
                   <div className="border-t border-[#e0e0e0] pt-4 space-y-2 tabular-nums">
                     {(order.items || []).map((item, index) => (

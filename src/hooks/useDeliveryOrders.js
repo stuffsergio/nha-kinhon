@@ -35,3 +35,14 @@ export function useUpdateDeliveryStatus() {
     },
   });
 }
+
+export function useUploadDeliveryPhotos() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ orderId, photos, photo }) =>
+      api.post(`/delivery/orders/${orderId}/photos`, { photos, photo }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["delivery", "orders"] });
+    },
+  });
+}

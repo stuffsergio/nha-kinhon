@@ -5,6 +5,8 @@ import { useAdminOrders, useUpdateOrderStatus } from "../hooks/useAdminOrders";
 import { useDeliveryPeople, useAssignDelivery } from "../hooks/useAdminDelivery";
 import { useToast } from "../context/ToastContext";
 import AdminOrderTrackingPanel from "../components/AdminOrderTrackingPanel";
+import OrderReceiptShare from "../components/OrderReceiptShare";
+import DeliveryProofGallery from "../components/DeliveryProofGallery";
 
 const statusLabels = {
   PENDING_PAYMENT: "Pendiente de pago",
@@ -204,6 +206,13 @@ export default function Admin() {
                 </div>
 
                 <AdminOrderTrackingPanel orderId={order.id} orderStatus={order.status} />
+
+                <OrderReceiptShare orderId={order.id} />
+
+                <DeliveryProofGallery
+                  photos={order.deliveryPhotos}
+                  legacyPhoto={order.deliveryPhoto}
+                />
 
                 {!["DELIVERED", "CANCELLED"].includes(order.status) && (
                   <div className="border-t border-[#e0e0e0] pt-4 mt-4">

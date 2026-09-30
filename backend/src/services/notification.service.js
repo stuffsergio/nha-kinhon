@@ -13,11 +13,21 @@ export async function createNotification({
 
   console.log(`[NOTIFICATION] User: ${userId} | ${title}: ${message}`);
 
-  const data = {
-    type,
-    notificationId: notification.id,
-    ...(orderId ? { orderId, url: `/pedido/${orderId}` } : { url: "/notificaciones" }),
-  };
+  const data = orderId
+    ? {
+        type,
+        notificationId: notification.id,
+        orderId,
+        screen: "order_tracking",
+        route: `/pedido/${orderId}`,
+        url: `/perfil?tab=orders&orderId=${orderId}`,
+      }
+    : {
+        type,
+        notificationId: notification.id,
+        url: "/notificaciones",
+        route: "/notificaciones",
+      };
 
   await sendPushToUser(userId, title, message, data);
 
@@ -58,7 +68,7 @@ async function sendPushToUser(userId, title, body, data = {}) {
       sound: "default",
       title,
       body,
-      data: { ...data, url: `/notificaciones` },
+      data,
     }));
 
     const res = await fetch("https://exp.host/--/api/v2/push/send", {

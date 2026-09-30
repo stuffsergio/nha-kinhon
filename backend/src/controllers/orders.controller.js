@@ -7,6 +7,7 @@ import {
 } from "../utils/orderPayment.js";
 import { getOrderTrackingPayload, toPublicTracking } from "../utils/orderTracking.js";
 import { parseRecipientCoordinatesFromBody } from "../utils/recipientCoordinates.js";
+import { buildOrderReceipt } from "../utils/orderReceipt.js";
 
 export async function listMyOrders(req, res) {
   const { page = 1, limit = 20, status } = req.query;
@@ -17,7 +18,14 @@ export async function listMyOrders(req, res) {
       where,
       skip: (page - 1) * limit,
       take: Number(limit),
-      include: { items: true, delivery: { select: { id: true, name: true } } },
+      include: {
+        items: true,
+        delivery: { select: { id: true, name: true } },
+        deliveryPhotos: {
+          orderBy: { createdAt: "asc" },
+          select: { id: true, url: true, createdAt: true },
+        },
+      },
       orderBy: { createdAt: "desc" },
     }),
     prisma.order.count({ where }),
@@ -26,10 +34,16 @@ export async function listMyOrders(req, res) {
   res.json({ data, total, page: Number(page), limit: Number(limit) });
 }
 
+const orderDetailInclude = {
+  items: { include: { product: true } },
+  delivery: { select: { id: true, name: true } },
+  deliveryPhotos: { orderBy: { createdAt: "asc" }, select: { id: true, url: true, createdAt: true } },
+};
+
 export async function getById(req, res) {
   const order = await prisma.order.findUnique({
     where: { id: req.params.id },
-    include: { items: { include: { product: true } }, delivery: { select: { id: true, name: true } } },
+    include: orderDetailInclude,
   });
 
   if (!order) throw new NotFoundError("Pedido");
@@ -38,6 +52,40 @@ export async function getById(req, res) {
   }
 
   res.json({ order });
+}
+
+export async function getReceipt(req, res) {
+  const order = await prisma.order.findUnique({
+    where: { id: req.params.id },
+    include: { items: true },
+  });
+
+  if (!order) throw new NotFoundError("Pedido");
+  if (order.userId !== req.user.id && req.user.role !== "ADMIN") {
+    throw new AppError("No tienes permiso para ver este recibo", 403);
+  }
+
+  res.json(buildOrderReceipt(order));
+}
+
+export async function listDeliveryPhotos(req, res) {
+  const order = await prisma.order.findUnique({
+    where: { id: req.params.id },
+    select: { id: true, userId: true, deliveryPhoto: true },
+  });
+
+  if (!order) throw new NotFoundError("Pedido");
+  if (order.userId !== req.user.id && req.user.role !== "ADMIN") {
+    throw new AppError("No tienes permiso para ver las fotos de entrega", 403);
+  }
+
+  const photos = await prisma.orderDeliveryPhoto.findMany({
+    where: { orderId: req.params.id },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, url: true, createdAt: true },
+  });
+
+  res.json({ photos, legacyPhoto: order.deliveryPhoto || null });
 }
 
 /** Mapa de seguimiento: el dueño del pedido (o admin) puede consultar la ubicación del repartidor. */
@@ -181,6 +229,7 @@ export async function updateStatus(req, res) {
       type: `ORDER_${status}`,
       title: "Pedido actualizado",
       message: `Tu pedido #${order.id.slice(0, 8)} está ${statusLabels[status] || status}.`,
+      orderId: order.id,
     });
   }
 
@@ -212,6 +261,7 @@ export async function cancel(req, res) {
     type: "ORDER_CANCELLED",
     title: "Pedido cancelado",
     message: `Tu pedido #${order.id.slice(0, 8)} ha sido cancelado.`,
+    orderId: order.id,
   });
 
   res.json({ order: updated });
@@ -233,7 +283,15 @@ export async function listAll(req, res) {
       where,
       skip: (page - 1) * limit,
       take: Number(limit),
-      include: { items: true, user: { select: { id: true, name: true, email: true } }, delivery: { select: { id: true, name: true } } },
+      include: {
+        items: true,
+        user: { select: { id: true, name: true, email: true } },
+        delivery: { select: { id: true, name: true } },
+        deliveryPhotos: {
+          orderBy: { createdAt: "asc" },
+          select: { id: true, url: true, createdAt: true },
+        },
+      },
       orderBy: { createdAt: "desc" },
     }),
     prisma.order.count({ where }),

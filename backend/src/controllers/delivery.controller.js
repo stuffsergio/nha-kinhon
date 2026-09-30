@@ -10,6 +10,11 @@ import {
   ACTIVE_DELIVERY_STATUSES,
   MAX_ACTIVE_DELIVERY_ORDERS,
 } from "../utils/deliveryCapacity.js";
+import { checkAndNotifyCourierNearby } from "../services/deliveryProximity.service.js";
+import {
+  assertValidDeliveryPhotoUrl,
+  normalizePhotoList,
+} from "../utils/deliveryPhoto.js";
 
 async function countActiveOrdersForDelivery(deliveryUserId) {
   return prisma.order.count({
@@ -90,8 +95,8 @@ export async function pickupOrder(req, res) {
   await createNotification({
     userId: order.userId,
     type: "ORDER_PICKED_UP",
-    title: "Pedido recogido",
-    message: `Tu pedido #${id.slice(0, 8)} ha sido recogido por un repartidor.`,
+    title: "Repartidor asignado",
+    message: `Un repartidor recogió tu pedido #${id.slice(0, 8)}. Sigue el envío en tiempo real.`,
     orderId: order.id,
   });
 
@@ -118,7 +123,17 @@ export async function updateDeliveryStatus(req, res) {
   const updateData = { status };
   if (status === "DELIVERED") {
     updateData.deliveredAt = new Date();
-    if (deliveryPhoto) updateData.deliveryPhoto = deliveryPhoto;
+    if (deliveryPhoto) {
+      try {
+        updateData.deliveryPhoto = assertValidDeliveryPhotoUrl(deliveryPhoto);
+      } catch (e) {
+        throw new AppError(e.message, 400);
+      }
+    }
+    const existingPhotos = await prisma.orderDeliveryPhoto.count({ where: { orderId: id } });
+    if (!updateData.deliveryPhoto && existingPhotos === 0) {
+      throw new AppError("Adjunta al menos una foto de entrega", 400);
+    }
   }
 
   const updated = await prisma.order.update({
@@ -138,6 +153,20 @@ export async function updateDeliveryStatus(req, res) {
   }
 
   if (status === "DELIVERED") {
+    if (updateData.deliveryPhoto) {
+      const duplicate = await prisma.orderDeliveryPhoto.findFirst({
+        where: { orderId: id, url: updateData.deliveryPhoto },
+      });
+      if (!duplicate) {
+        await prisma.orderDeliveryPhoto.create({
+          data: {
+            orderId: id,
+            url: updateData.deliveryPhoto,
+            uploadedById: req.user.id,
+          },
+        });
+      }
+    }
     await createNotification({
       userId: order.userId,
       type: "ORDER_DELIVERED",
@@ -148,6 +177,46 @@ export async function updateDeliveryStatus(req, res) {
   }
 
   res.json({ order: updated });
+}
+
+export async function addDeliveryPhotos(req, res) {
+  const { id } = req.params;
+  const rawList = normalizePhotoList(req.body);
+  if (rawList.length === 0) {
+    throw new AppError("Se requiere al menos una foto (photo o photos)", 400);
+  }
+
+  const order = await prisma.order.findUnique({ where: { id } });
+  if (!order) throw new NotFoundError("Pedido");
+  if (order.deliveryId !== req.user.id) {
+    throw new AppError("Este pedido no te pertenece", 403);
+  }
+  if (!["PICKED_UP", "IN_TRANSIT"].includes(order.status)) {
+    throw new AppError("Solo puedes subir fotos mientras el pedido está en reparto", 400);
+  }
+
+  const urls = [];
+  for (const raw of rawList) {
+    try {
+      urls.push(assertValidDeliveryPhotoUrl(raw));
+    } catch (e) {
+      throw new AppError(e.message, 400);
+    }
+  }
+
+  const created = await Promise.all(
+    urls.map((url) =>
+      prisma.orderDeliveryPhoto.create({
+        data: {
+          orderId: id,
+          url,
+          uploadedById: req.user.id,
+        },
+      }),
+    ),
+  );
+
+  res.status(201).json({ photos: created });
 }
 
 export async function getProfile(req, res) {
@@ -268,6 +337,8 @@ export async function updateLocation(req, res) {
     where: { userId: req.user.id },
     data: { currentLocation },
   });
+
+  await checkAndNotifyCourierNearby(req.user.id, latitude, longitude);
 
   res.json({
     message: "Ubicación actualizada",

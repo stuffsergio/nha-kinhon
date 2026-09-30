@@ -12,11 +12,18 @@ vi.mock("../../../config/db.js", () => ({
       findUnique: vi.fn(),
       update: vi.fn(),
     },
+    orderDeliveryPhoto: {
+      create: vi.fn(),
+    },
   },
 }));
 
 vi.mock("../../../services/notification.service.js", () => ({
   createNotification: vi.fn(),
+}));
+
+vi.mock("../../../services/deliveryProximity.service.js", () => ({
+  checkAndNotifyCourierNearby: vi.fn(),
 }));
 
 import prisma from "../../../config/db.js";
@@ -160,6 +167,51 @@ describe("delivery controller", () => {
       await expect(deliveryController.pickupOrder(req, res)).rejects.toThrow(
         "El pedido no está disponible para recoger"
       );
+    });
+  });
+
+  describe("addDeliveryPhotos", () => {
+    it("creates photos for assigned delivery during IN_TRANSIT", async () => {
+      const req = {
+        user: { id: "delivery-1" },
+        params: { id: "order-1" },
+        body: { photo: "data:image/jpeg;base64,abc" },
+      };
+      const res = mockRes();
+
+      prisma.order.findUnique.mockResolvedValue({
+        id: "order-1",
+        deliveryId: "delivery-1",
+        status: "IN_TRANSIT",
+      });
+      prisma.orderDeliveryPhoto.create.mockResolvedValue({
+        id: "photo-1",
+        url: "data:image/jpeg;base64,abc",
+      });
+
+      await deliveryController.addDeliveryPhotos(req, res);
+
+      expect(prisma.orderDeliveryPhoto.create).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    it("rejects upload from non-assigned delivery", async () => {
+      const req = {
+        user: { id: "delivery-2" },
+        params: { id: "order-1" },
+        body: { photo: "data:image/jpeg;base64,abc" },
+      };
+      const res = mockRes();
+
+      prisma.order.findUnique.mockResolvedValue({
+        id: "order-1",
+        deliveryId: "delivery-1",
+        status: "IN_TRANSIT",
+      });
+
+      await expect(deliveryController.addDeliveryPhotos(req, res)).rejects.toMatchObject({
+        statusCode: 403,
+      });
     });
   });
 

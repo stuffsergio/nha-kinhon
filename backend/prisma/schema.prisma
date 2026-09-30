@@ -140,12 +140,14 @@ model Order {
   pickedUpAt       DateTime?
   deliveredAt      DateTime?
   deliveryPhoto    String?
+  courierNearbyNotifiedAt DateTime?
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
   user             User         @relation(fields: [userId], references: [id])
   delivery         User?        @relation("DeliveryOrders", fields: [deliveryId], references: [id])
   items            OrderItem[]
+  deliveryPhotos   OrderDeliveryPhoto[]
 
   @@index([userId])
   @@index([status])
@@ -255,10 +257,24 @@ enum NotificationType {
   ORDER_SHIPPED
   ORDER_PICKED_UP
   ORDER_IN_TRANSIT
+  ORDER_COURIER_NEARBY
   ORDER_DELIVERED
   ORDER_CANCELLED
   PAYMENT_RECEIVED
   PROMO
+}
+
+model OrderDeliveryPhoto {
+  id           String   @id @default(cuid())
+  orderId      String
+  url          String
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_delivery_photos")
 }
 
 model DeliveryProfile {

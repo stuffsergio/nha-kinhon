@@ -18,6 +18,7 @@ const DeliveryDashboard = lazy(() => import("./pages/DeliveryDashboard"));
 const MarketDetail = lazy(() => import("./pages/MarketDetail"));
 const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const OrderTrackingRedirect = lazy(() => import("./pages/OrderTrackingRedirect"));
 
 function PageLoading() {
   return (
@@ -62,6 +63,7 @@ export default function App() {
           <Route path="/buscar" element={<Search />} />
           <Route path="/carrito" element={<Cart />} />
           <Route path="/perfil" element={<Profile />} />
+          <Route path="/pedido/:id" element={<OrderTrackingRedirect />} />
           <Route path="/servicios" element={<Services />} />
           <Route path="/supporters" element={<Support />} />
           <Route path="/admin" element={<Admin />} />

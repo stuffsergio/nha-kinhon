@@ -13,6 +13,9 @@ vi.mock("../../../config/db.js", () => ({
       update: vi.fn(),
       count: vi.fn(),
     },
+    orderDeliveryPhoto: {
+      findMany: vi.fn(),
+    },
     notification: {
       create: vi.fn(),
     },
@@ -192,6 +195,74 @@ describe("orders controller payment flow", () => {
           },
         }),
       );
+    });
+  });
+
+  describe("getReceipt", () => {
+    it("returns receipt for order owner", async () => {
+      const req = { user: { id: "user-1", role: "USER" }, params: { id: "order-1" } };
+      const res = mockRes();
+
+      prisma.order.findUnique.mockResolvedValue({
+        id: "order-1",
+        userId: "user-1",
+        status: "CONFIRMED",
+        subtotal: 1000,
+        shipping: 0,
+        total: 1000,
+        recipientName: "Ana",
+        recipientPhone: null,
+        recipientAddress: "Bissau",
+        createdAt: new Date("2026-09-30T10:00:00.000Z"),
+        items: [{ name: "Arroz", price: 1000, quantity: 1 }],
+      });
+
+      await ordersController.getReceipt(req, res);
+
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          receipt: expect.objectContaining({ orderId: "order-1" }),
+          shareText: expect.stringContaining("Nha Kinhon"),
+        }),
+      );
+    });
+
+    it("forbids receipt for another user", async () => {
+      const req = { user: { id: "user-2", role: "USER" }, params: { id: "order-1" } };
+      const res = mockRes();
+
+      prisma.order.findUnique.mockResolvedValue({
+        id: "order-1",
+        userId: "user-1",
+        items: [],
+      });
+
+      await expect(ordersController.getReceipt(req, res)).rejects.toMatchObject({
+        statusCode: 403,
+      });
+    });
+  });
+
+  describe("listDeliveryPhotos", () => {
+    it("lists photos for admin", async () => {
+      const req = { user: { id: "admin-1", role: "ADMIN" }, params: { id: "order-1" } };
+      const res = mockRes();
+
+      prisma.order.findUnique.mockResolvedValue({
+        id: "order-1",
+        userId: "user-1",
+        deliveryPhoto: "legacy.jpg",
+      });
+      prisma.orderDeliveryPhoto.findMany.mockResolvedValue([
+        { id: "p1", url: "photo1.jpg", createdAt: new Date() },
+      ]);
+
+      await ordersController.listDeliveryPhotos(req, res);
+
+      expect(res.json).toHaveBeenCalledWith({
+        photos: [{ id: "p1", url: "photo1.jpg", createdAt: expect.any(Date) }],
+        legacyPhoto: "legacy.jpg",
+      });
     });
   });
 
