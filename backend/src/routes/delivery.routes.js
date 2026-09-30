@@ -11,6 +11,7 @@ router.get("/orders/available", deliveryController.listAvailable);
 router.get("/orders/my", deliveryController.listMyOrders);
 router.post("/orders/:id/pickup", deliveryController.pickupOrder);
 router.put("/orders/:id/status", deliveryController.updateDeliveryStatus);
+router.post("/orders/:id/photos", deliveryController.addDeliveryPhotos);
 
 router.get("/profile", deliveryController.getProfile);
 router.put("/profile", deliveryController.updateProfile);

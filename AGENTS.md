@@ -26,6 +26,9 @@ Seeded logins: `carlos@example.com` / `123456` (USER), `admin@nhakinhon.com` / `
 ### Optional/unconfigured services (fail soft)
 Stripe, Cloudinary, SMTP and Expo push are left unconfigured. The app boots and works; only card payments, image uploads, email and push are unavailable. Product images render as broken placeholders because Cloudinary is unset — this is expected, not a bug.
 
+### Push notifications (delivery journey)
+Buyer push uses Expo (`POST /api/notifications/push-token`). Delivery events reuse `createNotification` (in-app + push). Push `data` includes `orderId`, `screen: "order_tracking"`, mobile `route: /pedido/:id`, web `url: /perfil?tab=orders&orderId=:id`. Courier-nearby alerts fire once per order when GPS updates put the repartidor within 500 m of `recipientLat/Lng` (requires coordinates on the order). No extra env vars beyond a running backend with network egress to `exp.host`.
+
 ### Lint/test/build notes
 - Tests mock the DB, so Postgres is not needed just to run them: backend `npm test` (vitest), frontend `npm test` (vitest/jsdom).
 - Backend `npm run lint` is clean; **frontend `npm run lint` has pre-existing errors** in the repo source (e.g. `no-undef` on `global`), unrelated to environment setup.
