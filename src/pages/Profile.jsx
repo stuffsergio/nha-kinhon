@@ -397,7 +397,16 @@ export default function Profile() {
                     <OrderTimeline status={order.status} />
                   </div>
 
-                  <OrderTrackingPanel orderId={order.id} orderStatus={order.status} />
+                  <OrderTrackingPanel
+                    orderId={order.id}
+                    orderStatus={order.status}
+                    destinationPreview={{
+                      lat: order.recipientLat,
+                      lng: order.recipientLng,
+                      name: order.recipientName,
+                      address: order.recipientAddress,
+                    }}
+                  />
 
                   <OrderReceiptShare orderId={order.id} />
 

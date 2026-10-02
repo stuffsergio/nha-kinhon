@@ -1,6 +1,13 @@
 import prisma from "../config/db.js";
+import {
+  computeEtaFromRouteDistance,
+  estimateRoadDistanceMeters,
+  fetchDrivingRoute,
+  formatEtaLabelSpanish,
+  pickEtaSpeedMps,
+} from "./osrmRoute.js";
 
-const LIVE_TRACKING_STATUSES = ["PICKED_UP", "IN_TRANSIT"];
+export const LIVE_TRACKING_STATUSES = ["PICKED_UP", "IN_TRANSIT"];
 
 /** Courier GPS older than this is not considered live. */
 export const LIVE_LOCATION_MAX_AGE_MS = 2 * 60 * 1000;
@@ -38,6 +45,59 @@ export function isCourierLocationFresh(location, nowMs = Date.now()) {
   const updatedMs = Date.parse(location.updatedAt);
   if (!Number.isFinite(updatedMs)) return false;
   return nowMs - updatedMs <= LIVE_LOCATION_MAX_AGE_MS;
+}
+
+export function courierLocationAgeSeconds(location, nowMs = Date.now()) {
+  if (!location?.updatedAt) return null;
+  const updatedMs = Date.parse(location.updatedAt);
+  if (!Number.isFinite(updatedMs)) return null;
+  return Math.max(0, Math.floor((nowMs - updatedMs) / 1000));
+}
+
+/** Buyer-facing GPS signal: LIVE | STALE | NO_GPS (null when order is not in a live-tracking status). */
+export function deriveCourierSignalState(inLiveStatus, courierLocation, locationFresh) {
+  if (!inLiveStatus) return null;
+  if (courierLocation == null) return "NO_GPS";
+  if (locationFresh) return "LIVE";
+  return "STALE";
+}
+
+async function buildRouteAndEta(courierLocation, destination, locationFresh, options = {}) {
+  if (
+    courierLocation == null ||
+    destination.lat == null ||
+    destination.lng == null
+  ) {
+    return { routePolyline: null, etaSeconds: null, etaLabel: null, routeDistanceMeters: null };
+  }
+
+  const route =
+    (await fetchDrivingRoute(
+      courierLocation.lat,
+      courierLocation.lng,
+      destination.lat,
+      destination.lng,
+      options,
+    )) ?? null;
+
+  const routeDistanceMeters =
+    route?.distanceMeters ??
+    estimateRoadDistanceMeters(
+      courierLocation.lat,
+      courierLocation.lng,
+      destination.lat,
+      destination.lng,
+    );
+
+  const speedMps = pickEtaSpeedMps(courierLocation, locationFresh);
+  const etaSeconds = computeEtaFromRouteDistance(routeDistanceMeters, speedMps);
+
+  return {
+    routePolyline: route?.polyline ?? null,
+    routeDistanceMeters,
+    etaSeconds,
+    etaLabel: formatEtaLabelSpanish(etaSeconds),
+  };
 }
 
 export function parseDeliveryLocation(raw) {
@@ -106,6 +166,18 @@ export async function getOrderTrackingPayload(orderId, options = {}) {
   const inLiveStatus = LIVE_TRACKING_STATUSES.includes(order.status);
   const locationFresh =
     courierLocation != null && isCourierLocationFresh(courierLocation, nowMs);
+  const courierSignalState = deriveCourierSignalState(
+    inLiveStatus,
+    courierLocation,
+    locationFresh,
+  );
+
+  const routeEta = await buildRouteAndEta(
+    courierLocation,
+    destinationCoords,
+    locationFresh,
+    options.routeOptions ?? {},
+  );
 
   return {
     orderId: order.id,
@@ -121,8 +193,15 @@ export async function getOrderTrackingPayload(orderId, options = {}) {
       lng: destinationCoords.lng,
     },
     courierLocation,
-    isLive: inLiveStatus && locationFresh,
-    courierLocationStale: inLiveStatus && courierLocation != null && !locationFresh,
+    courierSignalState,
+    lastLocationAt: courierLocation?.updatedAt ?? null,
+    lastLocationAgeSeconds: courierLocationAgeSeconds(courierLocation, nowMs),
+    isLive: courierSignalState === "LIVE",
+    courierLocationStale: courierSignalState === "STALE",
+    routePolyline: routeEta.routePolyline,
+    routeDistanceMeters: routeEta.routeDistanceMeters,
+    etaSeconds: routeEta.etaSeconds,
+    etaLabel: routeEta.etaLabel,
   };
 }
 
