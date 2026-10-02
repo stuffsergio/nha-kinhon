@@ -13,10 +13,33 @@ import {
   parseDeliveryLocation,
   parseDestinationCoordinates,
   isCourierLocationFresh,
+  courierLocationAgeSeconds,
+  deriveCourierSignalState,
   LIVE_LOCATION_MAX_AGE_MS,
   getOrderTrackingPayload,
   toPublicTracking,
 } from "../../../utils/orderTracking.js";
+
+function mockOsrmFetch() {
+  return vi.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      code: "Ok",
+      routes: [
+        {
+          distance: 900,
+          duration: 120,
+          geometry: {
+            coordinates: [
+              [-15.59, 11.86],
+              [-15.597, 11.865],
+            ],
+          },
+        },
+      ],
+    }),
+  });
+}
 
 describe("parseDeliveryLocation", () => {
   it("parses a valid location with ISO updatedAt", () => {
@@ -123,6 +146,27 @@ describe("parseDestinationCoordinates", () => {
   });
 });
 
+describe("courierLocationAgeSeconds", () => {
+  it("returns whole seconds since updatedAt", () => {
+    const now = Date.parse("2026-09-29T12:00:00.000Z");
+    expect(
+      courierLocationAgeSeconds({ updatedAt: "2026-09-29T11:59:30.000Z" }, now),
+    ).toBe(30);
+  });
+});
+
+describe("deriveCourierSignalState", () => {
+  it("returns null outside live-tracking statuses", () => {
+    expect(deriveCourierSignalState(false, { lat: 1, lng: 1 }, true)).toBeNull();
+  });
+
+  it("classifies LIVE, STALE and NO_GPS", () => {
+    expect(deriveCourierSignalState(true, { lat: 1, lng: 1 }, true)).toBe("LIVE");
+    expect(deriveCourierSignalState(true, { lat: 1, lng: 1 }, false)).toBe("STALE");
+    expect(deriveCourierSignalState(true, null, false)).toBe("NO_GPS");
+  });
+});
+
 describe("isCourierLocationFresh", () => {
   it("is fresh within the max age window", () => {
     const now = Date.parse("2026-09-29T12:00:00.000Z");
@@ -189,7 +233,10 @@ describe("getOrderTrackingPayload", () => {
 
   it("marks isLive when status is in transit and GPS is fresh", async () => {
     prisma.order.findUnique.mockResolvedValue(baseOrder);
-    const payload = await getOrderTrackingPayload("order-1", { nowMs });
+    const payload = await getOrderTrackingPayload("order-1", {
+      nowMs,
+      routeOptions: { fetchFn: mockOsrmFetch() },
+    });
     expect(payload).toMatchObject({
       orderId: "order-1",
       userId: "user-1",
@@ -202,8 +249,14 @@ describe("getOrderTrackingPayload", () => {
         lng: -15.597,
       },
       courierLocation: { lat: 11.86, lng: -15.59, updatedAt: freshUpdatedAt },
+      courierSignalState: "LIVE",
+      lastLocationAt: freshUpdatedAt,
+      lastLocationAgeSeconds: 30,
       isLive: true,
       courierLocationStale: false,
+      etaSeconds: expect.any(Number),
+      etaLabel: expect.any(String),
+      routePolyline: expect.any(Array),
     });
   });
 
@@ -222,9 +275,13 @@ describe("getOrderTrackingPayload", () => {
         },
       },
     });
-    const payload = await getOrderTrackingPayload("order-1", { nowMs });
+    const payload = await getOrderTrackingPayload("order-1", {
+      nowMs,
+      routeOptions: { fetchFn: mockOsrmFetch() },
+    });
     expect(payload.isLive).toBe(false);
     expect(payload.courierLocationStale).toBe(true);
+    expect(payload.courierSignalState).toBe("STALE");
   });
 
   it("is not live when GPS is missing even if picked up", async () => {
@@ -236,10 +293,14 @@ describe("getOrderTrackingPayload", () => {
         deliveryProfile: { phone: "+245 111", currentLocation: null },
       },
     });
-    const payload = await getOrderTrackingPayload("order-1", { nowMs });
+    const payload = await getOrderTrackingPayload("order-1", {
+      nowMs,
+      routeOptions: { fetchFn: mockOsrmFetch() },
+    });
     expect(payload.courierLocation).toBeNull();
     expect(payload.isLive).toBe(false);
     expect(payload.courierLocationStale).toBe(false);
+    expect(payload.courierSignalState).toBe("NO_GPS");
   });
 
   it("does not crash when the courier has no deliveryProfile", async () => {
@@ -247,10 +308,14 @@ describe("getOrderTrackingPayload", () => {
       ...baseOrder,
       delivery: { id: "delivery-1", name: "Joao", deliveryProfile: null },
     });
-    const payload = await getOrderTrackingPayload("order-1", { nowMs });
+    const payload = await getOrderTrackingPayload("order-1", {
+      nowMs,
+      routeOptions: { fetchFn: mockOsrmFetch() },
+    });
     expect(payload.courierLocation).toBeNull();
     expect(payload.deliveryPhone).toBeNull();
     expect(payload.isLive).toBe(false);
+    expect(payload.courierSignalState).toBe("NO_GPS");
   });
 
   it("is not live for confirmed orders even with GPS", async () => {
@@ -258,9 +323,13 @@ describe("getOrderTrackingPayload", () => {
       ...baseOrder,
       status: "CONFIRMED",
     });
-    const payload = await getOrderTrackingPayload("order-1", { nowMs });
+    const payload = await getOrderTrackingPayload("order-1", {
+      nowMs,
+      routeOptions: { fetchFn: mockOsrmFetch() },
+    });
     expect(payload.courierLocation).not.toBeNull();
     expect(payload.isLive).toBe(false);
     expect(payload.courierLocationStale).toBe(false);
+    expect(payload.courierSignalState).toBeNull();
   });
 });
