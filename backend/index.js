@@ -1,5 +1,7 @@
 import express from "express";
+import compression from "compression";
 import cors from "cors";
+import { brotliJson } from "./src/middleware/brotliJson.js";
 import cookieParser from "cookie-parser";
 import path from "path";
 import { existsSync } from "fs";
@@ -23,6 +25,18 @@ import deliveryRoutes from "./src/routes/delivery.routes.js";
 import adminDeliveryRoutes from "./src/routes/admin.delivery.routes.js";
 
 const app = express();
+
+app.use(brotliJson({ threshold: 512 }));
+app.use(
+  compression({
+    threshold: 512,
+    filter: (req, res) => {
+      if (req.headers["x-no-compression"]) return false;
+      if (res.getHeader("Content-Encoding")) return false;
+      return compression.filter(req, res);
+    },
+  }),
+);
 
 app.use(
   cors({

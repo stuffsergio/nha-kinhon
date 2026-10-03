@@ -18,6 +18,8 @@ import {
   LIVE_LOCATION_MAX_AGE_MS,
   getOrderTrackingPayload,
   toPublicTracking,
+  toLeanTracking,
+  simplifyRoutePolyline,
 } from "../../../utils/orderTracking.js";
 
 function mockOsrmFetch() {
@@ -316,6 +318,60 @@ describe("getOrderTrackingPayload", () => {
     expect(payload.deliveryPhone).toBeNull();
     expect(payload.isLive).toBe(false);
     expect(payload.courierSignalState).toBe("NO_GPS");
+  });
+
+  describe("toLeanTracking", () => {
+    it("drops bulky fields and simplifies polyline", () => {
+      const polyline = Array.from({ length: 100 }, (_, i) => [11 + i * 0.001, -15]);
+      const lean = toLeanTracking(
+        toPublicTracking({
+          orderId: "o1",
+          userId: "u1",
+          status: "IN_TRANSIT",
+          deliveryId: "d1",
+          deliveryName: "Joao",
+          deliveryPhone: "+245",
+          destination: { name: "Ana", address: "Rua 1", lat: 11.9, lng: -15.6 },
+          courierSignalState: "LIVE",
+          courierLocation: {
+            lat: 11.86,
+            lng: -15.59,
+            updatedAt: "2026-01-01T00:00:00.000Z",
+            accuracy: 10,
+            speed: 5,
+          },
+          lastLocationAgeSeconds: 3,
+          etaSeconds: 300,
+          etaLabel: "~5 min",
+          routePolyline: polyline,
+          routeDistanceMeters: 900,
+          isLive: true,
+          courierLocationStale: false,
+        }),
+      );
+
+      expect(lean).not.toHaveProperty("deliveryName");
+      expect(lean).not.toHaveProperty("isLive");
+      expect(lean.destination).toEqual({ lat: 11.9, lng: -15.6 });
+      expect(lean.courierLocation).toEqual({
+        lat: 11.86,
+        lng: -15.59,
+        updatedAt: "2026-01-01T00:00:00.000Z",
+      });
+      expect(lean.routePolyline.length).toBeLessThanOrEqual(32);
+      expect(lean.routePolyline[0]).toEqual(polyline[0]);
+      expect(lean.routePolyline.at(-1)).toEqual(polyline.at(-1));
+    });
+  });
+
+  describe("simplifyRoutePolyline", () => {
+    it("returns small polylines unchanged", () => {
+      const p = [
+        [1, 2],
+        [3, 4],
+      ];
+      expect(simplifyRoutePolyline(p)).toBe(p);
+    });
   });
 
   it("is not live for confirmed orders even with GPS", async () => {

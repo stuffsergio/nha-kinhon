@@ -5,7 +5,8 @@ import {
   ACTIVE_DELIVERY_STATUSES,
   MAX_ACTIVE_DELIVERY_ORDERS,
 } from "../utils/deliveryCapacity.js";
-import { getOrderTrackingPayload, toPublicTracking } from "../utils/orderTracking.js";
+import { getOrderTrackingPayload } from "../utils/orderTracking.js";
+import { formatTrackingHttpBody, wantsLeanTracking } from "../utils/trackingFormat.js";
 
 export async function listDeliveryPeople(req, res) {
   const profiles = await prisma.deliveryProfile.findMany({
@@ -95,5 +96,11 @@ export async function assignDelivery(req, res) {
 export async function getOrderTracking(req, res) {
   const tracking = await getOrderTrackingPayload(req.params.id);
   if (!tracking) throw new NotFoundError("Pedido");
-  res.json({ tracking: toPublicTracking(tracking) });
+  res.json(formatTrackingHttpBody(tracking, { lean: wantsLeanTracking(req) }));
+}
+
+export async function getOrderTrackingLean(req, res) {
+  const tracking = await getOrderTrackingPayload(req.params.id);
+  if (!tracking) throw new NotFoundError("Pedido");
+  res.json(formatTrackingHttpBody(tracking, { lean: true }));
 }

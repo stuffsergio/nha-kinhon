@@ -8,6 +8,7 @@ const router = Router();
 router.get("/", authenticate, ordersController.listMyOrders);
 router.get("/admin/all", authenticate, requireAdmin, ordersController.listAll);
 router.post("/checkout", authenticate, ordersController.checkout);
+router.get("/:id/tracking/lean", authenticate, ordersController.getTrackingLean);
 router.get("/:id/tracking", authenticate, ordersController.getTracking);
 router.get("/:id/receipt", authenticate, ordersController.getReceipt);
 router.get("/:id/delivery-photos", authenticate, ordersController.listDeliveryPhotos);
