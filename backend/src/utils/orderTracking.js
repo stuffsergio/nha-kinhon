@@ -211,3 +211,61 @@ export function toPublicTracking(tracking) {
   delete publicTracking.userId;
   return publicTracking;
 }
+
+const LEAN_POLYLINE_MAX_POINTS = 32;
+
+/**
+ * Reduces polyline size for low-bandwidth clients (uniform decimation, keeps endpoints).
+ */
+export function simplifyRoutePolyline(polyline, maxPoints = LEAN_POLYLINE_MAX_POINTS) {
+  if (!Array.isArray(polyline) || polyline.length <= maxPoints) return polyline;
+  if (maxPoints < 2) return [polyline[0], polyline[polyline.length - 1]];
+
+  const lastIndex = polyline.length - 1;
+  const step = lastIndex / (maxPoints - 1);
+  const simplified = [];
+  for (let i = 0; i < maxPoints; i += 1) {
+    const idx = i === maxPoints - 1 ? lastIndex : Math.round(i * step);
+    simplified.push(polyline[idx]);
+  }
+  return simplified;
+}
+
+function leanCourierLocation(location) {
+  if (!location) return null;
+  const lean = {
+    lat: location.lat,
+    lng: location.lng,
+    updatedAt: location.updatedAt ?? null,
+  };
+  if (location.heading != null) lean.heading = location.heading;
+  return lean;
+}
+
+/**
+ * Mobile-friendly tracking shape: omits contact/address noise and shortens route polyline.
+ * @see docs/TRACKING_OFFLINE.md
+ */
+export function toLeanTracking(tracking) {
+  const lean = {
+    orderId: tracking.orderId,
+    status: tracking.status,
+    courierSignalState: tracking.courierSignalState,
+    courierLocation: leanCourierLocation(tracking.courierLocation),
+    lastLocationAgeSeconds: tracking.lastLocationAgeSeconds,
+    etaSeconds: tracking.etaSeconds,
+    etaLabel: tracking.etaLabel,
+    destination: {
+      lat: tracking.destination?.lat ?? null,
+      lng: tracking.destination?.lng ?? null,
+    },
+  };
+
+  if (tracking.routePolyline?.length) {
+    lean.routePolyline = simplifyRoutePolyline(tracking.routePolyline);
+  } else {
+    lean.routePolyline = null;
+  }
+
+  return lean;
+}

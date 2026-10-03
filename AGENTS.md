@@ -29,6 +29,8 @@ Stripe, Cloudinary, SMTP and Expo push are left unconfigured. The app boots and 
 ### Live order tracking (`GET /api/orders/:id/tracking`, admin mirror)
 Tracking payload includes: `courierSignalState` (`LIVE` | `STALE` | `NO_GPS`, null before pickup/transit), `isLive`, `courierLocationStale`, `lastLocationAt`, `lastLocationAgeSeconds`, `routePolyline` (OSRM driving route when available), `routeDistanceMeters`, `etaSeconds`, `etaLabel`. GPS is **live** only when order status is `PICKED_UP` or `IN_TRANSIT` and `updatedAt` is ≤ `LIVE_LOCATION_MAX_AGE_MS` (2 min). Stale GPS must be shown as frozen (no implied movement). Optional env `OSRM_URL` (default public OSRM). Web compact map before pickup: `CONFIRMED` / `PROCESSING` / `SHIPPED`.
 
+**Low bandwidth (mobile):** see [`docs/TRACKING_OFFLINE.md`](docs/TRACKING_OFFLINE.md). Lean tracking via `?fields=lean` or `GET .../tracking/lean`. JSON responses use gzip + brotli (`Accept-Encoding`). Courier GPS batch upload: `PUT /api/delivery/location` with `{ points: [...] }`. Recommended poll: 5–10 s (good network), 20–30 s (2G). Order list endpoint omits `deliveryPhotos` (detail endpoints unchanged).
+
 ### Push notifications (delivery journey)
 Buyer push uses Expo (`POST /api/notifications/push-token`). Delivery events reuse `createNotification` (in-app + push). Push `data` includes `orderId`, `screen: "order_tracking"`, mobile `route: /pedido/:id`, web `url: /perfil?tab=orders&orderId=:id`. Courier-nearby alerts fire once per order when GPS updates put the repartidor within 500 m of `recipientLat/Lng` (requires coordinates on the order). No extra env vars beyond a running backend with network egress to `exp.host`.
 

@@ -332,6 +332,28 @@ describe("orders controller payment flow", () => {
       });
     });
 
+    it("returns lean tracking when fields=lean", async () => {
+      const req = {
+        user: { id: "user-1", role: "USER" },
+        params: { id: "order-1" },
+        query: { fields: "lean" },
+        get: () => "",
+      };
+      const res = mockRes();
+      getOrderTrackingPayload.mockResolvedValue(liveTracking);
+
+      await ordersController.getTracking(req, res);
+
+      expect(res.json).toHaveBeenCalledWith({
+        lean: true,
+        tracking: expect.objectContaining({
+          orderId: "order-1",
+          status: "IN_TRANSIT",
+        }),
+      });
+      expect(res.json.mock.calls[0][0].tracking).not.toHaveProperty("deliveryPhone");
+    });
+
     it("allows admin to view tracking of any order including unpaid", async () => {
       const req = { user: { id: "admin-1", role: "ADMIN" }, params: { id: "order-1" } };
       const res = mockRes();

@@ -14,10 +14,16 @@ export default function OrderTrackingPanel({ orderId, orderStatus, destinationPr
 
   const [preLiveOpen, setPreLiveOpen] = useState(false);
 
-  const { data: tracking, isLoading, isFetching, isError, error } = useOrderTracking(
-    orderId,
-    { enabled: isFullLive || (isPreLive && preLiveOpen) },
-  );
+  const {
+    data: tracking,
+    isLoading,
+    isFetching,
+    isError,
+    error,
+    isFetchError,
+  } = useOrderTracking(orderId, { enabled: isFullLive || (isPreLive && preLiveOpen) });
+
+  const showStaleTrackingNotice = Boolean(tracking && isFetchError);
 
   if (isPreLive && !preLiveOpen) {
     const hasDest =
@@ -107,13 +113,18 @@ export default function OrderTrackingPanel({ orderId, orderStatus, destinationPr
       {isLoading && (
         <div className="h-[120px] animate-pulse bg-[#f5f5f7] rounded-[12px]" aria-busy="true" />
       )}
-      {isError && (
+      {showStaleTrackingNotice && (
+        <p className="font-apple-body text-[14px] text-[#b45309] mb-2" role="status">
+          Sin conexión reciente: mostrando la última ubicación guardada.
+        </p>
+      )}
+      {isError && !tracking && (
         <p className="font-apple-body text-[14px] text-[#7a7a7a]">
           {error?.message || "No se pudo cargar el seguimiento."}
         </p>
       )}
-      {!isLoading && !isError && tracking && (
-        <OrderTrackingMap tracking={tracking} isFetching={isFetching} />
+      {!isLoading && tracking && (
+        <OrderTrackingMap tracking={tracking} isFetching={isFetching && !showStaleTrackingNotice} />
       )}
     </div>
   );

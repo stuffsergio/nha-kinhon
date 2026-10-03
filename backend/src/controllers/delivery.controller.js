@@ -12,6 +12,10 @@ import {
 } from "../utils/deliveryCapacity.js";
 import { checkAndNotifyCourierNearby } from "../services/deliveryProximity.service.js";
 import {
+  mergeLocationBatch,
+  parseLocationIngestBody,
+} from "../utils/deliveryLocationIngest.js";
+import {
   assertValidDeliveryPhotoUrl,
   normalizePhotoList,
 } from "../utils/deliveryPhoto.js";
@@ -299,49 +303,29 @@ export async function getStats(req, res) {
 }
 
 export async function updateLocation(req, res) {
-  const { lat, lng, heading, accuracy, speed } = req.body;
-  const latitude = Number(lat);
-  const longitude = Number(lng);
-
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-    throw new AppError("Se requieren lat y lng numéricos", 400);
-  }
-  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
-    throw new AppError("Coordenadas fuera de rango", 400);
-  }
+  const points = parseLocationIngestBody(req.body);
 
   const profile = await prisma.deliveryProfile.findUnique({
     where: { userId: req.user.id },
   });
   if (!profile) throw new NotFoundError("Perfil de repartidor");
 
-  const currentLocation = {
-    lat: latitude,
-    lng: longitude,
-    updatedAt: new Date().toISOString(),
-  };
-  if (heading !== undefined && heading !== null && heading !== "") {
-    const h = Number(heading);
-    if (Number.isFinite(h) && h >= 0 && h <= 360) currentLocation.heading = h;
-  }
-  if (accuracy !== undefined && accuracy !== null && accuracy !== "") {
-    const a = Number(accuracy);
-    if (Number.isFinite(a) && a >= 0) currentLocation.accuracy = a;
-  }
-  if (speed !== undefined && speed !== null && speed !== "") {
-    const s = Number(speed);
-    if (Number.isFinite(s) && s >= 0) currentLocation.speed = s;
-  }
+  const mergeResult = mergeLocationBatch(profile.currentLocation, points);
+  const { location: currentLocation, changed, appliedCount, skippedOlder } = mergeResult;
 
-  await prisma.deliveryProfile.update({
-    where: { userId: req.user.id },
-    data: { currentLocation },
-  });
+  if (changed) {
+    await prisma.deliveryProfile.update({
+      where: { userId: req.user.id },
+      data: { currentLocation },
+    });
 
-  await checkAndNotifyCourierNearby(req.user.id, latitude, longitude);
+    await checkAndNotifyCourierNearby(req.user.id, currentLocation.lat, currentLocation.lng);
+  }
 
   res.json({
-    message: "Ubicación actualizada",
+    message: changed ? "Ubicación actualizada" : "Ubicación sin cambios (datos antiguos o duplicados)",
     location: currentLocation,
+    applied: appliedCount,
+    skippedOlder,
   });
 }

@@ -260,7 +260,37 @@ describe("delivery controller", () => {
       expect(res.json).toHaveBeenCalledWith({
         message: "Ubicación actualizada",
         location: expect.objectContaining({ lat: 11.86, lng: -15.59 }),
+        applied: 1,
+        skippedOlder: 0,
       });
+    });
+
+    it("flushes a batch and keeps the newest point", async () => {
+      const req = {
+        user: { id: "delivery-1" },
+        body: {
+          points: [
+            { lat: 11.86, lng: -15.59, updatedAt: "2026-01-01T00:00:00.000Z" },
+            { lat: 11.87, lng: -15.58, updatedAt: "2026-01-01T00:01:00.000Z" },
+          ],
+        },
+      };
+      const res = mockRes();
+
+      prisma.deliveryProfile.findUnique.mockResolvedValue({ id: "profile-1", userId: "delivery-1" });
+      prisma.deliveryProfile.update.mockResolvedValue({});
+
+      await deliveryController.updateLocation(req, res);
+
+      expect(prisma.deliveryProfile.update).toHaveBeenCalledWith({
+        where: { userId: "delivery-1" },
+        data: {
+          currentLocation: expect.objectContaining({ lat: 11.87, lng: -15.58 }),
+        },
+      });
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ applied: 2, skippedOlder: 0 }),
+      );
     });
 
     it("returns 404 when the delivery profile does not exist", async () => {

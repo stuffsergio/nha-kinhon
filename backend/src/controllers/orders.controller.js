@@ -5,7 +5,8 @@ import {
   applyDefaultOrderListFilter,
   isUnpaidOrderStatus,
 } from "../utils/orderPayment.js";
-import { getOrderTrackingPayload, toPublicTracking } from "../utils/orderTracking.js";
+import { getOrderTrackingPayload } from "../utils/orderTracking.js";
+import { formatTrackingHttpBody, wantsLeanTracking } from "../utils/trackingFormat.js";
 import { parseRecipientCoordinatesFromBody } from "../utils/recipientCoordinates.js";
 import { buildOrderReceipt } from "../utils/orderReceipt.js";
 
@@ -21,10 +22,6 @@ export async function listMyOrders(req, res) {
       include: {
         items: true,
         delivery: { select: { id: true, name: true } },
-        deliveryPhotos: {
-          orderBy: { createdAt: "asc" },
-          select: { id: true, url: true, createdAt: true },
-        },
       },
       orderBy: { createdAt: "desc" },
     }),
@@ -88,11 +85,7 @@ export async function listDeliveryPhotos(req, res) {
   res.json({ photos, legacyPhoto: order.deliveryPhoto || null });
 }
 
-/** Mapa de seguimiento: el dueño del pedido (o admin) puede consultar la ubicación del repartidor. */
-export async function getTracking(req, res) {
-  const tracking = await getOrderTrackingPayload(req.params.id);
-  if (!tracking) throw new NotFoundError("Pedido");
-
+async function assertCanViewTracking(req, tracking) {
   if (tracking.userId !== req.user.id && req.user.role !== "ADMIN") {
     throw new AppError("No tienes permiso para ver el seguimiento", 403);
   }
@@ -100,8 +93,26 @@ export async function getTracking(req, res) {
   if (req.user.role !== "ADMIN" && isUnpaidOrderStatus(tracking.status)) {
     throw new AppError("El seguimiento estará disponible tras confirmar el pago", 400);
   }
+}
 
-  res.json({ tracking: toPublicTracking(tracking) });
+/** Mapa de seguimiento: el dueño del pedido (o admin) puede consultar la ubicación del repartidor. */
+export async function getTracking(req, res) {
+  const tracking = await getOrderTrackingPayload(req.params.id);
+  if (!tracking) throw new NotFoundError("Pedido");
+
+  await assertCanViewTracking(req, tracking);
+
+  res.json(formatTrackingHttpBody(tracking, { lean: wantsLeanTracking(req) }));
+}
+
+/** Variante ligera (misma autorización que getTracking). */
+export async function getTrackingLean(req, res) {
+  const tracking = await getOrderTrackingPayload(req.params.id);
+  if (!tracking) throw new NotFoundError("Pedido");
+
+  await assertCanViewTracking(req, tracking);
+
+  res.json(formatTrackingHttpBody(tracking, { lean: true }));
 }
 
 export async function checkout(req, res) {
