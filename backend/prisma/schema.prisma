@@ -148,6 +148,7 @@ model Order {
   delivery         User?        @relation("DeliveryOrders", fields: [deliveryId], references: [id])
   items            OrderItem[]
   deliveryPhotos   OrderDeliveryPhoto[]
+  notifications    Notification[]
 
   @@index([userId])
   @@index([status])
@@ -242,12 +243,15 @@ model Notification {
   type      NotificationType
   title     String
   message   String
+  orderId   String?
   read      Boolean          @default(false)
   createdAt DateTime         @default(now())
 
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order     Order?           @relation(fields: [orderId], references: [id], onDelete: SetNull)
 
   @@index([userId, read])
+  @@index([orderId])
   @@map("notifications")
 }
 

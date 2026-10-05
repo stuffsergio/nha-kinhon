@@ -1,5 +1,31 @@
 import prisma from "../config/db.js";
 
+/** Deep-link fields aligned with Expo push `data` (minus type/notificationId). */
+export function notificationDeepLinkFields(orderId) {
+  if (orderId) {
+    return {
+      orderId,
+      screen: "order_tracking",
+      route: `/pedido/${orderId}`,
+      url: `/perfil?tab=orders&orderId=${orderId}`,
+    };
+  }
+  return {
+    orderId: null,
+    url: "/notificaciones",
+    route: "/notificaciones",
+  };
+}
+
+export function formatNotificationForClient(notification) {
+  const rest = { ...notification };
+  delete rest.order;
+  return {
+    ...rest,
+    ...notificationDeepLinkFields(rest.orderId ?? null),
+  };
+}
+
 export async function createNotification({
   userId,
   type,
@@ -8,7 +34,13 @@ export async function createNotification({
   orderId,
 }) {
   const notification = await prisma.notification.create({
-    data: { userId, type, title, message },
+    data: {
+      userId,
+      type,
+      title,
+      message,
+      orderId: orderId ?? null,
+    },
   });
 
   console.log(`[NOTIFICATION] User: ${userId} | ${title}: ${message}`);
@@ -17,16 +49,12 @@ export async function createNotification({
     ? {
         type,
         notificationId: notification.id,
-        orderId,
-        screen: "order_tracking",
-        route: `/pedido/${orderId}`,
-        url: `/perfil?tab=orders&orderId=${orderId}`,
+        ...notificationDeepLinkFields(orderId),
       }
     : {
         type,
         notificationId: notification.id,
-        url: "/notificaciones",
-        route: "/notificaciones",
+        ...notificationDeepLinkFields(null),
       };
 
   await sendPushToUser(userId, title, message, data);

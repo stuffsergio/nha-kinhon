@@ -8,9 +8,13 @@ vi.mock("../../../config/db.js", () => ({
 }));
 
 import prisma from "../../../config/db.js";
-import { createNotification } from "../../../services/notification.service.js";
+import {
+  createNotification,
+  formatNotificationForClient,
+  notificationDeepLinkFields,
+} from "../../../services/notification.service.js";
 
-describe("notification.service createNotification", () => {
+describe("notification.service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     global.fetch = vi.fn().mockResolvedValue({
@@ -19,27 +23,78 @@ describe("notification.service createNotification", () => {
     });
   });
 
-  it("sends push data with order tracking deep links", async () => {
-    prisma.notification.create.mockResolvedValue({
-      id: "notif-1",
-      userId: "user-1",
-      type: "ORDER_IN_TRANSIT",
-    });
-    prisma.pushToken.findMany.mockResolvedValue([{ token: "ExponentPushToken[abc]" }]);
-
-    await createNotification({
-      userId: "user-1",
-      type: "ORDER_IN_TRANSIT",
-      title: "En camino",
-      message: "Tu pedido va en camino",
-      orderId: "order-99",
+  describe("notificationDeepLinkFields", () => {
+    it("returns order tracking hints when orderId is set", () => {
+      expect(notificationDeepLinkFields("order-99")).toEqual({
+        orderId: "order-99",
+        screen: "order_tracking",
+        route: "/pedido/order-99",
+        url: "/perfil?tab=orders&orderId=order-99",
+      });
     });
 
-    expect(global.fetch).toHaveBeenCalled();
-    const body = JSON.parse(global.fetch.mock.calls[0][1].body);
-    expect(body[0].data.orderId).toBe("order-99");
-    expect(body[0].data.route).toBe("/pedido/order-99");
-    expect(body[0].data.url).toBe("/perfil?tab=orders&orderId=order-99");
-    expect(body[0].data.screen).toBe("order_tracking");
+    it("returns inbox fallback when orderId is absent", () => {
+      expect(notificationDeepLinkFields(null)).toEqual({
+        orderId: null,
+        url: "/notificaciones",
+        route: "/notificaciones",
+      });
+    });
+  });
+
+  describe("formatNotificationForClient", () => {
+    it("merges deep link fields onto stored notification", () => {
+      const formatted = formatNotificationForClient({
+        id: "n1",
+        userId: "u1",
+        type: "ORDER_DELIVERED",
+        title: "Entregado",
+        message: "Listo",
+        orderId: "ord-1",
+        read: false,
+        createdAt: new Date("2026-01-01"),
+      });
+
+      expect(formatted.orderId).toBe("ord-1");
+      expect(formatted.screen).toBe("order_tracking");
+      expect(formatted.route).toBe("/pedido/ord-1");
+    });
+  });
+
+  describe("createNotification", () => {
+    it("persists orderId and sends push data with order tracking deep links", async () => {
+      prisma.notification.create.mockResolvedValue({
+        id: "notif-1",
+        userId: "user-1",
+        type: "ORDER_IN_TRANSIT",
+        orderId: "order-99",
+      });
+      prisma.pushToken.findMany.mockResolvedValue([{ token: "ExponentPushToken[abc]" }]);
+
+      await createNotification({
+        userId: "user-1",
+        type: "ORDER_IN_TRANSIT",
+        title: "En camino",
+        message: "Tu pedido va en camino",
+        orderId: "order-99",
+      });
+
+      expect(prisma.notification.create).toHaveBeenCalledWith({
+        data: {
+          userId: "user-1",
+          type: "ORDER_IN_TRANSIT",
+          title: "En camino",
+          message: "Tu pedido va en camino",
+          orderId: "order-99",
+        },
+      });
+
+      expect(global.fetch).toHaveBeenCalled();
+      const body = JSON.parse(global.fetch.mock.calls[0][1].body);
+      expect(body[0].data.orderId).toBe("order-99");
+      expect(body[0].data.route).toBe("/pedido/order-99");
+      expect(body[0].data.url).toBe("/perfil?tab=orders&orderId=order-99");
+      expect(body[0].data.screen).toBe("order_tracking");
+    });
   });
 });
