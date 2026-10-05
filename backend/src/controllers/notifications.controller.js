@@ -1,5 +1,9 @@
 import prisma from "../config/db.js";
-import { registerPushToken, unregisterPushToken } from "../services/notification.service.js";
+import {
+  registerPushToken,
+  unregisterPushToken,
+  formatNotificationForClient,
+} from "../services/notification.service.js";
 
 export async function registerPushTokenController(req, res) {
   const { token, platform } = req.body;
@@ -35,7 +39,13 @@ export async function list(req, res) {
     }),
   ]);
 
-  res.json({ data, total, unreadCount, page: Number(page), limit: Number(limit) });
+  res.json({
+    data: data.map(formatNotificationForClient),
+    total,
+    unreadCount,
+    page: Number(page),
+    limit: Number(limit),
+  });
 }
 
 export async function markAsRead(req, res) {
