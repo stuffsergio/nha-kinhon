@@ -17,7 +17,7 @@ export async function unregisterPushTokenController(req, res) {
   const { token } = req.body;
   if (!token) return res.status(400).json({ error: "Token es requerido" });
 
-  await unregisterPushToken(token);
+  await unregisterPushToken(req.user.id, token);
   res.json({ message: "Token eliminado" });
 }
 

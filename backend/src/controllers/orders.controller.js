@@ -9,6 +9,9 @@ import { getOrderTrackingPayload } from "../utils/orderTracking.js";
 import { formatTrackingHttpBody, wantsLeanTracking } from "../utils/trackingFormat.js";
 import { parseRecipientCoordinatesFromBody } from "../utils/recipientCoordinates.js";
 import { buildOrderReceipt } from "../utils/orderReceipt.js";
+import { allowUnverifiedPaymentConfirm } from "../config/runtime.js";
+import { isStripeConfigured, assertStripePaymentSucceededForOrder } from "../services/stripe.service.js";
+import { finalizeOrderAsPaid } from "../services/orderConfirm.service.js";
 
 export async function listMyOrders(req, res) {
   const { page = 1, limit = 20, status } = req.query;
@@ -180,24 +183,37 @@ export async function confirmAfterPayment(req, res) {
   if (!order) throw new NotFoundError("Pedido");
   if (order.userId !== req.user.id) throw new AppError("No tienes permiso", 403);
   if (!isUnpaidOrderStatus(order.status)) {
+    if (order.status === "CONFIRMED") {
+      const current = await prisma.order.findUnique({
+        where: { id },
+        include: { items: true },
+      });
+      return res.json({ order: current });
+    }
     throw new AppError("El pedido no está pendiente de pago", 400);
   }
 
-  const updated = await prisma.order.update({
-    where: { id },
-    data: { status: "CONFIRMED" },
-    include: { items: true },
+  let stripePaymentId = order.stripePaymentId;
+
+  if (isStripeConfigured()) {
+    const verified = await assertStripePaymentSucceededForOrder(order);
+    stripePaymentId = verified.stripePaymentId;
+  } else if (!allowUnverifiedPaymentConfirm()) {
+    throw new AppError(
+      "La confirmación manual de pago no está disponible. Usa Stripe o contacta con soporte.",
+      403,
+    );
+  }
+
+  const updated = await finalizeOrderAsPaid({
+    orderId: id,
+    userId: req.user.id,
+    stripePaymentId,
   });
 
-  await prisma.cartItem.deleteMany({ where: { userId: req.user.id } });
-
-  await createNotification({
-    userId: order.userId,
-    type: "ORDER_CONFIRMED",
-    title: "Pago confirmado",
-    message: `Tu pedido #${id.slice(0, 8)} está confirmado y listo para reparto.`,
-    orderId: order.id,
-  });
+  if (!updated) {
+    throw new AppError("No se pudo confirmar el pedido", 400);
+  }
 
   res.json({ order: updated });
 }

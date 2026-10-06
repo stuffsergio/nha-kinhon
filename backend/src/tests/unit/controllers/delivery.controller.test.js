@@ -14,6 +14,7 @@ vi.mock("../../../config/db.js", () => ({
     },
     orderDeliveryPhoto: {
       create: vi.fn(),
+      count: vi.fn(),
     },
   },
 }));
@@ -172,10 +173,12 @@ describe("delivery controller", () => {
 
   describe("addDeliveryPhotos", () => {
     it("creates photos for assigned delivery during IN_TRANSIT", async () => {
+      const tinyJpeg = Buffer.from([0xff, 0xd8, 0xff, 0xd9]);
+      const photoUrl = `data:image/jpeg;base64,${tinyJpeg.toString("base64")}`;
       const req = {
         user: { id: "delivery-1" },
         params: { id: "order-1" },
-        body: { photo: "data:image/jpeg;base64,abc" },
+        body: { photo: photoUrl },
       };
       const res = mockRes();
 
@@ -184,9 +187,10 @@ describe("delivery controller", () => {
         deliveryId: "delivery-1",
         status: "IN_TRANSIT",
       });
+      prisma.orderDeliveryPhoto.count.mockResolvedValue(0);
       prisma.orderDeliveryPhoto.create.mockResolvedValue({
         id: "photo-1",
-        url: "data:image/jpeg;base64,abc",
+        url: photoUrl,
       });
 
       await deliveryController.addDeliveryPhotos(req, res);

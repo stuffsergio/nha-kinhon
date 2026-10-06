@@ -1,61 +1,10 @@
-import Stripe from "stripe";
 import prisma from "../config/db.js";
 import env from "../config/env.js";
 import { AppError, NotFoundError, ForbiddenError } from "../utils/errors.js";
 import { isUnpaidOrderStatus } from "../utils/orderPayment.js";
-import { createNotification } from "../services/notification.service.js";
-
-let stripeClient = null;
-
-function getStripe() {
-  if (!env.STRIPE_SECRET_KEY) {
-    throw new AppError("Stripe no está configurado", 503);
-  }
-  if (!stripeClient) {
-    stripeClient = new Stripe(env.STRIPE_SECRET_KEY);
-  }
-  return stripeClient;
-}
-
-async function markOrderPaid({ orderId, userId, stripePaymentId }) {
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
-  if (!order || !isUnpaidOrderStatus(order.status)) {
-    return null;
-  }
-
-  const data = { status: "CONFIRMED" };
-  if (stripePaymentId) data.stripePaymentId = stripePaymentId;
-
-  const updated = await prisma.order.update({
-    where: { id: orderId },
-    data,
-  });
-
-  const ownerId = userId || order.userId;
-  await prisma.cartItem.deleteMany({ where: { userId: ownerId } });
-
-  await createNotification({
-    userId: order.userId,
-    type: "ORDER_CONFIRMED",
-    title: "Pago recibido",
-    message: `El pago del pedido #${orderId.slice(0, 8)} se ha confirmado.`,
-    orderId,
-  });
-
-  return updated;
-}
-
-async function markOrderCancelled(orderId) {
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
-  if (!order || !isUnpaidOrderStatus(order.status)) {
-    return null;
-  }
-
-  return prisma.order.update({
-    where: { id: orderId },
-    data: { status: "CANCELLED" },
-  });
-}
+import { isProduction } from "../config/runtime.js";
+import { getStripe, isStripeConfigured } from "../services/stripe.service.js";
+import { finalizeOrderAsPaid } from "../services/orderConfirm.service.js";
 
 export async function getConfig(req, res) {
   res.json({ publishableKey: env.STRIPE_PUBLISHABLE_KEY });
@@ -135,7 +84,7 @@ export async function createCheckoutSession(req, res) {
   const session = await getStripe().checkout.sessions.create({
     ui_mode: "elements",
     mode: "payment",
-    return_url: `${env.CLIENT_URL}/perfil?payment=success`,
+    return_url: `${env.CLIENT_URL.split(",")[0].trim()}/perfil?payment=success`,
     line_items: [
       {
         price_data: {
@@ -152,7 +101,6 @@ export async function createCheckoutSession(req, res) {
     },
   });
 
-  // Preferir PaymentIntent id si ya viene en la sesión; si no, guardar session.id
   const stripePaymentId =
     typeof session.payment_intent === "string"
       ? session.payment_intent
@@ -163,11 +111,19 @@ export async function createCheckoutSession(req, res) {
     data: { stripePaymentId },
   });
 
-  res.json({ clientSecret: session.client_secret, status: session.status, publishableKey: env.STRIPE_PUBLISHABLE_KEY });
+  res.json({
+    clientSecret: session.client_secret,
+    status: session.status,
+    publishableKey: env.STRIPE_PUBLISHABLE_KEY,
+  });
 }
 
 export async function handleWebhook(req, res) {
   let event;
+
+  if (isProduction && !env.STRIPE_WEBHOOK_SECRET) {
+    return res.status(503).json({ error: "Webhook de Stripe no configurado" });
+  }
 
   if (env.STRIPE_WEBHOOK_SECRET) {
     const sig = req.headers["stripe-signature"];
@@ -189,8 +145,26 @@ export async function handleWebhook(req, res) {
         ? session.payment_intent
         : session.payment_intent?.id || session.id;
 
-    if (orderId) {
-      await markOrderPaid({ orderId, userId, stripePaymentId });
+    if (orderId && session.payment_status === "paid") {
+      const order = await prisma.order.findUnique({ where: { id: orderId } });
+      if (!order) {
+        // skip unknown order
+      } else if (session.amount_total != null && session.amount_total !== Math.round(order.total)) {
+        console.error("[STRIPE] Importe de sesión no coincide con pedido", orderId);
+      } else if (session.metadata?.orderId && session.metadata.orderId !== orderId) {
+        console.error("[STRIPE] metadata.orderId no coincide", orderId);
+      } else {
+        let paymentIntentForValidation = null;
+        if (typeof session.payment_intent === "object" && session.payment_intent) {
+          paymentIntentForValidation = session.payment_intent;
+        }
+        await finalizeOrderAsPaid({
+          orderId,
+          userId,
+          stripePaymentId,
+          paymentIntentForValidation,
+        });
+      }
     }
   }
 
@@ -207,10 +181,11 @@ export async function handleWebhook(req, res) {
     }
 
     if (orderId) {
-      await markOrderPaid({
+      await finalizeOrderAsPaid({
         orderId,
         userId,
         stripePaymentId: paymentIntent.id,
+        paymentIntentForValidation: paymentIntent,
       });
     }
   }
@@ -237,3 +212,17 @@ export async function handleWebhook(req, res) {
 
   res.json({ received: true });
 }
+
+async function markOrderCancelled(orderId) {
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order || !isUnpaidOrderStatus(order.status)) {
+    return null;
+  }
+
+  return prisma.order.update({
+    where: { id: orderId },
+    data: { status: "CANCELLED" },
+  });
+}
+
+export { isStripeConfigured };
