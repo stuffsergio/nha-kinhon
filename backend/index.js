@@ -1,12 +1,14 @@
 import express from "express";
 import compression from "compression";
-import cors from "cors";
 import { brotliJson } from "./src/middleware/brotliJson.js";
 import cookieParser from "cookie-parser";
 import path from "path";
 import { existsSync } from "fs";
 import { fileURLToPath } from "url";
 import env from "./src/config/env.js";
+import { isProduction } from "./src/config/runtime.js";
+import { securityHeaders } from "./src/middleware/securityHeaders.js";
+import { corsMiddleware } from "./src/middleware/corsPolicy.js";
 import authRoutes from "./src/routes/auth.routes.js";
 import marketsRoutes from "./src/routes/markets.routes.js";
 import categoriesRoutes from "./src/routes/categories.routes.js";
@@ -26,6 +28,12 @@ import adminDeliveryRoutes from "./src/routes/admin.delivery.routes.js";
 
 const app = express();
 
+if (isProduction) {
+  app.set("trust proxy", 1);
+}
+
+app.disable("x-powered-by");
+app.use(securityHeaders());
 app.use(brotliJson({ threshold: 512 }));
 app.use(
   compression({
@@ -38,20 +46,7 @@ app.use(
   }),
 );
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      const allowed = (env.CLIENT_URL || "").split(",").map((s) => s.trim()).filter(Boolean);
-      if (allowed.length === 0 || allowed.includes(origin) || origin.startsWith("exp://") || origin.startsWith("nhakinhon://")) {
-        callback(null, true);
-      } else {
-        callback(null, false);
-      }
-    },
-    credentials: true,
-  }),
-);
+app.use(corsMiddleware());
 // Delivery proof photos are sent as JPEG data URLs in JSON; default 100kb is too small.
 app.use(express.json({
   limit: "5mb",
@@ -102,14 +97,26 @@ app.use((req, res) => {
 
 app.use((err, req, res, _next) => {
   const status = err.statusCode || err.status || 500;
-  const message =
+  let message =
     status === 413
       ? "La imagen es demasiado grande"
       : err.message || "Error interno del servidor";
-  console.error(`[${status}] ${message}`);
+
+  if (status === 500 && isProduction) {
+    message = "Error interno del servidor";
+  }
+
+  if (status >= 500) {
+    console.error(`[${status}] ${err.message || message}`);
+  } else {
+    console.warn(`[${status}] ${message}`);
+  }
+
   res.status(status).json({ error: message });
 });
 
 app.listen(env.PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${env.PORT}`);
 });
+
+export default app;

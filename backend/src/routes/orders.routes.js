@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authenticate } from "../middleware/auth.js";
 import { requireAdmin } from "../middleware/admin.js";
+import { confirmPaymentLimiter } from "../middleware/rateLimits.js";
 import * as ordersController from "../controllers/orders.controller.js";
 
 const router = Router();
@@ -13,7 +14,12 @@ router.get("/:id/tracking", authenticate, ordersController.getTracking);
 router.get("/:id/receipt", authenticate, ordersController.getReceipt);
 router.get("/:id/delivery-photos", authenticate, ordersController.listDeliveryPhotos);
 router.get("/:id", authenticate, ordersController.getById);
-router.post("/:id/confirm-payment", authenticate, ordersController.confirmAfterPayment);
+router.post(
+  "/:id/confirm-payment",
+  authenticate,
+  confirmPaymentLimiter,
+  ordersController.confirmAfterPayment,
+);
 router.put("/:id/status", authenticate, requireAdmin, ordersController.updateStatus);
 router.post("/:id/cancel", authenticate, ordersController.cancel);
 

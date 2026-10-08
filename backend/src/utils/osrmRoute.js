@@ -1,11 +1,12 @@
 import { haversineDistanceMeters } from "./geo.js";
+import { resolveOsrmBase, DEFAULT_OSRM_BASE } from "./osrmUrl.js";
 
 /** Fallback urban driving speed when GPS speed is missing or not trustworthy (m/s). */
 export const DEFAULT_URBAN_SPEED_MPS = 25 / 3.6; // ~25 km/h
 
 const ROAD_DISTANCE_FACTOR = 1.35;
 
-const DEFAULT_OSRM_BASE = "https://router.project-osrm.org";
+export { DEFAULT_OSRM_BASE };
 
 function geoJsonToLatLngRing(geometry) {
   if (!geometry?.coordinates?.length) return null;
@@ -21,9 +22,9 @@ export async function fetchDrivingRoute(
   lng1,
   lat2,
   lng2,
-  { fetchFn = globalThis.fetch, osrmBase = process.env.OSRM_URL || DEFAULT_OSRM_BASE } = {},
+  { fetchFn = globalThis.fetch, osrmBase = resolveOsrmBase(process.env.OSRM_URL) } = {},
 ) {
-  const url = `${osrmBase.replace(/\/$/, "")}/route/v1/driving/${lng1},${lat1};${lng2},${lat2}?overview=full&geometries=geojson`;
+  const url = `${osrmBase}/route/v1/driving/${lng1},${lat1};${lng2},${lat2}?overview=full&geometries=geojson`;
   let response;
   try {
     response = await fetchFn(url, { signal: AbortSignal.timeout(8000) });

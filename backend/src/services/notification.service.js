@@ -82,8 +82,8 @@ export async function registerPushToken(userId, token, platform = "android") {
   });
 }
 
-export async function unregisterPushToken(token) {
-  await prisma.pushToken.deleteMany({ where: { token } });
+export async function unregisterPushToken(userId, token) {
+  await prisma.pushToken.deleteMany({ where: { token, userId } });
 }
 
 async function sendPushToUser(userId, title, body, data = {}) {

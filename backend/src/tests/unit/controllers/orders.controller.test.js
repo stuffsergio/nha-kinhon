@@ -26,6 +26,19 @@ vi.mock("../../../services/notification.service.js", () => ({
   createNotification: vi.fn(),
 }));
 
+vi.mock("../../../services/stripe.service.js", () => ({
+  isStripeConfigured: vi.fn(() => false),
+  assertStripePaymentSucceededForOrder: vi.fn(),
+}));
+
+vi.mock("../../../config/runtime.js", () => ({
+  allowUnverifiedPaymentConfirm: vi.fn(() => true),
+}));
+
+vi.mock("../../../services/orderConfirm.service.js", () => ({
+  finalizeOrderAsPaid: vi.fn(),
+}));
+
 vi.mock("../../../utils/orderTracking.js", async (importOriginal) => {
   const actual = await importOriginal();
   return {
@@ -36,6 +49,9 @@ vi.mock("../../../utils/orderTracking.js", async (importOriginal) => {
 
 import prisma from "../../../config/db.js";
 import { createNotification } from "../../../services/notification.service.js";
+import { finalizeOrderAsPaid } from "../../../services/orderConfirm.service.js";
+import { isStripeConfigured, assertStripePaymentSucceededForOrder } from "../../../services/stripe.service.js";
+import { allowUnverifiedPaymentConfirm } from "../../../config/runtime.js";
 import { getOrderTrackingPayload } from "../../../utils/orderTracking.js";
 import * as ordersController from "../../../controllers/orders.controller.js";
 import { AppError } from "../../../utils/errors.js";
@@ -96,16 +112,19 @@ describe("orders controller payment flow", () => {
   });
 
   describe("confirmAfterPayment", () => {
-    it("confirms PENDING_PAYMENT, clears cart and notifies", async () => {
+    it("confirms via finalizeOrderAsPaid in dev bypass mode", async () => {
       const req = { user: { id: "user-1" }, params: { id: "order-1" } };
       const res = mockRes();
+
+      allowUnverifiedPaymentConfirm.mockReturnValue(true);
+      isStripeConfigured.mockReturnValue(false);
 
       prisma.order.findUnique.mockResolvedValue({
         id: "order-1",
         userId: "user-1",
         status: "PENDING_PAYMENT",
       });
-      prisma.order.update.mockResolvedValue({
+      finalizeOrderAsPaid.mockResolvedValue({
         id: "order-1",
         status: "CONFIRMED",
         items: [],
@@ -113,29 +132,58 @@ describe("orders controller payment flow", () => {
 
       await ordersController.confirmAfterPayment(req, res);
 
-      expect(prisma.order.update).toHaveBeenCalledWith({
-        where: { id: "order-1" },
-        data: { status: "CONFIRMED" },
-        include: { items: true },
+      expect(finalizeOrderAsPaid).toHaveBeenCalledWith({
+        orderId: "order-1",
+        userId: "user-1",
+        stripePaymentId: undefined,
       });
-      expect(prisma.cartItem.deleteMany).toHaveBeenCalledWith({
-        where: { userId: "user-1" },
-      });
-      expect(createNotification).toHaveBeenCalled();
       expect(res.json).toHaveBeenCalled();
     });
 
-    it("rejects already confirmed orders", async () => {
+    it("requires Stripe verification when Stripe is configured", async () => {
       const req = { user: { id: "user-1" }, params: { id: "order-1" } };
       const res = mockRes();
 
+      isStripeConfigured.mockReturnValue(true);
+      assertStripePaymentSucceededForOrder.mockResolvedValue({ stripePaymentId: "pi_1" });
       prisma.order.findUnique.mockResolvedValue({
         id: "order-1",
         userId: "user-1",
-        status: "CONFIRMED",
+        status: "PENDING_PAYMENT",
+        stripePaymentId: "pi_1",
+        total: 1000,
       });
+      finalizeOrderAsPaid.mockResolvedValue({ id: "order-1", status: "CONFIRMED", items: [] });
 
-      await expect(ordersController.confirmAfterPayment(req, res)).rejects.toBeInstanceOf(AppError);
+      await ordersController.confirmAfterPayment(req, res);
+
+      expect(assertStripePaymentSucceededForOrder).toHaveBeenCalled();
+      expect(finalizeOrderAsPaid).toHaveBeenCalledWith(
+        expect.objectContaining({ stripePaymentId: "pi_1" }),
+      );
+    });
+
+    it("returns confirmed order idempotently when already paid", async () => {
+      const req = { user: { id: "user-1" }, params: { id: "order-1" } };
+      const res = mockRes();
+
+      prisma.order.findUnique
+        .mockResolvedValueOnce({
+          id: "order-1",
+          userId: "user-1",
+          status: "CONFIRMED",
+        })
+        .mockResolvedValueOnce({
+          id: "order-1",
+          userId: "user-1",
+          status: "CONFIRMED",
+          items: [],
+        });
+
+      await ordersController.confirmAfterPayment(req, res);
+
+      expect(finalizeOrderAsPaid).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({ order: expect.objectContaining({ status: "CONFIRMED" }) });
     });
   });
 

@@ -30,7 +30,11 @@ export async function create(req, res) {
   }
 
   const contact = await prisma.contact.create({
-    data: { ...req.body, userId: req.user.id },
+    data: {
+      userId: req.user.id,
+      name: name.trim(),
+      phone: phone.trim(),
+    },
   });
 
   res.status(201).json({ contact });
@@ -43,9 +47,24 @@ export async function update(req, res) {
 
   if (!contact) throw new NotFoundError("Contacto");
 
+  const { name: nextName, phone: nextPhone } = req.body;
+  const data = {};
+  if (nextName !== undefined) {
+    if (!String(nextName).trim()) {
+      return res.status(400).json({ error: "El nombre es obligatorio" });
+    }
+    data.name = String(nextName).trim();
+  }
+  if (nextPhone !== undefined) {
+    if (!String(nextPhone).trim()) {
+      return res.status(400).json({ error: "El teléfono es obligatorio" });
+    }
+    data.phone = String(nextPhone).trim();
+  }
+
   const updated = await prisma.contact.update({
     where: { id: req.params.id },
-    data: req.body,
+    data,
   });
 
   res.json({ contact: updated });

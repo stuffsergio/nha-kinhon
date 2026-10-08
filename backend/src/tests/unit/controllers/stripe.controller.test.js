@@ -133,6 +133,8 @@ describe("stripe controller payment sheet + webhook", () => {
           data: {
             object: {
               id: "pi_123",
+              amount: 2500,
+              status: "succeeded",
               metadata: { orderId: "order-1", userId: "user-1" },
             },
           },
@@ -145,14 +147,16 @@ describe("stripe controller payment sheet + webhook", () => {
         id: "order-1",
         userId: "user-1",
         status: "PENDING_PAYMENT",
+        total: 2500,
       });
-      prisma.order.update.mockResolvedValue({ id: "order-1", status: "CONFIRMED" });
+      prisma.order.update.mockResolvedValue({ id: "order-1", status: "CONFIRMED", items: [] });
 
       await stripeController.handleWebhook(req, res);
 
       expect(prisma.order.update).toHaveBeenCalledWith({
         where: { id: "order-1" },
         data: { status: "CONFIRMED", stripePaymentId: "pi_123" },
+        include: { items: true },
       });
       expect(prisma.cartItem.deleteMany).toHaveBeenCalledWith({
         where: { userId: "user-1" },

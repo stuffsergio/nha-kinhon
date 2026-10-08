@@ -18,6 +18,8 @@ import {
 import {
   assertValidDeliveryPhotoUrl,
   normalizePhotoList,
+  MAX_PHOTOS_PER_REQUEST,
+  MAX_PHOTOS_PER_ORDER,
 } from "../utils/deliveryPhoto.js";
 
 async function countActiveOrdersForDelivery(deliveryUserId) {
@@ -189,6 +191,9 @@ export async function addDeliveryPhotos(req, res) {
   if (rawList.length === 0) {
     throw new AppError("Se requiere al menos una foto (photo o photos)", 400);
   }
+  if (rawList.length > MAX_PHOTOS_PER_REQUEST) {
+    throw new AppError(`Máximo ${MAX_PHOTOS_PER_REQUEST} fotos por solicitud`, 400);
+  }
 
   const order = await prisma.order.findUnique({ where: { id } });
   if (!order) throw new NotFoundError("Pedido");
@@ -197,6 +202,11 @@ export async function addDeliveryPhotos(req, res) {
   }
   if (!["PICKED_UP", "IN_TRANSIT"].includes(order.status)) {
     throw new AppError("Solo puedes subir fotos mientras el pedido está en reparto", 400);
+  }
+
+  const existingCount = await prisma.orderDeliveryPhoto.count({ where: { orderId: id } });
+  if (existingCount + rawList.length > MAX_PHOTOS_PER_ORDER) {
+    throw new AppError(`Máximo ${MAX_PHOTOS_PER_ORDER} fotos por pedido`, 400);
   }
 
   const urls = [];
