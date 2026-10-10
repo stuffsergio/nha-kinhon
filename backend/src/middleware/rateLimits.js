@@ -1,11 +1,20 @@
 import rateLimit from "express-rate-limit";
+import { translateError } from "../i18n/index.js";
 
-const spanishMessage = { error: "Demasiadas solicitudes. Intenta de nuevo más tarde." };
+function rateLimitHandler(code) {
+  return (req, res) => {
+    const locale = req.locale;
+    res.status(429).json({
+      error: translateError(code, locale),
+      code,
+    });
+  };
+}
 
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
-  message: { error: "Demasiados intentos. Intenta de nuevo en 15 minutos." },
+  handler: rateLimitHandler("RATE_LIMIT_AUTH"),
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -13,7 +22,7 @@ export const authLimiter = rateLimit({
 export const refreshLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 60,
-  message: spanishMessage,
+  handler: rateLimitHandler("RATE_LIMIT"),
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -21,7 +30,7 @@ export const refreshLimiter = rateLimit({
 export const confirmPaymentLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 30,
-  message: spanishMessage,
+  handler: rateLimitHandler("RATE_LIMIT"),
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -29,7 +38,7 @@ export const confirmPaymentLimiter = rateLimit({
 export const deliveryLocationLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 120,
-  message: spanishMessage,
+  handler: rateLimitHandler("RATE_LIMIT"),
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -37,7 +46,7 @@ export const deliveryLocationLimiter = rateLimit({
 export const deliveryPhotosLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 40,
-  message: spanishMessage,
+  handler: rateLimitHandler("RATE_LIMIT"),
   standardHeaders: true,
   legacyHeaders: false,
 });

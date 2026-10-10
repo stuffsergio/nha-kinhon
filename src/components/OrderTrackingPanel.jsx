@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronUp, Map } from "lucide-react";
 import { useOrderTracking } from "../hooks/useOrderTracking";
 import OrderTrackingMap from "./OrderTrackingMap";
@@ -7,6 +8,7 @@ export const FULL_LIVE_STATUSES = ["PICKED_UP", "IN_TRANSIT"];
 export const PRE_LIVE_STATUSES = ["CONFIRMED", "PROCESSING", "SHIPPED"];
 
 export default function OrderTrackingPanel({ orderId, orderStatus, destinationPreview }) {
+  const { t } = useTranslation();
   const isFullLive = FULL_LIVE_STATUSES.includes(orderStatus);
   const isPreLive = PRE_LIVE_STATUSES.includes(orderStatus);
 
@@ -37,10 +39,10 @@ export default function OrderTrackingPanel({ orderId, orderStatus, destinationPr
             </div>
             <div>
               <p className="font-apple-display text-[17px] font-semibold text-[#1d1d1f]">
-                Seguimiento en mapa
+                {t("tracking.mapTitle")}
               </p>
               <p className="font-apple-body text-[14px] text-[#7a7a7a] mt-0.5">
-                El mapa en vivo se activará cuando el pedido esté recogido o en camino.
+                {t("tracking.preLiveHint")}
               </p>
             </div>
           </div>
@@ -50,7 +52,7 @@ export default function OrderTrackingPanel({ orderId, orderStatus, destinationPr
               onClick={() => setPreLiveOpen(true)}
               className="shrink-0 inline-flex items-center gap-1 font-apple-body text-[14px] text-[#0066cc] hover:underline"
             >
-              Ver destino
+              {t("tracking.viewDestination")}
               <ChevronDown size={16} />
             </button>
           )}
@@ -75,14 +77,14 @@ export default function OrderTrackingPanel({ orderId, orderStatus, destinationPr
       <div className="rounded-[12px] border border-[#e0e0e0] bg-[#fafafa] p-4 space-y-3">
         <div className="flex items-center justify-between gap-2">
           <h4 className="font-apple-display text-[17px] font-semibold text-[#1d1d1f]">
-            Destino de entrega
+            {t("tracking.deliveryDestination")}
           </h4>
           <button
             type="button"
             onClick={() => setPreLiveOpen(false)}
             className="inline-flex items-center gap-1 font-apple-body text-[14px] text-[#0066cc] hover:underline"
           >
-            Ocultar
+            {t("tracking.hide")}
             <ChevronUp size={16} />
           </button>
         </div>
@@ -98,7 +100,7 @@ export default function OrderTrackingPanel({ orderId, orderStatus, destinationPr
         )}
         {!isLoading && !dest && (
           <p className="font-apple-body text-[14px] text-[#7a7a7a]">
-            Aún no hay coordenadas de entrega para este pedido.
+            {t("tracking.noDeliveryCoords")}
           </p>
         )}
       </div>
@@ -108,19 +110,19 @@ export default function OrderTrackingPanel({ orderId, orderStatus, destinationPr
   return (
     <div className="rounded-[12px] border border-[#e0e0e0] bg-[#fafafa] p-4">
       <h4 className="font-apple-display text-[19px] font-semibold text-[#1d1d1f] mb-3">
-        Seguimiento en mapa
+        {t("tracking.mapTitle")}
       </h4>
       {isLoading && (
         <div className="h-[120px] animate-pulse bg-[#f5f5f7] rounded-[12px]" aria-busy="true" />
       )}
       {showStaleTrackingNotice && (
         <p className="font-apple-body text-[14px] text-[#b45309] mb-2" role="status">
-          Sin conexión reciente: mostrando la última ubicación guardada.
+          {t("tracking.staleNotice")}
         </p>
       )}
       {isError && !tracking && (
         <p className="font-apple-body text-[14px] text-[#7a7a7a]">
-          {error?.message || "No se pudo cargar el seguimiento."}
+          {error?.message || t("tracking.loadError")}
         </p>
       )}
       {!isLoading && tracking && (

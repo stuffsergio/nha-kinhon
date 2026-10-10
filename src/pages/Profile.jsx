@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   User,
   Heart,
@@ -25,8 +26,12 @@ import { api } from "../services/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "../context/ToastContext";
 import { useSearchParams } from "react-router-dom";
+import LanguageSelector from "../components/LanguageSelector";
+import { useOrderStatusLabel } from "../hooks/useOrderStatusLabel";
 
 export default function Profile() {
+  const { t } = useTranslation();
+  const statusLabel = useOrderStatusLabel();
   const { user, updateUser } = useAuth();
   const qc = useQueryClient();
   const toast = useToast();
@@ -85,9 +90,9 @@ export default function Profile() {
         email: emailInput?.value,
       });
       updateUser(data.user);
-      toast("Perfil actualizado", "success");
+      toast(t("profile.updated"), "success");
     } catch (e) {
-      toast("Error: " + e.message, "error");
+      toast(t("common.errorPrefix", { message: e.message }), "error");
     } finally {
       setSavingProfile(false);
     }
@@ -95,18 +100,18 @@ export default function Profile() {
 
   useEffect(() => {
     if (searchParams.get("payment") === "success") {
-      toast("Pago realizado con éxito", "success");
+      toast(t("profile.paymentSuccess"), "success");
       setSearchParams({}, { replace: true });
       qc.invalidateQueries({ queryKey: ["orders"] });
     }
   }, []);
 
   const tabs = [
-    { id: "dashboard", label: "Dashboard", icon: User },
-    { id: "favorites", label: "Favoritos", icon: Heart },
-    { id: "orders", label: "Pedidos", icon: ShoppingBag },
-    { id: "contacts", label: "Contactos", icon: Users },
-    { id: "settings", label: "Configuración", icon: Settings },
+    { id: "dashboard", label: t("profile.tabDashboard"), icon: User },
+    { id: "favorites", label: t("profile.tabFavorites"), icon: Heart },
+    { id: "orders", label: t("profile.tabOrders"), icon: ShoppingBag },
+    { id: "contacts", label: t("profile.tabContacts"), icon: Users },
+    { id: "settings", label: t("profile.tabSettings"), icon: Settings },
   ];
 
   useEffect(() => {
@@ -132,7 +137,7 @@ export default function Profile() {
     return (
       <div className="w-full max-w-[980px] mx-auto py-[80px] px-6">
         <p className="text-center font-apple-body text-[17px] text-[#7a7a7a]">
-          Inicia sesión para ver tu perfil
+          {t("auth.profileLoginPrompt")}
         </p>
       </div>
     );
@@ -141,7 +146,7 @@ export default function Profile() {
   return (
     <div className="w-full max-w-[980px] mx-auto py-[48px] md:py-[80px] px-6 space-y-6">
       <h1 className="font-apple-display text-[34px] sm:text-[44px] md:text-[56px] font-semibold leading-[1.07] tracking-[-0.28px] text-[#1d1d1f]">
-        Perfil
+        {t("profile.title")}
       </h1>
 
       <div className="flex gap-2 border-b border-[#e0e0e0] overflow-x-auto">
@@ -316,7 +321,7 @@ export default function Profile() {
                       disabled={removeFavorite.isPending && removeFavorite.variables === product.id}
                       className="text-[#0066cc] font-apple-body text-[14px] hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {removeFavorite.isPending && removeFavorite.variables === product.id ? "Quitando…" : "Quitar"}
+                      {removeFavorite.isPending && removeFavorite.variables === product.id ? t("common.removing") : t("common.remove")}
                     </button>
                   </div>
                 </div>
@@ -359,17 +364,6 @@ export default function Profile() {
                 PICKED_UP: "bg-[#ecfdf5] text-[#059669]",
                 IN_TRANSIT: "bg-[#eff6ff] text-[#0066cc]",
               };
-              const statusLabels = {
-                DELIVERED: "Entregado",
-                CANCELLED: "Cancelado",
-                PENDING_PAYMENT: "Pendiente de pago",
-                PENDING: "Pendiente",
-                CONFIRMED: "Confirmado",
-                PROCESSING: "En Preparación",
-                SHIPPED: "Enviado",
-                PICKED_UP: "Recogido",
-                IN_TRANSIT: "En Camino",
-              };
               return (
                 <div
                   key={order.id}
@@ -389,7 +383,7 @@ export default function Profile() {
                     <span
                       className={`px-3 py-1 rounded-[9999px] font-apple-body text-[13px] font-medium ${badgeColors[order.status] || "bg-[#f5f5f7] text-[#1d1d1f]"}`}
                     >
-                      {statusLabels[order.status] || order.status}
+                      {statusLabel(order.status)}
                     </span>
                   </div>
 
@@ -515,7 +509,7 @@ export default function Profile() {
           className="fixed inset-0 z-[9999] overflow-y-auto"
           role="dialog"
           aria-modal="true"
-          aria-label="Añadir contacto"
+          aria-label={t("home.addContact")}
         >
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -526,7 +520,7 @@ export default function Profile() {
             <button
               onClick={() => setShowAddContact(false)}
               className="absolute top-4 right-4 p-2 hover:bg-[#f5f5f7] rounded-full transition-colors duration-150"
-              aria-label="Cerrar"
+              aria-label={t("common.close")}
             >
               <X size={24} />
             </button>
@@ -651,7 +645,7 @@ export default function Profile() {
                   disabled={createContact.isPending}
                   className="flex-1 px-4 py-3 bg-[#0066cc] text-white rounded-[9999px] font-apple-body text-[17px] hover:bg-[#0071e3] disabled:bg-[#d2d2d7] disabled:cursor-not-allowed transition-colors duration-150"
                 >
-                  {createContact.isPending ? "Guardando\u2026" : "Guardar"}
+                  {createContact.isPending ? "Guardando\u2026" : t("common.save")}
                 </button>
               </div>
             </form>
@@ -665,12 +659,12 @@ export default function Profile() {
           <div className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow">
             <h3 className="font-apple-display text-[34px] font-semibold leading-[1.47] tracking-[-0.374px] text-[#1d1d1f] mb-4 flex items-center gap-2">
               <User size={20} />
-              Datos Personales
+              {t("profile.personalData")}
             </h3>
             <div className="space-y-4">
               <div>
                 <label className="block font-apple-body text-[14px] font-normal leading-[1.43] tracking-[-0.224px] text-[#7a7a7a] mb-1">
-                  Nombre
+                  {t("common.name")}
                 </label>
                 <input
                   id="profile-name"
@@ -681,7 +675,7 @@ export default function Profile() {
               </div>
               <div>
                 <label className="block font-apple-body text-[14px] font-normal leading-[1.43] tracking-[-0.224px] text-[#7a7a7a] mb-1">
-                  Email
+                  {t("common.email")}
                 </label>
                 <input
                   id="profile-email"
@@ -695,9 +689,16 @@ export default function Profile() {
                 disabled={savingProfile}
                 className="bg-[#0066cc] text-white font-apple-body text-[17px] px-6 py-2 rounded-[9999px] hover:bg-[#0071e3] transition-colors disabled:bg-[#d2d2d7] disabled:cursor-not-allowed"
               >
-                {savingProfile ? "Guardando…" : "Guardar cambios"}
+                {savingProfile ? t("common.saving") : t("profile.saveChanges")}
               </button>
             </div>
+          </div>
+          <div className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow">
+            <h3 className="font-apple-display text-[28px] font-semibold text-[#1d1d1f] mb-2">
+              {t("profile.languageSection")}
+            </h3>
+            <p className="font-apple-body text-[15px] text-[#7a7a7a] mb-4">{t("profile.languageHint")}</p>
+            <LanguageSelector />
           </div>
         </div>
       )}
@@ -733,7 +734,7 @@ export default function Profile() {
                   Email
                 </p>
                 <p className="font-apple-display text-[22px] font-semibold leading-[1.14] text-[#1d1d1f]">
-                  {contactoToShow.email || "—"}
+                  {contactoToShow.email || t("common.dash")}
                 </p>
               </div>
               <div>
@@ -741,7 +742,7 @@ export default function Profile() {
                   Teléfono
                 </p>
                 <p className="font-apple-display text-[22px] font-semibold leading-[1.14] text-[#1d1d1f]">
-                  {contactoToShow.phone || "—"}
+                  {contactoToShow.phone || t("common.dash")}
                 </p>
               </div>
               <div>
@@ -749,7 +750,7 @@ export default function Profile() {
                   Dirección
                 </p>
                 <p className="font-apple-display text-[22px] font-semibold leading-[1.14] text-[#1d1d1f]">
-                  {contactoToShow.address || "—"}
+                  {contactoToShow.address || t("common.dash")}
                 </p>
               </div>
             </div>

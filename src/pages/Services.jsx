@@ -1,44 +1,51 @@
+import { useTranslation } from "react-i18next";
 import { Package, Send, Heart, Shield } from "lucide-react";
 import ButtonPrimary from "../components/ButtonPrimary";
 import { Link } from "react-router-dom";
 
-const services = [
-  {
-    icon: Package,
-    title: "Envío de Productos",
-    description: "Selecciona productos de nuestros mercados asociados en Guinea-Bissau y recíbelos directamente en la dirección que indiques.",
-    features: ["Compra por categorías", "Selección de mercado", "Entrega a domicilio"],
-  },
-  {
-    icon: Send,
-    title: "Envío de Dinero",
-    description: "Envía dinero de forma segura a tus familiares y amigos en Guinea-Bissau desde cualquier parte del mundo.",
-    features: ["Transferencias seguras", "Cambio de divisa", "Notificación al receptor"],
-  },
-  {
-    icon: Heart,
-    title: "Asistencia Familiar",
-    description: "Coordina ayudas y paquetes familiares con seguimiento personalizado para asegurar que todo llegue a su destino.",
-    features: ["Paquetes personalizados", "Seguimiento en tiempo real", "Confirmación de entrega"],
-  },
-  {
-    icon: Shield,
-    title: "Atención al Cliente",
-    description: "Soporte dedicado para resolver cualquier duda o incidencia durante todo el proceso de envío.",
-    features: ["Soporte 24/7", "Asistencia en portugués y crioulo", "Resolución rápida"],
-  },
-];
-
 export default function Services() {
+  const { t } = useTranslation();
+
+  const services = [
+    {
+      icon: Package,
+      title: t("services.productShippingTitle"),
+      description: t("services.productShippingDesc"),
+      features: [t("services.f1"), t("services.f2"), t("services.f3")],
+      comingSoon: false,
+    },
+    {
+      icon: Send,
+      title: t("services.moneyTitle"),
+      description: t("services.moneyDesc"),
+      features: [t("services.f4"), t("services.f5"), t("services.f6")],
+      comingSoon: true,
+    },
+    {
+      icon: Heart,
+      title: t("services.familyTitle"),
+      description: t("services.familyDesc"),
+      features: [t("services.f7"), t("services.f8"), t("services.f9")],
+      comingSoon: true,
+    },
+    {
+      icon: Shield,
+      title: t("services.supportTitle"),
+      description: t("services.supportDesc"),
+      features: [t("services.f10"), t("services.f11"), t("services.f12")],
+      comingSoon: false,
+    },
+  ];
+
   return (
     <div className="w-full">
       <section className="bg-[#ffffff] py-[48px] md:py-[80px] px-6">
         <div className="max-w-[980px] mx-auto text-center">
           <h1 className="font-apple-display text-[34px] sm:text-[44px] md:text-[56px] font-semibold leading-[1.07] tracking-[-0.28px] text-[#1d1d1f] mb-4">
-            Servicios
+            {t("services.title")}
           </h1>
           <p className="font-apple-body text-[18px] md:text-[24px] font-normal leading-[1.3] md:leading-[1.17] tracking-[0.168px] text-[#7a7a7a] max-w-[680px] mx-auto">
-            Todo lo que necesitas para hacer llegar tu apoyo a Guinea-Bissau
+            {t("services.subtitle")}
           </p>
         </div>
       </section>
@@ -49,9 +56,9 @@ export default function Services() {
             const Icon = service.icon;
             return (
               <div key={service.title} className="bg-[#ffffff] p-[32px] rounded-[18px] no-shadow relative">
-                {(service.title === "Envío de Dinero" || service.title === "Asistencia Familiar") && (
+                {service.comingSoon && (
                   <span className="absolute top-3 right-3 font-apple-body text-[11px] font-semibold leading-[1.2] tracking-[0.06px] uppercase text-[#ffffff] bg-[#0066cc] rounded-[9999px] px-[10px] py-[4px]">
-                    Próximamente
+                    {t("services.comingSoon")}
                   </span>
                 )}
                 <div className="w-12 h-12 bg-[#f5f5f7] rounded-full flex items-center justify-center mb-5">
@@ -80,13 +87,13 @@ export default function Services() {
       <section className="bg-[#ffffff] py-[48px] md:py-[80px] px-6 text-center">
         <div className="max-w-[980px] mx-auto">
           <h2 className="font-apple-display text-[28px] sm:text-[34px] md:text-[40px] font-semibold leading-[1.1] text-[#1d1d1f] mb-4">
-            ¿Listo para empezar?
+            {t("services.readyTitle")}
           </h2>
           <p className="font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a] mb-8">
-            Explora nuestros productos y encuentra todo lo que necesitas
+            {t("services.readyBody")}
           </p>
           <Link to="/buscar">
-            <ButtonPrimary>Comenzar ahora</ButtonPrimary>
+            <ButtonPrimary>{t("services.startNow")}</ButtonPrimary>
           </Link>
         </div>
       </section>

@@ -1,9 +1,11 @@
 import { Share2, Copy } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useOrderReceipt } from "../hooks/useOrderReceipt";
 import { useToast } from "../context/ToastContext";
 
 export default function OrderReceiptShare({ orderId }) {
+  const { t } = useTranslation();
   const { data, isLoading, isError } = useOrderReceipt(orderId);
   const toast = useToast();
   const [busy, setBusy] = useState(false);
@@ -15,9 +17,9 @@ export default function OrderReceiptShare({ orderId }) {
     setBusy(true);
     try {
       await navigator.clipboard.writeText(shareText);
-      toast("Recibo copiado al portapapeles", "success");
+      toast( t("receipt.copied"), "success");
     } catch {
-      toast("No se pudo copiar el recibo", "error");
+      toast( t("receipt.copyFailed"), "error");
     } finally {
       setBusy(false);
     }
@@ -29,7 +31,7 @@ export default function OrderReceiptShare({ orderId }) {
     try {
       if (navigator.share) {
         await navigator.share({
-          title: "Recibo Nha Kinhon",
+          title: t("receipt.shareTitle"),
           text: shareText,
         });
       } else {
@@ -38,7 +40,7 @@ export default function OrderReceiptShare({ orderId }) {
       }
     } catch (e) {
       if (e?.name !== "AbortError") {
-        toast("No se pudo compartir el recibo", "error");
+        toast( t("receipt.shareFailed"), "error");
       }
     } finally {
       setBusy(false);

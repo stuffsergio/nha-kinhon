@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { ShoppingCart, Users, Plus, MapPin, Store } from "lucide-react";
 import ButtonPrimary from "../components/ButtonPrimary";
@@ -18,6 +19,7 @@ const emojiMap = {
 const getEmoji = (icon) => emojiMap[icon] || "\uD83D\uDCE6";
 
 export default function Home() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: categoriesRes, isLoading: catLoading } = useCategories();
@@ -40,15 +42,15 @@ export default function Home() {
               NHA KINHON
             </h1>
             <p className="font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a] mt-1">
-              Servicio de envío de comida desde la diáspora
+              {t("home.tagline")}
             </p>
           </div>
           <div className="flex flex-wrap gap-3 sm:shrink-0">
             <ButtonPrimary onClick={() => navigate("/buscar")}>
-              Comenzar
+              {t("home.start")}
             </ButtonPrimary>
             <ButtonSecondary onClick={() => navigate("/mapa")}>
-              Explorar
+              {t("home.explore")}
             </ButtonSecondary>
           </div>
         </div>
@@ -58,7 +60,7 @@ export default function Home() {
         <div className="max-w-[980px] mx-auto">
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-apple-display text-[32px] font-semibold leading-[1.1] text-[#1d1d1f]">
-              Categorías Populares
+              {t("home.popularCategories")}
             </h2>
             <button
               onClick={() => navigate("/buscar")}
@@ -95,7 +97,7 @@ export default function Home() {
         <div className="max-w-[980px] mx-auto">
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-apple-display text-[32px] font-semibold leading-[1.1] text-[#1d1d1f]">
-              Productos Destacados
+              {t("home.featuredProducts")}
             </h2>
             <button
               onClick={() => navigate("/buscar")}
@@ -143,13 +145,13 @@ export default function Home() {
         <div className="max-w-[980px] mx-auto">
           <div className="flex items-center justify-between mb-8">
             <h2 className="font-apple-display text-[32px] font-semibold leading-[1.1] text-[#1d1d1f]">
-              Mercados y Tiendas
+              {t("home.marketsAndStores")}
             </h2>
             <button
               onClick={() => navigate("/mapa")}
               className="font-apple-body text-[15px] text-[#0066cc] hover:underline"
             >
-              Ver en mapa
+              {t("home.viewOnMap")}
             </button>
           </div>
           {marketsLoading ? (
@@ -168,7 +170,7 @@ export default function Home() {
                     {market.location} &bull; {market.hours}
                   </p>
                   <ButtonSecondary onClick={() => navigate("/mapa")}>
-                    Ver productos
+                    {t("home.viewProducts")}
                   </ButtonSecondary>
                 </div>
               ))}
@@ -181,14 +183,14 @@ export default function Home() {
         <div className="max-w-[980px] mx-auto">
           <div className="flex items-center justify-between mb-8">
             <h2 className="font-apple-display text-[32px] font-semibold leading-[1.1] text-[#1d1d1f]">
-              Mis Contactos
+              {t("home.myContacts")}
             </h2>
             <button
               onClick={() => navigate("/perfil?tab=contacts")}
               className="font-apple-body text-[15px] text-[#0066cc] hover:underline inline-flex items-center gap-1.5"
             >
               <Plus size={16} />
-              Añadir contacto
+              {t("home.addContact")}
             </button>
           </div>
           {contactsLoading ? (
@@ -197,10 +199,10 @@ export default function Home() {
             <div className="text-center py-16">
               <Users size={48} className="text-[#d2d2d7] mx-auto mb-4" strokeWidth={1} />
               <p className="font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a] mb-4">
-                No tienes contactos guardados
+                {t("home.noContacts")}
               </p>
               <ButtonPrimary onClick={() => navigate("/perfil?tab=contacts")}>
-                Añadir tu primer contacto
+                {t("home.addFirstContact")}
               </ButtonPrimary>
             </div>
           ) : (

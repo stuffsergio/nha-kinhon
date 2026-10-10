@@ -1,4 +1,5 @@
 import prisma from "../config/db.js";
+import { DEFAULT_LOCALE, resolveLocale, translateNotification } from "../i18n/index.js";
 
 /** Deep-link fields aligned with Expo push `data` (minus type/notificationId). */
 export function notificationDeepLinkFields(orderId) {
@@ -26,24 +27,44 @@ export function formatNotificationForClient(notification) {
   };
 }
 
+async function getUserLocale(userId) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { locale: true },
+  });
+  return resolveLocale({ userLocale: user?.locale }) || DEFAULT_LOCALE;
+}
+
 export async function createNotification({
   userId,
   type,
   title,
   message,
   orderId,
+  template,
+  templateParams = {},
 }) {
+  let finalTitle = title;
+  let finalMessage = message;
+
+  if (template) {
+    const locale = await getUserLocale(userId);
+    const translated = translateNotification(template, locale, templateParams);
+    finalTitle = translated.title;
+    finalMessage = translated.message;
+  }
+
   const notification = await prisma.notification.create({
     data: {
       userId,
       type,
-      title,
-      message,
+      title: finalTitle,
+      message: finalMessage,
       orderId: orderId ?? null,
     },
   });
 
-  console.log(`[NOTIFICATION] User: ${userId} | ${title}: ${message}`);
+  console.log(`[NOTIFICATION] User: ${userId} | ${finalTitle}: ${finalMessage}`);
 
   const data = orderId
     ? {
@@ -57,7 +78,7 @@ export async function createNotification({
         ...notificationDeepLinkFields(null),
       };
 
-  await sendPushToUser(userId, title, message, data);
+  await sendPushToUser(userId, finalTitle, finalMessage, data);
 
   return notification;
 }

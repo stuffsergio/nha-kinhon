@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CheckoutElementsProvider, useCheckout, PaymentElement } from "@stripe/react-stripe-js/checkout";
 import { loadStripe } from "@stripe/stripe-js";
@@ -23,7 +24,7 @@ function PaymentForm({ cartTotal, email, onCancel, onSuccess }) {
     const { error } = await checkoutResult.checkout.confirm({ email });
 
     if (error) {
-      toast(error.message || "Error al procesar el pago", "error");
+      toast(error.message || t("checkout.paymentProcessError"), "error");
       setProcessing(false);
     } else {
       onSuccess();
@@ -42,7 +43,7 @@ function PaymentForm({ cartTotal, email, onCancel, onSuccess }) {
     return (
       <div className="text-center py-12 bg-[#fef2f2] rounded-[18px]">
         <p className="font-apple-body text-[17px] text-[#dc2626] mb-4">
-          {checkoutResult.error.message || "Error al cargar el pago"}
+          {checkoutResult.error.message || t("checkout.paymentLoadError")}
         </p>
         <button onClick={onCancel} className="text-[#0066cc] font-apple-body text-[15px] hover:underline">
           Volver al carrito
@@ -78,6 +79,7 @@ function PaymentForm({ cartTotal, email, onCancel, onSuccess }) {
 }
 
 export default function CheckoutPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { clearCart } = useCart();
@@ -125,7 +127,7 @@ export default function CheckoutPage() {
           Pagar con Tarjeta
         </h1>
         <p className="font-apple-body text-[17px] text-[#7a7a7a]">
-          Total a pagar: <strong className="text-[#1d1d1f]">{cartTotal?.toLocaleString() || "—"} FCFA</strong>
+          Total a pagar: <strong className="text-[#1d1d1f]">{cartTotal?.toLocaleString() || t("common.dash")} FCFA</strong>
         </p>
       </div>
 

@@ -1,5 +1,6 @@
 import prisma from "../config/db.js";
-import { AppError, NotFoundError } from "../utils/errors.js";
+import { AppError, NotFoundError, codedError } from "../utils/errors.js";
+import { t } from "../i18n/index.js";
 import { createNotification } from "../services/notification.service.js";
 import {
   applyDefaultOrderListFilter,
@@ -48,7 +49,7 @@ export async function getById(req, res) {
 
   if (!order) throw new NotFoundError("Pedido");
   if (order.userId !== req.user.id && req.user.role !== "ADMIN") {
-    throw new AppError("No tienes permiso para ver este pedido", 403);
+    throw codedError("ORDER_VIEW_FORBIDDEN", 403);
   }
 
   res.json({ order });
@@ -62,10 +63,10 @@ export async function getReceipt(req, res) {
 
   if (!order) throw new NotFoundError("Pedido");
   if (order.userId !== req.user.id && req.user.role !== "ADMIN") {
-    throw new AppError("No tienes permiso para ver este recibo", 403);
+    throw codedError("RECEIPT_FORBIDDEN", 403);
   }
 
-  res.json(buildOrderReceipt(order));
+  res.json(buildOrderReceipt(order, req.locale));
 }
 
 export async function listDeliveryPhotos(req, res) {
@@ -245,17 +246,16 @@ export async function updateStatus(req, res) {
     include: { items: true },
   });
 
-  const statusLabels = {
-    CONFIRMED: "confirmado",
-    CANCELLED: "cancelado",
-  };
-
   if (status === "CONFIRMED" || status === "CANCELLED") {
+    const statusKey = status === "CONFIRMED" ? "confirmed" : "cancelled";
     await createNotification({
       userId: order.userId,
       type: `ORDER_${status}`,
-      title: "Pedido actualizado",
-      message: `Tu pedido #${order.id.slice(0, 8)} está ${statusLabels[status] || status}.`,
+      template: status === "CANCELLED" ? "ORDER_CANCELLED" : "ORDER_CONFIRMED",
+      templateParams: {
+        shortId: order.id.slice(0, 8),
+        statusLabel: t(`orderStatusShort.${statusKey}`, "es"),
+      },
       orderId: order.id,
     });
   }
@@ -286,8 +286,8 @@ export async function cancel(req, res) {
   await createNotification({
     userId: order.userId,
     type: "ORDER_CANCELLED",
-    title: "Pedido cancelado",
-    message: `Tu pedido #${order.id.slice(0, 8)} ha sido cancelado.`,
+    template: "ORDER_CANCELLED",
+    templateParams: { shortId: order.id.slice(0, 8) },
     orderId: order.id,
   });
 

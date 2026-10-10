@@ -1,19 +1,21 @@
+import { useTranslation } from "react-i18next";
 import { MapPin, Phone, Package, Clock } from "lucide-react";
 import DeliveryStatusBadge from "./DeliveryStatusBadge";
 import DeliveryTimeline from "./DeliveryTimeline";
 
-function timeAgo(date) {
-  const diff = Date.now() - new Date(date).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "Ahora";
-  if (mins < 60) return `Hace ${mins} min`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `Hace ${hrs}h`;
-  const days = Math.floor(hrs / 24);
-  return `Hace ${days}d`;
-}
-
 export default function DeliveryOrderCard({ order, actions, showTimeAgo }) {
+  const { t } = useTranslation();
+
+  function timeAgo(date) {
+    const diff = Date.now() - new Date(date).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return t("delivery.timeAgoNow");
+    if (mins < 60) return t("delivery.timeAgoMin", { count: mins });
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return t("delivery.timeAgoHours", { count: hrs });
+    const days = Math.floor(hrs / 24);
+    return t("delivery.timeAgoDays", { count: days });
+  }
   const itemCount = order.items?.reduce((s, i) => s + i.quantity, 0) || 0;
   const orderTotal = order.items?.reduce((s, i) => s + i.price * i.quantity, 0) || order.total;
 
@@ -68,7 +70,7 @@ export default function DeliveryOrderCard({ order, actions, showTimeAgo }) {
           <div>
             <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px]">Teléfono</p>
             <a href={`tel:${order.recipientPhone}`} className="font-apple-body text-[15px] text-[#0066cc] hover:underline">
-              {order.recipientPhone || "—"}
+              {order.recipientPhone || t("common.dash")}
             </a>
           </div>
         </div>

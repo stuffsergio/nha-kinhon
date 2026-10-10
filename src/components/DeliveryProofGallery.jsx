@@ -1,4 +1,6 @@
+import { useTranslation } from "react-i18next";
 export default function DeliveryProofGallery({ photos = [], legacyPhoto = null }) {
+  const { t } = useTranslation();
   const urls = [
     ...photos.map((p) => (typeof p === "string" ? p : p.url)),
     ...(legacyPhoto && !photos.some((p) => (p.url || p) === legacyPhoto) ? [legacyPhoto] : []),
@@ -9,7 +11,7 @@ export default function DeliveryProofGallery({ photos = [], legacyPhoto = null }
   return (
     <div>
       <p className="font-apple-body text-[13px] text-[#7a7a7a] mb-2">
-        {urls.length > 1 ? "Pruebas de entrega" : "Prueba de entrega"}
+        {urls.length > 1 ? "Pruebas de entrega" : t("deliveryProof.title")}
       </p>
       <div className={`grid gap-3 ${urls.length > 1 ? "grid-cols-2 sm:grid-cols-3" : ""}`}>
         {urls.map((url, index) => (

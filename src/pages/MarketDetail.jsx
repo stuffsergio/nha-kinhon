@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router-dom";
 import { MapPin, Clock, Phone, ArrowLeft, Apple, ShoppingCart, ChevronDown, ChevronUp } from "lucide-react";
 import { useMarket } from "../hooks/useMarkets";
@@ -6,12 +7,7 @@ import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import ButtonPrimary from "../components/ButtonPrimary";
-
-const typeConfig = {
-  MERCADO_LOCAL: { label: "Mercado Local", color: "#dc3545" },
-  SUPERMERCADO: { label: "Supermercado", color: "#0066cc" },
-  TIENDA_ESPECIALIZADA: { label: "Tienda Especializada", color: "#7c3aed" },
-};
+import { useMarketTypeMeta } from "../hooks/useMarketTypeMeta";
 
 function groupByCategory(products) {
   const groups = {};
@@ -24,6 +20,8 @@ function groupByCategory(products) {
 }
 
 export default function MarketDetail() {
+  const { t } = useTranslation();
+  const { get: getMarketType } = useMarketTypeMeta();
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
@@ -35,7 +33,7 @@ export default function MarketDetail() {
 
   const market = marketRes?.market;
   const products = market?.products || [];
-  const cfg = typeConfig[market?.type] || typeConfig.MERCADO_LOCAL;
+  const cfg = getMarketType(market?.type || "MERCADO_LOCAL");
 
   const handleAddToCart = async (product) => {
     if (!user) { navigate("/login"); return; }

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ShoppingBag,
@@ -35,52 +36,53 @@ const CHILD_UP = {
   transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] },
 };
 
-const steps = [
-  {
-    icon: ShoppingBag,
-    title: "Elige productos",
-    description: "Selecciona alimentos y productos de mercados locales de Guinea-Bissau.",
-  },
-  {
-    icon: CreditCard,
-    title: "Paga desde tu país",
-    description: "Usa tu tarjeta internacional. Nosotros gestionamos el pago y la logística.",
-  },
-  {
-    icon: HeartHandshake,
-    title: "Reciben en casa",
-    description: "Tu familia recibe el pedido directamente en su domicilio.",
-  },
-];
-
-const benefits = [
-  {
-    icon: MapPin,
-    title: "Cobertura nacional",
-    description: "Llegamos a cualquier región de Guinea-Bissau. Sin importar lo remoto.",
-  },
-  {
-    icon: Truck,
-    title: "Delivery confiable",
-    description: "Repartidores verificados con seguimiento en tiempo real de tu pedido.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Pago seguro",
-    description: "Transacciones protegidas con Stripe. Tu dinero está seguro hasta la entrega.",
-  },
-];
-
-const stats = [
-  { value: "100+", label: "Productos locales" },
-  { value: "Toda", label: "Guinea-Bissau" },
-  { value: "24/7", label: "Soporte" },
-  { value: "×0", label: "Comisiones ocultas" },
-];
-
 export default function Landing() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, loading } = useAuth();
+
+  const steps = [
+    {
+      icon: ShoppingBag,
+      title: t("landing.step1Title"),
+      description: t("landing.step1Desc"),
+    },
+    {
+      icon: CreditCard,
+      title: t("landing.step2Title"),
+      description: t("landing.step2Desc"),
+    },
+    {
+      icon: HeartHandshake,
+      title: t("landing.step3Title"),
+      description: t("landing.step3Desc"),
+    },
+  ];
+
+  const benefits = [
+    {
+      icon: MapPin,
+      title: t("landing.benefit1Title"),
+      description: t("landing.benefit1Desc"),
+    },
+    {
+      icon: Truck,
+      title: t("landing.benefit2Title"),
+      description: t("landing.benefit2Desc"),
+    },
+    {
+      icon: ShieldCheck,
+      title: t("landing.benefit3Title"),
+      description: t("landing.benefit3Desc"),
+    },
+  ];
+
+  const stats = [
+    { value: "100+", label: t("landing.statsProducts") },
+    { value: t("landing.statsAll"), label: t("landing.statsCountry") },
+    { value: "24/7", label: t("landing.statsSupport") },
+    { value: t("landing.statsZero"), label: t("landing.statsFees") },
+  ];
 
   if (loading) {
     return (
@@ -104,9 +106,9 @@ export default function Landing() {
         </Link>
         <div className="hidden md:flex items-center gap-6">
           {[
-            { label: "Cómo funciona", href: "#como-funciona" },
-            { label: "Ventajas", href: "#ventajas" },
-            { label: "App", href: "#app" },
+            { label: t("landing.howItWorks"), href: "#como-funciona" },
+            { label: t("landing.benefits"), href: "#ventajas" },
+            { label: t("landing.app"), href: "#app" },
           ].map((link) => (
             <a
               key={link.href}
@@ -120,11 +122,11 @@ export default function Landing() {
         <div className="relative group">
           <button className="inline-flex items-center gap-1.5 font-apple-body text-[13px] font-medium text-white bg-primary/80 rounded-full px-4 py-2 cursor-default">
             <Download size={14} />
-            Descargar app
+            {t("landing.downloadApp")}
           </button>
           <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
             <span className="font-apple-body text-[11px] text-white bg-ink/90 px-2 py-1 rounded-md whitespace-nowrap">
-              Próximamente
+              {t("landing.comingSoon")}
             </span>
           </div>
         </div>
@@ -139,30 +141,29 @@ export default function Landing() {
           <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-xl border border-white/20 rounded-full px-4 py-1.5 mb-8 shadow-xs">
             <Globe size={14} className="text-primary" />
             <span className="font-apple-body text-[13px] font-medium text-ink-muted-80 tracking-wide">
-              Conectando la diáspora guineana
+              {t("landing.diasporaBadge")}
             </span>
           </div>
           <h1 className="font-apple-display text-[56px] md:text-[72px] font-semibold leading-[1.05] tracking-[-0.36px] text-ink mb-6">
-            Envía a tus seres queridos
-            <span className="text-primary"> desde cualquier lugar</span>
+            {t("landing.heroTitle")}
+            <span className="text-primary">{t("landing.heroTitleAccent")}</span>
           </h1>
           <p className="font-apple-body text-[20px] md:text-[24px] font-normal leading-[1.4] text-ink-muted-48 mb-10 max-w-[600px] mx-auto">
-            Nha Kinhon conecta a la diáspora guineana con sus familiares en Guinea-Bissau.
-            Compra productos locales y recíbelos en su domicilio.
+            {t("landing.heroSubtitle")}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               to="/login?mode=register"
               className="group inline-flex items-center justify-center gap-2 font-apple-body text-[17px] font-medium text-white bg-primary rounded-full px-7 py-3.5 hover:bg-primary-focus transition-all duration-200 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30"
             >
-              Crear cuenta gratis
+              {t("landing.createFreeAccount")}
               <ArrowRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
             </Link>
             <Link
               to="/login"
               className="inline-flex items-center justify-center font-apple-body text-[17px] font-medium text-ink bg-white/80 backdrop-blur-xl border border-hairline rounded-full px-7 py-3.5 hover:bg-white hover:border-ink-muted-48 transition-all duration-200 shadow-xs"
             >
-              Iniciar sesión
+              {t("landing.signIn")}
             </Link>
           </div>
         </motion.div>
@@ -192,13 +193,13 @@ export default function Landing() {
         <div className="max-w-[980px] mx-auto">
           <motion.div className="text-center mb-16" {...FADE_UP}>
             <span className="font-apple-body text-[13px] font-semibold uppercase tracking-widest text-primary">
-              Cómo funciona
+              {t("landing.howItWorks")}
             </span>
             <h2 className="font-apple-display text-[40px] md:text-[48px] font-semibold leading-[1.1] tracking-[-0.28px] text-ink mt-3 mb-4">
-              Tres pasos sencillos
+              {t("landing.stepsTitle")}
             </h2>
             <p className="font-apple-body text-[18px] text-ink-muted-48 max-w-[500px] mx-auto">
-              Enviar a tus familiares nunca fue tan fácil
+              {t("landing.stepsSubtitle")}
             </p>
           </motion.div>
           <motion.div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8" {...STAGGER}>
@@ -215,7 +216,7 @@ export default function Landing() {
                   <step.icon size={28} className="text-primary" strokeWidth={1.5} />
                 </div>
                 <span className="font-apple-body text-[12px] font-semibold uppercase tracking-widest text-primary/60 mb-3 block">
-                  Paso {i + 1}
+                  {t("landing.stepLabel", { n: i + 1 })}
                 </span>
                 <h3 className="font-apple-display text-[22px] font-semibold leading-[1.2] text-ink mb-3">
                   {step.title}
@@ -234,13 +235,13 @@ export default function Landing() {
         <div className="max-w-[980px] mx-auto">
           <motion.div className="text-center mb-16" {...FADE_UP}>
             <span className="font-apple-body text-[13px] font-semibold uppercase tracking-widest text-primary">
-              Ventajas
+              {t("landing.benefits")}
             </span>
             <h2 className="font-apple-display text-[40px] md:text-[48px] font-semibold leading-[1.1] tracking-[-0.28px] text-ink mt-3 mb-4">
-              ¿Por qué Nha Kinhon?
+              {t("landing.whyTitle")}
             </h2>
             <p className="font-apple-body text-[18px] text-ink-muted-48 max-w-[500px] mx-auto">
-              La forma más fácil y segura de enviar a Guinea-Bissau
+              {t("landing.whySubtitle")}
             </p>
           </motion.div>
           <motion.div className="grid grid-cols-1 md:grid-cols-3 gap-6" {...STAGGER}>
@@ -271,23 +272,22 @@ export default function Landing() {
           <motion.div className="flex flex-col md:flex-row items-center gap-12" {...FADE_UP}>
             <div className="flex-1">
               <span className="font-apple-body text-[13px] font-semibold uppercase tracking-widest text-primary">
-                App móvil
+                {t("landing.mobileSection")}
               </span>
               <h2 className="font-apple-display text-[36px] md:text-[44px] font-semibold leading-[1.1] tracking-[-0.28px] text-ink mt-3 mb-4">
-                Lleva Nha Kinhon en tu bolsillo
+                {t("landing.mobileTitle")}
               </h2>
               <p className="font-apple-body text-[18px] leading-[1.6] text-ink-muted-48 mb-8 max-w-[480px]">
-                Gestiona tus envíos, haz seguimiento en tiempo real y paga desde tu
-                dispositivo Android.
+                {t("landing.mobileDesc")}
               </p>
               <div className="flex flex-wrap gap-3">
                 <div className="inline-flex items-center gap-2 bg-ink text-white rounded-full px-5 py-3 font-apple-body text-[14px] font-medium shadow-sm">
                   <Smartphone size={18} />
-                  Google Play
+                  {t("landing.googlePlay")}
                 </div>
               </div>
               <div className="mt-6 flex flex-col gap-2">
-                {["Pago seguro con Stripe", "Seguimiento en tiempo real", "Notificaciones push"].map(
+                {[t("landing.featureStripe"), t("services.f8"), t("landing.featurePush")].map(
                   (feature) => (
                     <div key={feature} className="flex items-center gap-2.5">
                       <CheckCircle2 size={16} className="text-primary shrink-0" />
@@ -309,7 +309,7 @@ export default function Landing() {
                     </div>
                     <p className="font-apple-body text-[13px] text-ink-muted-48">Nha Kinhon</p>
                     <p className="font-apple-display text-[11px] font-semibold text-ink/60 mt-1">
-                      Envíos a Guinea-Bissau
+                      {t("landing.mockTagline")}
                     </p>
                   </div>
                 </div>
@@ -325,16 +325,16 @@ export default function Landing() {
         <div className="absolute top-[-30%] left-[-20%] w-[80%] h-[80%] bg-gradient-to-br from-primary/[0.03] to-transparent rounded-full blur-3xl" />
         <motion.div className="relative max-w-[600px] mx-auto text-center" {...FADE_UP}>
           <h2 className="font-apple-display text-[40px] md:text-[48px] font-semibold leading-[1.1] tracking-[-0.28px] text-ink mb-4">
-            Únete a la diáspora guineana
+            {t("landing.ctaTitle")}
           </h2>
           <p className="font-apple-body text-[18px] leading-[1.6] text-ink-muted-48 mb-10 max-w-[500px] mx-auto">
-            Crea tu cuenta gratis y empieza a enviar a tus familiares hoy mismo.
+            {t("landing.ctaSubtitle")}
           </p>
           <Link
             to="/login?mode=register"
             className="group inline-flex items-center justify-center gap-2 font-apple-body text-[17px] font-medium text-white bg-primary rounded-full px-8 py-4 hover:bg-primary-focus transition-all duration-200 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30"
           >
-            Crear cuenta gratis
+            {t("landing.createFreeAccount")}
             <ArrowRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
           </Link>
         </motion.div>

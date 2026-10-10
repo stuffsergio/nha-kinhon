@@ -1,9 +1,13 @@
 import { Search } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function SearchBar({ searchQuery, onSearch, onSearchSubmit, placeholder }) {
+  const { t } = useTranslation();
   return (
     <div className="relative max-w-[600px] mx-auto">
-      <label htmlFor="search-input" className="sr-only">Buscar</label>
+      <label htmlFor="search-input" className="sr-only">
+        {t("search.srLabel")}
+      </label>
       <input
         id="search-input"
         type="text"

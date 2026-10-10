@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, Link } from "react-router-dom";
 import { Truck, ArrowLeft } from "lucide-react";
 import { useDeliveryLogin, useDeliveryRegister } from "../hooks/useDeliveryAuth";
@@ -6,6 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 
 export default function DeliveryLogin() {
+  const { t } = useTranslation();
   const [tab, setTab] = useState("login");
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -29,25 +31,25 @@ export default function DeliveryLogin() {
     e.preventDefault();
     try {
       await loginMutation.mutateAsync({ email: form.email, password: form.password });
-      toast("Bienvenido repartidor", "success");
+      toast( t("delivery.welcome"), "success");
       navigate("/delivery/dashboard", { replace: true });
     } catch (err) {
-      toast(err.message || "Error al iniciar sesión", "error");
+      toast(err.message || t("delivery.loginError"), "error");
     }
   };
 
   const handleRegister = async (e) => {
     e.preventDefault();
     if (!form.name.trim() || !form.email.trim() || !form.password || !form.phone.trim()) {
-      toast("Completa todos los campos obligatorios", "error");
+      toast( t("delivery.fillRequired"), "error");
       return;
     }
     if (form.password.length < 6) {
-      toast("La contraseña debe tener al menos 6 caracteres", "error");
+      toast( t("auth.passwordMin"), "error");
       return;
     }
     if (form.password !== form.confirmPassword) {
-      toast("Las contraseñas no coinciden", "error");
+      toast( t("auth.passwordMismatch"), "error");
       return;
     }
     try {
@@ -55,10 +57,10 @@ export default function DeliveryLogin() {
         name: form.name.trim(), email: form.email.trim(), password: form.password,
         phone: form.phone.trim(), vehicle: form.vehicle, serviceArea: form.serviceArea,
       });
-      toast("Registro completado", "success");
+      toast( t("delivery.registerDone"), "success");
       navigate("/delivery/dashboard", { replace: true });
     } catch (err) {
-      toast(err.message || "Error al registrarse", "error");
+      toast(err.message || t("delivery.registerError"), "error");
     }
   };
 
@@ -76,7 +78,7 @@ export default function DeliveryLogin() {
             Repartidores
           </h1>
           <p className="font-apple-body text-[17px] text-[#7a7a7a]">
-            {tab === "login" ? "Inicia sesión para gestionar tus entregas" : "Regístrate para empezar a repartir"}
+            {tab === "login" ? t("delivery.loginSubtitle") : t("delivery.registerSubtitle")}
           </p>
         </div>
 
@@ -93,7 +95,7 @@ export default function DeliveryLogin() {
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block font-apple-body text-[14px] text-[#7a7a7a] mb-1">Email</label>
-              <input type="email" value={form.email} onChange={update("email")} placeholder="tu@email.com" required className="w-full px-4 py-3 border border-[#e0e0e0] rounded-[12px] focus:outline-none focus:ring-2 focus:ring-[#059669] font-apple-body text-[17px]" />
+              <input type="email" value={form.email} onChange={update("email")} placeholder={t("auth.emailPlaceholder")} required className="w-full px-4 py-3 border border-[#e0e0e0] rounded-[12px] focus:outline-none focus:ring-2 focus:ring-[#059669] font-apple-body text-[17px]" />
             </div>
             <div>
               <label className="block font-apple-body text-[14px] text-[#7a7a7a] mb-1">Contraseña</label>
@@ -107,11 +109,11 @@ export default function DeliveryLogin() {
           <form onSubmit={handleRegister} className="space-y-4">
             <div>
               <label className="block font-apple-body text-[14px] text-[#7a7a7a] mb-1">Nombre completo *</label>
-              <input type="text" value={form.name} onChange={update("name")} placeholder="Tu nombre" required className="w-full px-4 py-3 border border-[#e0e0e0] rounded-[12px] focus:outline-none focus:ring-2 focus:ring-[#059669] font-apple-body text-[17px]" />
+              <input type="text" value={form.name} onChange={update("name")} placeholder={t("auth.yourName")} required className="w-full px-4 py-3 border border-[#e0e0e0] rounded-[12px] focus:outline-none focus:ring-2 focus:ring-[#059669] font-apple-body text-[17px]" />
             </div>
             <div>
               <label className="block font-apple-body text-[14px] text-[#7a7a7a] mb-1">Email *</label>
-              <input type="email" value={form.email} onChange={update("email")} placeholder="tu@email.com" required className="w-full px-4 py-3 border border-[#e0e0e0] rounded-[12px] focus:outline-none focus:ring-2 focus:ring-[#059669] font-apple-body text-[17px]" />
+              <input type="email" value={form.email} onChange={update("email")} placeholder={t("auth.emailPlaceholder")} required className="w-full px-4 py-3 border border-[#e0e0e0] rounded-[12px] focus:outline-none focus:ring-2 focus:ring-[#059669] font-apple-body text-[17px]" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -143,11 +145,11 @@ export default function DeliveryLogin() {
             </div>
             <div>
               <label className="block font-apple-body text-[14px] text-[#7a7a7a] mb-1">Contraseña *</label>
-              <input type="password" value={form.password} onChange={update("password")} placeholder="Mínimo 6 caracteres" required className="w-full px-4 py-3 border border-[#e0e0e0] rounded-[12px] focus:outline-none focus:ring-2 focus:ring-[#059669] font-apple-body text-[17px]" />
+              <input type="password" value={form.password} onChange={update("password")} placeholder={t("auth.minPassword")} required className="w-full px-4 py-3 border border-[#e0e0e0] rounded-[12px] focus:outline-none focus:ring-2 focus:ring-[#059669] font-apple-body text-[17px]" />
             </div>
             <div>
               <label className="block font-apple-body text-[14px] text-[#7a7a7a] mb-1">Confirmar contraseña *</label>
-              <input type="password" value={form.confirmPassword} onChange={update("confirmPassword")} placeholder="Repite la contraseña" required className="w-full px-4 py-3 border border-[#e0e0e0] rounded-[12px] focus:outline-none focus:ring-2 focus:ring-[#059669] font-apple-body text-[17px]" />
+              <input type="password" value={form.confirmPassword} onChange={update("confirmPassword")} placeholder={t("auth.repeatPassword")} required className="w-full px-4 py-3 border border-[#e0e0e0] rounded-[12px] focus:outline-none focus:ring-2 focus:ring-[#059669] font-apple-body text-[17px]" />
             </div>
             <button type="submit" disabled={registerMutation.isPending} className="w-full py-3 bg-[#059669] text-white rounded-[9999px] font-apple-body text-[17px] font-normal leading-[1.47] hover:bg-[#047857] transition-colors disabled:bg-[#d2d2d7] disabled:cursor-not-allowed">
               {registerMutation.isPending ? "Registrando..." : "Crear cuenta"}

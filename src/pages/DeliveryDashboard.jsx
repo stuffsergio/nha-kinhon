@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, Link } from "react-router-dom";
 import { Package, ClipboardList, User, Clock, Truck, DollarSign, Star, TrendingUp, ArrowLeft, MapPin, Camera, X } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -16,25 +17,26 @@ import { fileToCompressedDataUrl } from "../utils/image";
 import DeliveryOrderCard from "../components/DeliveryOrderCard";
 import ButtonPrimary from "../components/ButtonPrimary";
 
-function timeAgo(date) {
-  const diff = Date.now() - new Date(date).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "Ahora";
-  if (mins < 60) return `Hace ${mins} min`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `Hace ${hrs}h`;
-  const days = Math.floor(hrs / 24);
-  return `Hace ${days}d`;
-}
-
-const tabs = [
-  { id: "available", label: "Disponibles", icon: Package },
-  { id: "active", label: "Mis Activos", icon: ClipboardList },
-  { id: "history", label: "Historial", icon: Clock },
-  { id: "profile", label: "Mi Perfil", icon: User },
-];
-
 export default function DeliveryDashboard() {
+  const { t } = useTranslation();
+
+  function timeAgo(date) {
+    const diff = Date.now() - new Date(date).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return t("delivery.timeAgoNow");
+    if (mins < 60) return t("delivery.timeAgoMin", { count: mins });
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return t("delivery.timeAgoHours", { count: hrs });
+    const days = Math.floor(hrs / 24);
+    return t("delivery.timeAgoDays", { count: days });
+  }
+
+  const tabs = [
+    { id: "available", label: t("delivery.tabAvailable"), icon: Package },
+    { id: "active", label: t("delivery.tabActive"), icon: ClipboardList },
+    { id: "history", label: t("delivery.tabHistory"), icon: Clock },
+    { id: "profile", label: t("delivery.tabProfile"), icon: User },
+  ];
   const { user, updateUser, logout } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
@@ -80,7 +82,7 @@ export default function DeliveryDashboard() {
     return (
       <div className="w-full max-w-[980px] mx-auto py-[80px] px-6">
         <Link to="/" className="inline-flex items-center gap-1.5 font-apple-body text-[15px] text-[#7a7a7a] hover:text-[#1d1d1f] transition-colors mb-10">
-          <ArrowLeft size={18} /> Volver al inicio
+          <ArrowLeft size={18} /> {t("common.backHome")}
         </Link>
         <div className="max-w-[420px] mx-auto">
           <div className="bg-[#ffffff] border border-[#e0e0e0] rounded-[24px] no-shadow p-8 text-center">
@@ -88,16 +90,16 @@ export default function DeliveryDashboard() {
               <Truck size={40} className="text-[#059669]" />
             </div>
             <h1 className="font-apple-display text-[32px] font-semibold leading-[1.1] text-[#1d1d1f] mb-3">
-              Panel de Repartidores
+              {t("delivery.dashboardTitle")}
             </h1>
             <p className="font-apple-body text-[17px] text-[#7a7a7a] mb-8 leading-relaxed">
-              Inicia sesión o regístrate para gestionar tus entregas, ver tu historial y recibir pedidos cerca de ti.
+              {t("delivery.dashboardGuestDesc")}
             </p>
             <div className="space-y-3 mb-8">
               {[
-                { icon: MapPin, text: "Recoge pedidos cerca de tu zona" },
-                { icon: DollarSign, text: "Gana por cada entrega" },
-                { icon: Clock, text: "Horario flexible, tú decides" },
+                { icon: MapPin, text: t("delivery.perk1") },
+                { icon: DollarSign, text: t("delivery.perk2") },
+                { icon: Clock, text: t("delivery.perk3") },
               ].map(({ icon: Icon, text }) => (
                 <div key={text} className="flex items-center gap-3 text-left">
                   <div className="w-9 h-9 bg-[#f5f5f7] rounded-full flex items-center justify-center shrink-0">
@@ -108,12 +110,12 @@ export default function DeliveryDashboard() {
               ))}
             </div>
             <ButtonPrimary onClick={() => navigate("/delivery/login")} className="w-full">
-              Ir a iniciar sesión
+              {t("delivery.goLogin")}
             </ButtonPrimary>
             <p className="font-apple-body text-[14px] text-[#7a7a7a] mt-4">
-              ¿No tienes cuenta?{" "}
+              {t("delivery.noAccount")}{" "}
               <button onClick={() => navigate("/delivery/login")} className="text-[#0066cc] hover:underline">
-                Regístrate aquí
+                {t("delivery.registerHere")}
               </button>
             </p>
           </div>
@@ -138,7 +140,7 @@ export default function DeliveryDashboard() {
           </h1>
           <p className="font-apple-body text-[17px] text-[#7a7a7a]">
             {user.name}
-            {profLoading ? " • …" : ` • ${profile?.vehicle || "—"} • ${profile?.serviceArea || "Sin zona"}`}
+            {profLoading ? " • …" : ` • ${profile?.vehicle || t("common.dash")} • ${profile?.serviceArea || t("delivery.noZone")}`}
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -269,7 +271,7 @@ export default function DeliveryDashboard() {
           ) : (
             activeOrders.map((order) => {
               const nextStatus = order.status === "PICKED_UP" ? "IN_TRANSIT" : order.status === "IN_TRANSIT" ? "DELIVERED" : null;
-              const actionLabel = order.status === "PICKED_UP" ? "En camino" : order.status === "IN_TRANSIT" ? "Marcar entregado" : null;
+              const actionLabel = order.status === "PICKED_UP" ? t("orderTimeline.inTransit") : order.status === "IN_TRANSIT" ? "Marcar entregado" : null;
               return (
                 <DeliveryOrderCard
                   key={order.id}
@@ -313,7 +315,7 @@ export default function DeliveryDashboard() {
                               return;
                             }
                             updateStatus.mutate({ orderId: order.id, status: nextStatus }, {
-                              onSuccess: () => toast("Estado actualizado", "success"),
+                              onSuccess: () => toast( t("admin.statusUpdated"), "success"),
                               onError: (e) => toast("Error: " + e.message, "error"),
                             });
                           }}
@@ -339,7 +341,7 @@ export default function DeliveryDashboard() {
           ) : historyOrders.length === 0 ? (
             <div className="text-center py-[80px]">
               <Clock size={48} className="mx-auto mb-4 text-[#7a7a7a]" />
-              <p className="font-apple-body text-[17px] text-[#7a7a7a]">Aún no has completado ninguna entrega.</p>
+              <p className="font-apple-body text-[17px] text-[#7a7a7a]">{t("delivery.historyEmpty")}</p>
             </div>
           ) : (
             historyOrders.map((order) => <DeliveryOrderCard key={order.id} order={order} />)
@@ -351,19 +353,19 @@ export default function DeliveryDashboard() {
         <div className="space-y-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow">
-              <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-1">Total entregas</p>
+              <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-1">{t("delivery.totalDeliveries")}</p>
               <p className="font-apple-display text-[40px] font-semibold leading-[1.1] text-[#1d1d1f]">{statsLoading ? "…" : (stats?.totalDeliveries || 0)}</p>
             </div>
             <div className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow">
-              <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-1">Entregas hoy</p>
+              <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-1">{t("delivery.statsDeliveriesToday")}</p>
               <p className="font-apple-display text-[40px] font-semibold leading-[1.1] text-[#1d1d1f]">{statsLoading ? "…" : (stats?.deliveriesToday || 0)}</p>
             </div>
             <div className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow">
-              <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-1">Ganancias totales</p>
+              <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-1">{t("delivery.statsTotalEarnings")}</p>
               <p className="font-apple-display text-[28px] font-semibold leading-[1.1] text-[#1d1d1f]">{statsLoading ? "…" : `${stats?.totalEarnings?.toLocaleString() || 0} FCFA`}</p>
             </div>
             <div className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow">
-              <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-1">Rating</p>
+              <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-1">{t("delivery.rating")}</p>
               <div className="flex items-center gap-1">
                 <p className="font-apple-display text-[40px] font-semibold leading-[1.1] text-[#1d1d1f]">{statsLoading ? "…" : (stats?.rating?.toFixed(1) || "5.0")}</p>
                 <Star size={20} className="text-[#f59e0b]" />
@@ -373,45 +375,45 @@ export default function DeliveryDashboard() {
 
           <div className="bg-[#ffffff] border border-[#e0e0e0] p-[24px] rounded-[18px] no-shadow space-y-4">
             <h3 className="font-apple-display text-[28px] font-semibold leading-[1.14] tracking-[0.196px] text-[#1d1d1f]">
-              Datos del Perfil
+              {t("delivery.profileData")}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-1">Nombre</p>
+                <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-1">{t("common.name")}</p>
                 <p className="font-apple-body text-[17px] text-[#1d1d1f]">{user.name}</p>
               </div>
               <div>
-                <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-1">Email</p>
+                <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-1">{t("common.email")}</p>
                 <p className="font-apple-body text-[17px] text-[#1d1d1f]">{user.email}</p>
               </div>
               <div>
-                <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-1">Teléfono</p>
-                <p className="font-apple-body text-[17px] text-[#1d1d1f]">{profile?.phone || "—"}</p>
+                <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-1">{t("common.phone")}</p>
+                <p className="font-apple-body text-[17px] text-[#1d1d1f]">{profile?.phone || t("common.dash")}</p>
               </div>
               <div>
-                <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-1">Vehículo</p>
-                <p className="font-apple-body text-[17px] text-[#1d1d1f] capitalize">{profile?.vehicle || "—"}</p>
+                <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-1">{t("delivery.vehicle")}</p>
+                <p className="font-apple-body text-[17px] text-[#1d1d1f] capitalize">{profile?.vehicle || t("common.dash")}</p>
               </div>
               <div>
-                <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-1">Zona</p>
-                <p className="font-apple-body text-[17px] text-[#1d1d1f]">{profile?.serviceArea || "—"}</p>
+                <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-1">{t("delivery.serviceArea")}</p>
+                <p className="font-apple-body text-[17px] text-[#1d1d1f]">{profile?.serviceArea || t("common.dash")}</p>
               </div>
               <div className="flex items-center gap-3">
                 <div>
-                  <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-1">Disponible</p>
+                  <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-1">{t("delivery.availableLabel")}</p>
                   <p className={`font-apple-body text-[17px] font-medium ${profile?.isActive ? "text-[#059669]" : "text-[#dc2626]"}`}>
-                    {profile?.isActive ? "Sí" : "No"}
+                    {profile?.isActive ? t("common.yes") : t("common.no")}
                   </p>
                 </div>
                 <button
                   onClick={() => toggleActive.mutate(undefined, {
-                    onSuccess: () => toast(profile?.isActive ? "Te has desactivado" : "Ya estás disponible para recibir pedidos", "success"),
+                    onSuccess: () => toast(profile?.isActive ? t("delivery.toggleOffToast") : t("delivery.toggleOnToast"), "success"),
                     onError: (e) => toast("Error: " + e.message, "error"),
                   })}
                   disabled={toggleActive.isPending}
                   className={`ml-auto px-5 py-2 rounded-[9999px] font-apple-body text-[15px] transition-colors disabled:opacity-50 ${profile?.isActive ? "bg-[#dc2626] text-white hover:bg-[#b91c1c]" : "bg-[#059669] text-white hover:bg-[#047857]"}`}
                 >
-                  {profile?.isActive ? "Desactivar" : "Activar"}
+                  {profile?.isActive ? t("delivery.toggleDeactivate") : t("delivery.toggleActivate")}
                 </button>
               </div>
             </div>
@@ -420,7 +422,7 @@ export default function DeliveryDashboard() {
       )}
 
       {deliverOrder && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto" role="dialog" aria-modal="true" aria-label="Confirmar entrega">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto" role="dialog" aria-modal="true" aria-label={t("delivery.markDelivered")}>
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !updateStatus.isPending && setDeliverOrder(null)} />
           <div className="relative min-h-full flex items-center justify-center p-6">
             <div className="relative bg-[#ffffff] rounded-[18px] no-shadow w-full max-w-[420px] p-8 animate-fade-in">
@@ -428,15 +430,18 @@ export default function DeliveryDashboard() {
                 onClick={() => setDeliverOrder(null)}
                 disabled={updateStatus.isPending}
                 className="absolute top-4 right-4 p-2 hover:bg-[#f5f5f7] rounded-full transition-colors disabled:opacity-50"
-                aria-label="Cerrar"
+                aria-label={t("common.close")}
               >
                 <X size={22} />
               </button>
               <h3 className="font-apple-display text-[28px] font-semibold leading-[1.14] tracking-[0.196px] text-[#1d1d1f] mb-2">
-                Confirmar Entrega
+                {t("delivery.confirmDeliveryTitle")}
               </h3>
               <p className="font-apple-body text-[15px] text-[#7a7a7a] mb-5">
-                Pedido #{deliverOrder.id.slice(0, 8)} &bull; {deliverOrder.recipientName}. Adjunta una o más fotos como prueba de entrega.
+                {t("delivery.confirmDeliveryIntro", {
+                  id: deliverOrder.id.slice(0, 8),
+                  name: deliverOrder.recipientName,
+                })}
               </p>
 
               <input
@@ -470,7 +475,7 @@ export default function DeliveryDashboard() {
                         type="button"
                         onClick={() => setDeliveryPhotos((prev) => prev.filter((_, i) => i !== index))}
                         className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white"
-                        aria-label="Quitar foto"
+                        aria-label={t("delivery.removePhoto")}
                       >
                         <X size={16} />
                       </button>
@@ -492,7 +497,7 @@ export default function DeliveryDashboard() {
                   className="w-full h-[220px] mb-5 rounded-[14px] border-2 border-dashed border-[#d2d2d7] flex flex-col items-center justify-center gap-3 text-[#7a7a7a] hover:border-[#0066cc] hover:text-[#0066cc] transition-colors disabled:opacity-50"
                 >
                   <Camera size={40} strokeWidth={1.5} />
-                  <span className="font-apple-body text-[15px]">{photoLoading ? "Procesando…" : "Tomar / subir foto"}</span>
+                  <span className="font-apple-body text-[15px]">{photoLoading ? t("common.processing") : t("delivery.takePhoto")}</span>
                 </button>
               )}
 
@@ -502,7 +507,7 @@ export default function DeliveryDashboard() {
                   disabled={updateStatus.isPending}
                   className="flex-1 px-4 py-3 border border-[#e0e0e0] rounded-[9999px] font-apple-body text-[17px] text-[#1d1d1f] hover:bg-[#f5f5f7] transition-colors disabled:opacity-50"
                 >
-                  Cancelar
+                  {t("common.cancel")}
                 </button>
                 <button
                   onClick={async () => {
@@ -518,7 +523,7 @@ export default function DeliveryDashboard() {
                         status: "DELIVERED",
                         deliveryPhoto: deliveryPhotos[0],
                       });
-                      toast("Pedido entregado con éxito", "success");
+                      toast(t("delivery.deliverySuccessToast"), "success");
                       setDeliverOrder(null);
                       setDeliveryPhotos([]);
                     } catch (e) {

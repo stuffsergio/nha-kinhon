@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import { MapPin } from "lucide-react";
@@ -23,6 +24,7 @@ function ClickHandler({ onPick }) {
 }
 
 export default function RecipientMapPicker({ lat, lng, onChange }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(lat != null && lng != null);
 
   const position = lat != null && lng != null ? [lat, lng] : null;
@@ -35,7 +37,7 @@ export default function RecipientMapPicker({ lat, lng, onChange }) {
         className="font-apple-body text-[14px] text-[#0066cc] hover:underline flex items-center gap-1"
       >
         <MapPin size={14} />
-        {open ? "Ocultar mapa de entrega" : "Marcar ubicación en mapa (opcional)"}
+        {open ? t("mapPicker.hide") : "Marcar ubicación en mapa (opcional)"}
       </button>
       {open && (
         <>

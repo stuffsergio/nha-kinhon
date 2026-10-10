@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Apple } from "lucide-react";
 import SearchBar from "../components/SearchBar";
@@ -13,6 +14,7 @@ import { useAuth } from "../context/AuthContext";
 import ButtonPrimary from "../components/ButtonPrimary";
 
 export default function Search() {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -154,7 +156,7 @@ export default function Search() {
         searchQuery={searchQuery}
         onSearch={handleSearch}
         onSearchSubmit={handleSearchSubmit}
-        placeholder="Buscar productos, categorías o tiendas..."
+        placeholder={t("search.placeholder")}
       />
 
       {selectedCategory && (

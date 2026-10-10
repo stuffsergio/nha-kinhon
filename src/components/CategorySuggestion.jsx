@@ -1,6 +1,8 @@
+import { useTranslation } from "react-i18next";
 import * as LucideIcons from "lucide-react";
 
 export default function CategorySuggestion({ categories, loading, onCategoryClick, onSearchClick }) {
+  const { t } = useTranslation();
   const sampleProducts = [
     { name: "Arroz", icon: "Wheat" },
     { name: "Tomates", icon: "Carrot" },
@@ -14,7 +16,7 @@ export default function CategorySuggestion({ categories, loading, onCategoryClic
     <div className="space-y-6">
       <section>
         <h2 className="font-apple-display text-[34px] font-semibold leading-[1.47] tracking-[-0.374px] text-[#1d1d1f] mb-4">
-          Categorías
+          {t("search.categories")}
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {loading && categories.length === 0 ? (

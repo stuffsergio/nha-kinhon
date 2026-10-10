@@ -1,18 +1,16 @@
+import { useTranslation } from "react-i18next";
 import { X, Clock, MapPin, Phone, Package, ShoppingCart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useMarket } from "../hooks/useMarkets";
-
-const typeConfig = {
-  MERCADO_LOCAL: { label: "Mercado Local", color: "#dc3545", bg: "#fef2f2" },
-  SUPERMERCADO: { label: "Supermercado", color: "#0066cc", bg: "#eff6ff" },
-  TIENDA_ESPECIALIZADA: { label: "Tienda Especializada", color: "#7c3aed", bg: "#f5f3ff" },
-};
+import { useMarketTypeMeta } from "../hooks/useMarketTypeMeta";
 
 export default function MarketModal({ market, onClose }) {
+  const { t } = useTranslation();
+  const { get: getMarketType } = useMarketTypeMeta();
   const navigate = useNavigate();
   const { data: marketRes, isLoading } = useMarket(market.id);
   const marketProducts = marketRes?.market?.products || [];
-  const cfg = typeConfig[market.type] || typeConfig.MERCADO_LOCAL;
+  const cfg = getMarketType(market.type || "MERCADO_LOCAL");
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">

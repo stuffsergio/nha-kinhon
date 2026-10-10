@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { api, setTokens, clearTokens } from "../services/api";
+import i18n, { applyUserLocale, persistLocale } from "../i18n/config";
 
 const AuthContext = createContext(null);
 
@@ -18,6 +19,7 @@ export function AuthProvider({ children }) {
         const me = await api.get("/auth/me");
         if (cancelled) return;
         setUser(me.user);
+        if (me.user?.locale) applyUserLocale(me.user.locale);
       } catch {
       } finally {
         if (!cancelled) setLoading(false);
@@ -41,6 +43,7 @@ export function AuthProvider({ children }) {
     const data = await api.post("/auth/login", { email, password }, { auth: false });
     setTokens(data.accessToken);
     setUser(data.user);
+    if (data.user?.locale) applyUserLocale(data.user.locale);
     return data.user;
   }, []);
 
@@ -48,6 +51,7 @@ export function AuthProvider({ children }) {
     const data = await api.post("/auth/register", { name, email, password }, { auth: false });
     setTokens(data.accessToken);
     setUser(data.user);
+    if (data.user?.locale) applyUserLocale(data.user.locale);
     return data.user;
   }, []);
 
@@ -65,8 +69,26 @@ export function AuthProvider({ children }) {
     setUser((prev) => (prev ? { ...prev, ...updates } : updates));
   }, []);
 
+  const setLocale = useCallback(
+    async (locale) => {
+      persistLocale(locale);
+      await i18n.changeLanguage(locale);
+      if (user) {
+        try {
+          const data = await api.put("/auth/me", { locale });
+          setUser(data.user);
+        } catch {
+          /* keep local language choice */
+        }
+      }
+    },
+    [user],
+  );
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser }}>
+    <AuthContext.Provider
+      value={{ user, loading, login, register, logout, updateUser, setLocale }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -74,6 +96,6 @@ export function AuthProvider({ children }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth debe usarse dentro de AuthProvider");
+  if (!ctx) throw new Error(i18n.t("auth.useAuthProvider"));
   return ctx;
 }

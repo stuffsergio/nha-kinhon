@@ -43,8 +43,8 @@ export async function checkAndNotifyCourierNearby(deliveryUserId, lat, lng) {
     await createNotification({
       userId: order.userId,
       type: "ORDER_COURIER_NEARBY",
-      title: "Repartidor cerca",
-      message: `Tu pedido #${order.id.slice(0, 8)} está cerca del destinatario.`,
+      template: "ORDER_COURIER_NEARBY",
+      templateParams: { shortId: order.id.slice(0, 8) },
       orderId: order.id,
     });
   }

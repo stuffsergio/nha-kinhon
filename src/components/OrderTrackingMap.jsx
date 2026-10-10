@@ -1,16 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { MapContainer, TileLayer, Marker, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import { Crosshair, MapPin, Navigation, Radio, Route } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 
 const DEFAULT_CENTER = [11.863, -15.597];
-
-const SIGNAL_CHIPS = {
-  LIVE: { label: "En vivo", className: "bg-[#ecfdf5] text-[#059669]" },
-  STALE: { label: "Señal antigua", className: "bg-[#fffbeb] text-[#d97706]" },
-  NO_GPS: { label: "Repartidor sin señal", className: "bg-[#f5f5f7] text-[#7a7a7a]" },
-};
 
 function courierDivIcon(stale, frozen) {
   const bg = stale ? "#d97706" : "#0066cc";
@@ -70,13 +65,13 @@ function MapViewportController({ mode, courier, destination, boundsKey }) {
   return null;
 }
 
-function formatRelativeAgeSeconds(totalSeconds) {
+function formatRelativeAgeSeconds(totalSeconds, t) {
   if (totalSeconds == null) return null;
-  if (totalSeconds < 8) return "ahora";
-  if (totalSeconds < 60) return `hace ${totalSeconds} s`;
+  if (totalSeconds < 8) return t("tracking.ageNow");
+  if (totalSeconds < 60) return t("tracking.ageSeconds", { count: totalSeconds });
   const minutes = Math.floor(totalSeconds / 60);
-  if (minutes === 1) return "hace 1 min";
-  return `hace ${minutes} min`;
+  if (minutes === 1) return t("tracking.ageOneMinute");
+  return t("tracking.ageMinutes", { count: minutes });
 }
 
 function resolveSignalState(tracking) {
@@ -93,6 +88,12 @@ export default function OrderTrackingMap({
   compact = false,
   destinationOnly = null,
 }) {
+  const { t } = useTranslation();
+  const SIGNAL_CHIPS = {
+    LIVE: { label: t("tracking.signalLive"), className: "bg-[#ecfdf5] text-[#059669]" },
+    STALE: { label: t("tracking.signalStale"), className: "bg-[#fffbeb] text-[#d97706]" },
+    NO_GPS: { label: t("tracking.signalNoGps"), className: "bg-[#f5f5f7] text-[#7a7a7a]" },
+  };
   const courier = tracking?.courierLocation;
   const destination = tracking?.destination ?? destinationOnly;
   const hasDestination = destination?.lat != null && destination?.lng != null;
@@ -164,12 +165,12 @@ export default function OrderTrackingMap({
           <div className="text-right">
             {displayedAgeSeconds != null && (
               <p className="font-apple-body text-[13px] text-[#7a7a7a]">
-                Última señal: {formatRelativeAgeSeconds(displayedAgeSeconds)}
+                {t("tracking.lastSignal", { age: formatRelativeAgeSeconds(displayedAgeSeconds, t) })}
               </p>
             )}
             {showStaleHint && (
               <p className="font-apple-body text-[12px] text-[#d97706] max-w-[240px]">
-                Ubicación congelada; el repartidor puede estar sin señal.
+                {t("tracking.frozenHint")}
               </p>
             )}
           </div>
@@ -180,10 +181,10 @@ export default function OrderTrackingMap({
         <div className="rounded-[12px] border border-dashed border-[#e0e0e0] bg-[#f5f5f7] p-6 text-center">
           <Navigation size={28} className="mx-auto text-[#7a7a7a] mb-2" />
           <p className="font-apple-body text-[15px] text-[#1d1d1f]">
-            El repartidor aún no ha compartido su ubicación.
+            {t("tracking.noCourierYet")}
           </p>
           <p className="font-apple-body text-[14px] text-[#7a7a7a] mt-1">
-            Cuando active el GPS verás su posición aquí en tiempo casi real.
+            {t("tracking.gpsHint")}
           </p>
         </div>
       )}
@@ -239,7 +240,7 @@ export default function OrderTrackingMap({
                   type="button"
                   onClick={() => triggerCamera("courier")}
                   className="flex items-center gap-1.5 rounded-[10px] bg-[#ffffff]/95 backdrop-blur px-3 py-2 text-[12px] font-medium text-[#1d1d1f] shadow-sm border border-[#e0e0e0] hover:bg-[#f5f5f7]"
-                  title="Centrar en repartidor"
+                  title={t("tracking.centerCourier")}
                 >
                   <Crosshair size={14} className="text-[#0066cc]" />
                   Repartidor
@@ -250,7 +251,7 @@ export default function OrderTrackingMap({
                   type="button"
                   onClick={() => triggerCamera("destination")}
                   className="flex items-center gap-1.5 rounded-[10px] bg-[#ffffff]/95 backdrop-blur px-3 py-2 text-[12px] font-medium text-[#1d1d1f] shadow-sm border border-[#e0e0e0] hover:bg-[#f5f5f7]"
-                  title="Centrar en destino"
+                  title={t("tracking.centerDestination")}
                 >
                   <MapPin size={14} className="text-[#059669]" />
                   Destino
@@ -261,7 +262,7 @@ export default function OrderTrackingMap({
                   type="button"
                   onClick={() => triggerCamera("both")}
                   className="flex items-center gap-1.5 rounded-[10px] bg-[#ffffff]/95 backdrop-blur px-3 py-2 text-[12px] font-medium text-[#1d1d1f] shadow-sm border border-[#e0e0e0] hover:bg-[#f5f5f7]"
-                  title="Encuadrar repartidor y destino"
+                  title={t("tracking.frameBoth")}
                 >
                   <Route size={14} className="text-[#7a7a7a]" />
                   Ver ambos

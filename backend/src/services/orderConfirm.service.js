@@ -37,8 +37,8 @@ export async function finalizeOrderAsPaid({ orderId, userId, stripePaymentId, pa
   await createNotification({
     userId: order.userId,
     type: "ORDER_CONFIRMED",
-    title: "Pago recibido",
-    message: `El pago del pedido #${orderId.slice(0, 8)} se ha confirmado.`,
+    template: "ORDER_PAYMENT_CONFIRMED",
+    templateParams: { shortId: orderId.slice(0, 8) },
     orderId,
   });
 

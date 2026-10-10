@@ -42,6 +42,8 @@ describe("auth controller", () => {
     it("should create user and return tokens", async () => {
       const req = {
         body: { name: "Test", email: "test@test.com", password: "123456" },
+        locale: "es",
+        headers: { "accept-language": "es-ES" },
       };
       const res = mockRes();
 
@@ -51,6 +53,7 @@ describe("auth controller", () => {
         name: "Test",
         email: "test@test.com",
         role: "USER",
+        locale: "es",
         password: "hashed",
       });
 
@@ -60,7 +63,7 @@ describe("auth controller", () => {
         where: { email: "test@test.com" },
       });
       expect(prisma.user.create).toHaveBeenCalledOnce();
-      expect(signAccessToken).toHaveBeenCalledWith({ id: 1, role: "USER" });
+      expect(signAccessToken).toHaveBeenCalledWith({ id: 1, role: "USER", locale: "es" });
       expect(res.cookie).toHaveBeenCalledWith(
         "refreshToken",
         "mock-refresh-token",
@@ -68,7 +71,7 @@ describe("auth controller", () => {
       );
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith({
-        user: { id: 1, name: "Test", email: "test@test.com", role: "USER" },
+        user: { id: 1, name: "Test", email: "test@test.com", role: "USER", locale: "es" },
         accessToken: "mock-access-token",
       });
     });
@@ -124,6 +127,7 @@ describe("auth controller", () => {
           balance: 0,
           phone: null,
           avatar: null,
+          locale: null,
         },
         accessToken: "mock-access-token",
       });
@@ -169,6 +173,7 @@ describe("auth controller", () => {
         avatar: null,
         balance: 0,
         role: "USER",
+        locale: "pt",
         createdAt: new Date(),
       };
 
@@ -197,7 +202,7 @@ describe("auth controller", () => {
 
   describe("logout", () => {
     it("should clear refresh token and cookie", async () => {
-      const req = { user: { id: 1 } };
+      const req = { user: { id: 1 }, locale: "es" };
       const res = mockRes();
 
       await authController.logout(req, res);
@@ -211,7 +216,41 @@ describe("auth controller", () => {
         secure: true,
         sameSite: "none",
       });
-      expect(res.json).toHaveBeenCalledWith({ message: "Sesión cerrada" });
+      expect(res.json).toHaveBeenCalledWith({
+        message: "Sesión cerrada",
+        code: "LOGOUT_OK",
+      });
+    });
+  });
+
+  describe("updateMe locale", () => {
+    it("persists supported locale", async () => {
+      const req = {
+        user: { id: 1 },
+        body: { locale: "pov" },
+        headers: { "accept-language": "es-ES" },
+      };
+      const res = mockRes();
+      const updated = {
+        id: 1,
+        name: "Test",
+        email: "t@t.com",
+        phone: null,
+        avatar: null,
+        balance: 0,
+        role: "USER",
+        locale: "pov",
+      };
+      prisma.user.update.mockResolvedValue(updated);
+
+      await authController.updateMe(req, res);
+
+      expect(prisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ locale: "pov" }),
+        }),
+      );
+      expect(res.json).toHaveBeenCalledWith({ user: updated });
     });
   });
 });

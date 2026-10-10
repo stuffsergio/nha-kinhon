@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { PaymentElement, useCheckout } from "@stripe/react-stripe-js/checkout";
 import { useToast } from "../context/ToastContext";
 
 export default function StripePaymentForm({ onSuccess, onCancel }) {
+  const { t } = useTranslation();
   const checkout = useCheckout();
   const toast = useToast();
   const [processing, setProcessing] = useState(false);
@@ -15,7 +17,7 @@ export default function StripePaymentForm({ onSuccess, onCancel }) {
 
     const loadResult = await checkout.loadActions();
     if (loadResult.error) {
-      toast(loadResult.error.message || "Error al cargar el pago", "error");
+      toast(loadResult.error.message || t("checkout.paymentLoadError"), "error");
       setProcessing(false);
       return;
     }
@@ -23,7 +25,7 @@ export default function StripePaymentForm({ onSuccess, onCancel }) {
     const { error } = await checkout.confirm();
 
     if (error) {
-      toast(error.message || "Error al procesar el pago", "error");
+      toast(error.message || t("checkout.paymentProcessError"), "error");
       setProcessing(false);
     } else {
       toast("Pago realizado con éxito", "success");
