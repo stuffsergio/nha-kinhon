@@ -25,6 +25,9 @@ import stripeRoutes from "./src/routes/stripe.routes.js";
 import deliveryAuthRoutes from "./src/routes/delivery.auth.routes.js";
 import deliveryRoutes from "./src/routes/delivery.routes.js";
 import adminDeliveryRoutes from "./src/routes/admin.delivery.routes.js";
+import { localeMiddleware } from "./src/middleware/locale.js";
+import { formatErrorResponse } from "./src/utils/httpErrors.js";
+import { translateError } from "./src/i18n/index.js";
 
 const app = express();
 
@@ -53,6 +56,7 @@ app.use(express.json({
   verify: (req, res, buf) => { req.rawBody = buf; },
 }));
 app.use(cookieParser());
+app.use(localeMiddleware);
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
@@ -92,27 +96,31 @@ if (process.env.NODE_ENV === "production") {
 }
 
 app.use((req, res) => {
-  res.status(404).json({ error: "Ruta no encontrada" });
+  const locale = req.locale;
+  res.status(404).json({
+    error: translateError("ROUTE_NOT_FOUND", locale),
+    code: "ROUTE_NOT_FOUND",
+  });
 });
 
 app.use((err, req, res, _next) => {
-  const status = err.statusCode || err.status || 500;
-  let message =
-    status === 413
-      ? "La imagen es demasiado grande"
-      : err.message || "Error interno del servidor";
+  const locale = req.locale;
+  let { status, body } = formatErrorResponse(err, locale);
 
   if (status === 500 && isProduction) {
-    message = "Error interno del servidor";
+    body = {
+      error: translateError("INTERNAL", locale),
+      code: "INTERNAL",
+    };
   }
 
   if (status >= 500) {
-    console.error(`[${status}] ${err.message || message}`);
+    console.error(`[${status}] ${err.message || body.error}`);
   } else {
-    console.warn(`[${status}] ${message}`);
+    console.warn(`[${status}] ${body.error}`);
   }
 
-  res.status(status).json({ error: message });
+  res.status(status).json(body);
 });
 
 app.listen(env.PORT, () => {

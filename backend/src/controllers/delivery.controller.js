@@ -101,8 +101,8 @@ export async function pickupOrder(req, res) {
   await createNotification({
     userId: order.userId,
     type: "ORDER_PICKED_UP",
-    title: "Repartidor asignado",
-    message: `Un repartidor recogió tu pedido #${id.slice(0, 8)}. Sigue el envío en tiempo real.`,
+    template: "ORDER_PICKED_UP",
+    templateParams: { shortId: id.slice(0, 8) },
     orderId: order.id,
   });
 
@@ -152,8 +152,8 @@ export async function updateDeliveryStatus(req, res) {
     await createNotification({
       userId: order.userId,
       type: "ORDER_IN_TRANSIT",
-      title: "Pedido en camino",
-      message: `Tu pedido #${id.slice(0, 8)} está en camino hacia ti.`,
+      template: "ORDER_IN_TRANSIT",
+      templateParams: { shortId: id.slice(0, 8) },
       orderId: order.id,
     });
   }
@@ -176,8 +176,8 @@ export async function updateDeliveryStatus(req, res) {
     await createNotification({
       userId: order.userId,
       type: "ORDER_DELIVERED",
-      title: "Pedido entregado",
-      message: `Tu pedido #${id.slice(0, 8)} ha sido entregado.`,
+      template: "ORDER_DELIVERED",
+      templateParams: { shortId: id.slice(0, 8) },
       orderId: order.id,
     });
   }

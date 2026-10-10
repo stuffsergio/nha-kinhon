@@ -84,8 +84,8 @@ export async function assignDelivery(req, res) {
   await createNotification({
     userId: order.userId,
     type: "ORDER_PICKED_UP",
-    title: "Pedido recogido",
-    message: `Tu pedido #${id.slice(0, 8)} ha sido recogido por un repartidor.`,
+    template: "ORDER_PICKED_UP_ADMIN",
+    templateParams: { shortId: id.slice(0, 8) },
     orderId: order.id,
   });
 

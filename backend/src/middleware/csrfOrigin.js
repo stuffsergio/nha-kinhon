@@ -1,4 +1,4 @@
-import { AppError } from "../utils/errors.js";
+import { codedError } from "../utils/errors.js";
 import { isOriginAllowed } from "../config/runtime.js";
 
 /**
@@ -9,7 +9,7 @@ export function requireSameSiteOrigin(req, res, next) {
   const origin = req.headers.origin;
   if (origin) {
     if (!isOriginAllowed(origin)) {
-      throw new AppError("Origen no permitido", 403);
+      throw codedError("ORIGIN_FORBIDDEN", 403);
     }
     return next();
   }
@@ -19,10 +19,10 @@ export function requireSameSiteOrigin(req, res, next) {
     try {
       const refOrigin = new URL(referer).origin;
       if (!isOriginAllowed(refOrigin)) {
-        throw new AppError("Origen no permitido", 403);
+        throw codedError("ORIGIN_FORBIDDEN", 403);
       }
     } catch {
-      throw new AppError("Referer inválido", 403);
+      throw codedError("REFERER_INVALID", 403);
     }
   }
 

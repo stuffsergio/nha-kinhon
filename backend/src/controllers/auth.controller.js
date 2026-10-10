@@ -1,7 +1,8 @@
 import bcrypt from "bcrypt";
 import prisma from "../config/db.js";
 import { signAccessToken, signRefreshToken, verifyToken } from "../utils/jwt.js";
-import { AppError, NotFoundError, UnauthorizedError } from "../utils/errors.js";
+import { AppError, NotFoundError, UnauthorizedError, codedError } from "../utils/errors.js";
+import { isSupportedLocale, normalizeLocale, resolveLocale, translateMessage } from "../i18n/index.js";
 
 const REFRESH_COOKIE_OPTS = {
   httpOnly: true,
@@ -10,18 +11,44 @@ const REFRESH_COOKIE_OPTS = {
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
+function accessPayload(user) {
+  return { id: user.id, role: user.role, locale: user.locale ?? null };
+}
+
+function publicUser(user) {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    balance: user.balance,
+    phone: user.phone,
+    avatar: user.avatar,
+    locale: user.locale ?? null,
+  };
+}
+
 export async function register(req, res) {
-  const { name, email, password } = req.body;
+  const { name, email, password, locale: bodyLocale } = req.body;
 
   const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) throw new AppError("El email ya está registrado", 409);
+  if (existing) throw codedError("EMAIL_REGISTERED", 409);
+
+  let locale = null;
+  if (bodyLocale !== undefined && bodyLocale !== null && bodyLocale !== "") {
+    const norm = normalizeLocale(bodyLocale);
+    if (!norm || !isSupportedLocale(norm)) throw codedError("LOCALE_INVALID", 400);
+    locale = norm;
+  } else {
+    locale = req.locale;
+  }
 
   const hashed = await bcrypt.hash(password, 10);
   const user = await prisma.user.create({
-    data: { name, email, password: hashed },
+    data: { name, email, password: hashed, locale },
   });
 
-  const accessToken = signAccessToken({ id: user.id, role: user.role });
+  const accessToken = signAccessToken(accessPayload(user));
   const refreshToken = signRefreshToken({ id: user.id });
 
   await prisma.user.update({
@@ -32,7 +59,13 @@ export async function register(req, res) {
   res.cookie("refreshToken", refreshToken, REFRESH_COOKIE_OPTS);
 
   res.status(201).json({
-    user: { id: user.id, name: user.name, email: user.email, role: user.role },
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      locale: user.locale,
+    },
     accessToken,
   });
 }
@@ -41,12 +74,12 @@ export async function login(req, res) {
   const { email, password } = req.body;
 
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) throw new UnauthorizedError("Credenciales incorrectas");
+  if (!user) throw new UnauthorizedError("Credenciales incorrectas", "CREDENTIALS_INVALID");
 
   const valid = await bcrypt.compare(password, user.password);
-  if (!valid) throw new UnauthorizedError("Credenciales incorrectas");
+  if (!valid) throw new UnauthorizedError("Credenciales incorrectas", "CREDENTIALS_INVALID");
 
-  const accessToken = signAccessToken({ id: user.id, role: user.role });
+  const accessToken = signAccessToken(accessPayload(user));
   const refreshToken = signRefreshToken({ id: user.id });
 
   await prisma.user.update({
@@ -57,36 +90,28 @@ export async function login(req, res) {
   res.cookie("refreshToken", refreshToken, REFRESH_COOKIE_OPTS);
 
   res.json({
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      balance: user.balance,
-      phone: user.phone,
-      avatar: user.avatar,
-    },
+    user: publicUser(user),
     accessToken,
   });
 }
 
 export async function refresh(req, res) {
   const refreshToken = req.cookies?.refreshToken;
-  if (!refreshToken) throw new UnauthorizedError("Refresh token requerido");
+  if (!refreshToken) throw new UnauthorizedError("Refresh token requerido", "REFRESH_REQUIRED");
 
   let decoded;
   try {
     decoded = verifyToken(refreshToken);
   } catch {
-    throw new UnauthorizedError("Refresh token inválido o expirado");
+    throw new UnauthorizedError("Refresh token inválido o expirado", "REFRESH_INVALID");
   }
 
   const user = await prisma.user.findUnique({ where: { id: decoded.id } });
   if (!user || user.refreshToken !== refreshToken) {
-    throw new UnauthorizedError("Refresh token inválido");
+    throw new UnauthorizedError("Refresh token inválido", "REFRESH_MISMATCH");
   }
 
-  const newAccess = signAccessToken({ id: user.id, role: user.role });
+  const newAccess = signAccessToken(accessPayload(user));
   const newRefresh = signRefreshToken({ id: user.id });
 
   await prisma.user.update({
@@ -106,7 +131,7 @@ export async function logout(req, res) {
   });
 
   res.clearCookie("refreshToken", { httpOnly: true, secure: true, sameSite: "none" });
-  res.json({ message: "Sesión cerrada" });
+  res.json({ message: translateMessage("LOGOUT_OK", req.locale), code: "LOGOUT_OK" });
 }
 
 export async function getMe(req, res) {
@@ -114,33 +139,54 @@ export async function getMe(req, res) {
     where: { id: req.user.id },
     select: {
       id: true, name: true, email: true, phone: true,
-      avatar: true, balance: true, role: true,
+      avatar: true, balance: true, role: true, locale: true,
       createdAt: true,
     },
   });
 
   if (!user) throw new NotFoundError("Usuario");
 
+  req.locale = resolveLocale({
+    userLocale: user.locale,
+    acceptLanguage: req.headers?.["accept-language"],
+  });
+
   res.json({ user });
 }
 
 export async function updateMe(req, res) {
-  const { name, email, phone, avatar } = req.body;
+  const { name, email, phone, avatar, locale: bodyLocale } = req.body;
 
   if (email) {
     const existing = await prisma.user.findFirst({
       where: { email, NOT: { id: req.user.id } },
     });
-    if (existing) throw new AppError("El email ya está en uso", 409);
+    if (existing) throw codedError("EMAIL_IN_USE", 409);
+  }
+
+  const data = { name, email, phone, avatar };
+  if (bodyLocale !== undefined) {
+    if (bodyLocale === null || bodyLocale === "") {
+      data.locale = null;
+    } else {
+      const norm = normalizeLocale(bodyLocale);
+      if (!norm || !isSupportedLocale(norm)) throw codedError("LOCALE_INVALID", 400);
+      data.locale = norm;
+    }
   }
 
   const user = await prisma.user.update({
     where: { id: req.user.id },
-    data: { name, email, phone, avatar },
+    data,
     select: {
       id: true, name: true, email: true, phone: true,
-      avatar: true, balance: true, role: true,
+      avatar: true, balance: true, role: true, locale: true,
     },
+  });
+
+  req.locale = resolveLocale({
+    userLocale: user.locale,
+    acceptLanguage: req.headers?.["accept-language"],
   });
 
   res.json({ user });
@@ -151,7 +197,7 @@ export async function changePassword(req, res) {
 
   const user = await prisma.user.findUnique({ where: { id: req.user.id } });
   const valid = await bcrypt.compare(currentPassword, user.password);
-  if (!valid) throw new AppError("Contraseña actual incorrecta", 400);
+  if (!valid) throw codedError("PASSWORD_WRONG", 400);
 
   const hashed = await bcrypt.hash(newPassword, 10);
   await prisma.user.update({
@@ -159,5 +205,8 @@ export async function changePassword(req, res) {
     data: { password: hashed, refreshToken: null },
   });
 
-  res.json({ message: "Contraseña actualizada. Vuelve a iniciar sesión." });
+  res.json({
+    message: translateMessage("PASSWORD_UPDATED", req.locale),
+    code: "PASSWORD_UPDATED",
+  });
 }

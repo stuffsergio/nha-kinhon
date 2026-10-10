@@ -1,27 +1,25 @@
-const STATUS_LABELS = {
-  PENDING_PAYMENT: "Pendiente de pago",
-  PENDING: "Pendiente",
-  CONFIRMED: "Confirmado",
-  PROCESSING: "En preparación",
-  SHIPPED: "Listo para reparto",
-  PICKED_UP: "Recogido",
-  IN_TRANSIT: "En camino",
-  DELIVERED: "Entregado",
-  CANCELLED: "Cancelado",
+import { DEFAULT_LOCALE, t } from "../i18n/index.js";
+
+const INTL_LOCALE = {
+  es: "es-ES",
+  pt: "pt-PT",
+  pov: "pt-GW",
 };
 
-function formatFcfa(amount) {
-  return `${Math.round(Number(amount) || 0).toLocaleString("es-ES")} FCFA`;
+function formatFcfa(amount, locale) {
+  const intl = INTL_LOCALE[locale] || INTL_LOCALE.es;
+  return `${Math.round(Number(amount) || 0).toLocaleString(intl)} FCFA`;
 }
 
-function formatDate(date) {
-  return new Date(date).toLocaleString("es-ES", {
+function formatDate(date, locale) {
+  const intl = INTL_LOCALE[locale] || INTL_LOCALE.es;
+  return new Date(date).toLocaleString(intl, {
     dateStyle: "medium",
     timeStyle: "short",
   });
 }
 
-export function buildOrderReceipt(order) {
+export function buildOrderReceipt(order, locale = DEFAULT_LOCALE) {
   const shortId = order.id.slice(0, 8);
   const items = (order.items || []).map((item) => ({
     name: item.name,
@@ -30,13 +28,16 @@ export function buildOrderReceipt(order) {
     lineTotal: item.price * item.quantity,
   }));
 
+  const statusLabel =
+    t(`orderStatus.${order.status}`, locale) || order.status;
+
   const receipt = {
     orderId: order.id,
     shortId,
     status: order.status,
-    statusLabel: STATUS_LABELS[order.status] || order.status,
+    statusLabel,
     createdAt: order.createdAt,
-    createdAtLabel: formatDate(order.createdAt),
+    createdAtLabel: formatDate(order.createdAt, locale),
     recipient: {
       name: order.recipientName,
       phone: order.recipientPhone || null,
@@ -48,34 +49,45 @@ export function buildOrderReceipt(order) {
     total: order.total,
     notes: order.notes || null,
     currency: "FCFA",
+    locale,
   };
 
   const lines = [
-    "🛒 *Nha Kinhon* — Recibo de pedido",
-    `Pedido: #${shortId}`,
-    `Fecha: ${receipt.createdAtLabel}`,
-    `Estado: ${receipt.statusLabel}`,
+    t("receipt.header", locale),
+    t("receipt.orderLine", locale, { shortId }),
+    t("receipt.dateLine", locale, { date: receipt.createdAtLabel }),
+    t("receipt.statusLine", locale, { status: statusLabel }),
     "",
-    `*Destinatario:* ${order.recipientName}`,
+    t("receipt.recipient", locale, { name: order.recipientName }),
   ];
 
-  if (order.recipientPhone) lines.push(`Tel: ${order.recipientPhone}`);
-  if (order.recipientAddress) lines.push(`Dirección: ${order.recipientAddress}`);
-  lines.push("", "*Productos:*");
+  if (order.recipientPhone) {
+    lines.push(t("receipt.phone", locale, { phone: order.recipientPhone }));
+  }
+  if (order.recipientAddress) {
+    lines.push(t("receipt.address", locale, { address: order.recipientAddress }));
+  }
+  lines.push("", t("receipt.products", locale));
 
   for (const item of items) {
-    lines.push(`• ${item.name} ×${item.quantity} — ${formatFcfa(item.lineTotal)}`);
+    lines.push(
+      t("receipt.productLine", locale, {
+        name: item.name,
+        quantity: item.quantity,
+        amount: formatFcfa(item.lineTotal, locale),
+      }),
+    );
   }
 
   lines.push(
     "",
-    `Subtotal: ${formatFcfa(order.subtotal)}`,
-    `Envío: ${formatFcfa(order.shipping ?? 0)}`,
-    `*Total: ${formatFcfa(order.total)}*`,
+    t("receipt.subtotal", locale, { amount: formatFcfa(order.subtotal, locale) }),
+    t("receipt.shipping", locale, { amount: formatFcfa(order.shipping ?? 0, locale) }),
+    t("receipt.total", locale, { amount: formatFcfa(order.total, locale) }),
   );
 
   if (order.notes) {
-    lines.push("", `Notas: ${order.notes}`);
+    lines.push("", t("receipt.notes", locale, { notes: order.notes }));
   }
 
   return {

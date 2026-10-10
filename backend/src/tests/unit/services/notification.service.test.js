@@ -4,6 +4,7 @@ vi.mock("../../../config/db.js", () => ({
   default: {
     notification: { create: vi.fn() },
     pushToken: { findMany: vi.fn(), deleteMany: vi.fn() },
+    user: { findUnique: vi.fn() },
   },
 }));
 
@@ -63,6 +64,7 @@ describe("notification.service", () => {
 
   describe("createNotification", () => {
     it("persists orderId and sends push data with order tracking deep links", async () => {
+      prisma.user.findUnique.mockResolvedValue({ locale: "es" });
       prisma.notification.create.mockResolvedValue({
         id: "notif-1",
         userId: "user-1",
@@ -74,19 +76,19 @@ describe("notification.service", () => {
       await createNotification({
         userId: "user-1",
         type: "ORDER_IN_TRANSIT",
-        title: "En camino",
-        message: "Tu pedido va en camino",
+        template: "ORDER_IN_TRANSIT",
+        templateParams: { shortId: "order-99" },
         orderId: "order-99",
       });
 
       expect(prisma.notification.create).toHaveBeenCalledWith({
-        data: {
+        data: expect.objectContaining({
           userId: "user-1",
           type: "ORDER_IN_TRANSIT",
-          title: "En camino",
-          message: "Tu pedido va en camino",
+          title: "Pedido en camino",
+          message: expect.stringContaining("order-99"),
           orderId: "order-99",
-        },
+        }),
       });
 
       expect(global.fetch).toHaveBeenCalled();
@@ -95,6 +97,27 @@ describe("notification.service", () => {
       expect(body[0].data.route).toBe("/pedido/order-99");
       expect(body[0].data.url).toBe("/perfil?tab=orders&orderId=order-99");
       expect(body[0].data.screen).toBe("order_tracking");
+    });
+
+    it("translates push copy to user locale", async () => {
+      prisma.user.findUnique.mockResolvedValue({ locale: "pt" });
+      prisma.notification.create.mockResolvedValue({ id: "n2" });
+      prisma.pushToken.findMany.mockResolvedValue([]);
+
+      await createNotification({
+        userId: "user-2",
+        type: "ORDER_DELIVERED",
+        template: "ORDER_DELIVERED",
+        templateParams: { shortId: "abcd1234" },
+        orderId: "x",
+      });
+
+      expect(prisma.notification.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          title: "Encomenda entregue",
+          message: expect.stringContaining("abcd1234"),
+        }),
+      });
     });
   });
 });
