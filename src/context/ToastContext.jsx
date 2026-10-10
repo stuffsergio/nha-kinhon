@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback } from "react";
 import { X, CheckCircle, AlertCircle, Info } from "lucide-react";
+import i18n from "../i18n/config.js";
 
 const ToastContext = createContext(null);
 
@@ -56,6 +57,6 @@ export function ToastProvider({ children }) {
 
 export function useToast() {
   const ctx = useContext(ToastContext);
-  if (!ctx) throw new Error("useToast debe usarse dentro de ToastProvider");
+  if (!ctx) throw new Error(i18n.t("auth.useToastProvider"));
   return ctx;
 }

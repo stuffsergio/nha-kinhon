@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { api } from "../services/api";
 import { useAuth } from "./AuthContext";
+import i18n from "../i18n/config.js";
 
 export const CartContext = createContext();
 
@@ -23,7 +24,7 @@ export function CartProvider({ children }) {
   }, [user]);
 
   const addToCart = useCallback(async (product) => {
-    if (!user) throw new Error("Debes iniciar sesión para agregar productos al carrito");
+    if (!user) throw new Error(i18n.t("auth.loginRequiredCart"));
     const data = await api.post("/cart/items", {
       productId: product.id,
       quantity: 1,
@@ -107,7 +108,7 @@ export function CartProvider({ children }) {
 export function useCart() {
   const context = useContext(CartContext);
   if (!context) {
-    throw new Error("useCart debe usarse dentro de CartProvider");
+    throw new Error(i18n.t("auth.useCartProvider"));
   }
   return context;
 }

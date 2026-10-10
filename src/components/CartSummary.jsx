@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useCheckout } from "../hooks/useOrders";
@@ -11,6 +12,7 @@ import RecipientMapPicker from "./RecipientMapPicker";
 const STRIPE_ENABLED = !!import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 
 export default function CartSummary({ cartTotal }) {
+  const { t } = useTranslation();
   const { cart, clearCart } = useCart();
   const checkout = useCheckout();
   const navigate = useNavigate();
@@ -27,9 +29,9 @@ export default function CartSummary({ cartTotal }) {
   const [notes, setNotes] = useState("");
 
   const handleCheckout = () => {
-    if (!recipientName.trim()) { toast("Introduce el nombre del destinatario", "error"); return; }
-    if (!recipientPhone.trim()) { toast("Introduce el teléfono del destinatario", "error"); return; }
-    if (!recipientAddress.trim()) { toast("Introduce la dirección del destinatario", "error"); return; }
+    if (!recipientName.trim()) { toast( t("cart.needRecipientName"), "error"); return; }
+    if (!recipientPhone.trim()) { toast( t("cart.needRecipientPhone"), "error"); return; }
+    if (!recipientAddress.trim()) { toast( t("cart.needRecipientAddress"), "error"); return; }
     setShowConfirm(true);
   };
 
@@ -88,7 +90,7 @@ export default function CartSummary({ cartTotal }) {
             type="text"
             value={recipientName}
             onChange={(e) => setRecipientName(e.target.value)}
-            placeholder="Nombre del destinatario"
+            placeholder={t("cart.recipientNamePlaceholder")}
             autoComplete="name"
             className={inputClass}
           />
@@ -113,7 +115,7 @@ export default function CartSummary({ cartTotal }) {
             type="text"
             value={recipientAddress}
             onChange={(e) => setRecipientAddress(e.target.value)}
-            placeholder="Dirección completa en Guinea-Bissau"
+            placeholder={t("cart.addressPlaceholder")}
             autoComplete="street-address"
             className={inputClass}
           />
@@ -161,7 +163,7 @@ export default function CartSummary({ cartTotal }) {
         disabled={cart.length === 0 || checkingOut}
         className="w-full disabled:bg-[#d2d2d7] disabled:cursor-not-allowed"
       >
-        {checkingOut ? "Preparando pago\u2026" : "Proceder al Pago"}
+        {checkingOut ? "Preparando pago\u2026" : t("cart.proceedPay")}
       </ButtonPrimary>
 
       {cart.length > 0 && (
@@ -169,7 +171,7 @@ export default function CartSummary({ cartTotal }) {
           onClick={() => {
             if (window.confirm("¿Vaciar el carrito? Se perderán todos los productos añadidos.")) {
               clearCart();
-              toast("Carrito vaciado", "info");
+              toast( t("cart.emptied"), "info");
             }
           }}
           className="w-full text-[#0066cc] font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] py-3 rounded-[9999px] hover:bg-[#f5f5f7] transition-colors duration-150"
@@ -179,7 +181,7 @@ export default function CartSummary({ cartTotal }) {
       )}
 
       {showConfirm && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto" role="dialog" aria-modal="true" aria-label="Confirmar pedido">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto" role="dialog" aria-modal="true" aria-label={t("cart.confirmOrderAria")}>
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowConfirm(false)} />
           <div className="relative min-h-full flex items-center justify-center p-6">
             <div className="relative bg-[#ffffff] rounded-[18px] no-shadow w-full max-w-[420px] p-8 animate-fade-in">

@@ -1,10 +1,12 @@
+import { useTranslation } from "react-i18next";
 import { Store, Clock, MapPin } from "lucide-react";
 
 export default function MarketPreviewCard({ market }) {
+  const { t } = useTranslation();
   const typeLabels = {
-    mercado_local: "Mercado Local",
-    supermercado: "Supermercado",
-    tienda_especializada: "Tienda Especializada",
+    mercado_local: t("map.typeMercadoLocal"),
+    supermercado: t("map.typeSupermercado"),
+    tienda_especializada: t("map.typeTienda"),
   };
 
   return (

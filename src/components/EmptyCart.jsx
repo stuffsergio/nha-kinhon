@@ -1,8 +1,11 @@
 import { ShoppingCart, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import ButtonPrimary from "./ButtonPrimary";
 
 export default function EmptyCart() {
+  const { t } = useTranslation();
+
   return (
     <div className="text-center py-[80px]">
       <div className="flex justify-center mb-6">
@@ -11,15 +14,15 @@ export default function EmptyCart() {
         </div>
       </div>
       <h2 className="font-apple-display text-[40px] font-semibold leading-[1.1] text-[#1d1d1f] mb-2">
-        Tu carrito está vacío
+        {t("cart.emptyTitle")}
       </h2>
       <p className="font-apple-body text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-[#7a7a7a] mb-6">
-        Agrega productos para comenzar tu pedido
+        {t("cart.emptySubtitle")}
       </p>
       <Link to="/buscar">
         <ButtonPrimary>
           <span className="flex items-center gap-2">
-            Explorar Productos
+            {t("cart.explore")}
             <ArrowRight size={20} />
           </span>
         </ButtonPrimary>

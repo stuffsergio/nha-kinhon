@@ -1,3 +1,5 @@
+import i18n from "../i18n/config.js";
+
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 let accessToken = null;
@@ -41,7 +43,10 @@ async function request(endpoint, options = {}) {
     if (qs) url += `?${qs}`;
   }
 
-  const headers = { "Content-Type": "application/json" };
+  const headers = {
+    "Content-Type": "application/json",
+    "Accept-Language": i18n.language || "es",
+  };
   if (auth) {
     const token = getAccessToken();
     if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -71,7 +76,9 @@ async function request(endpoint, options = {}) {
   }
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: "Error de conexión" }));
+    const err = await res.json().catch(() => ({
+      error: i18n.t("common.connectionError"),
+    }));
     throw new Error(err.error || `Error ${res.status}`);
   }
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
 import { useAdminOrders, useUpdateOrderStatus } from "../hooks/useAdminOrders";
@@ -7,18 +8,7 @@ import { useToast } from "../context/ToastContext";
 import AdminOrderTrackingPanel from "../components/AdminOrderTrackingPanel";
 import OrderReceiptShare from "../components/OrderReceiptShare";
 import DeliveryProofGallery from "../components/DeliveryProofGallery";
-
-const statusLabels = {
-  PENDING_PAYMENT: "Pendiente de pago",
-  PENDING: "Pendiente",
-  CONFIRMED: "Confirmado",
-  PROCESSING: "En preparación",
-  SHIPPED: "Enviado",
-  PICKED_UP: "Recogido",
-  IN_TRANSIT: "En camino",
-  DELIVERED: "Entregado",
-  CANCELLED: "Cancelado",
-};
+import { useOrderStatusLabel } from "../hooks/useOrderStatusLabel";
 
 const statusColors = {
   PENDING_PAYMENT: "bg-[#fffbeb] text-[#d97706]",
@@ -32,13 +22,14 @@ const statusColors = {
   CANCELLED: "bg-[#dc2626]/10 text-[#dc2626]",
 };
 
-const tabs = [
-  { id: "orders", label: "Todos los Pedidos" },
-  { id: "assign", label: "Asignar Repartidores" },
-  { id: "delivery", label: "Repartidores" },
-];
-
 export default function Admin() {
+  const { t } = useTranslation();
+  const statusLabel = useOrderStatusLabel();
+  const tabs = [
+    { id: "orders", label: t("admin.tabOrders") },
+    { id: "assign", label: t("admin.tabAssign") },
+    { id: "delivery", label: t("admin.tabDelivery") },
+  ];
   const { user } = useAuth();
   const toast = useToast();
   const [activeTab, setActiveTab] = useState("orders");
@@ -178,11 +169,11 @@ export default function Admin() {
                       Pedido #{order.id.slice(0, 8)}
                     </h3>
                     <p className="font-apple-body text-[14px] text-[#7a7a7a]">
-                      {new Date(order.createdAt).toLocaleDateString()} &bull; {order.user?.name || "Usuario"}
+                      {new Date(order.createdAt).toLocaleDateString()} &bull; {order.user?.name || t("common.user")}
                     </p>
                   </div>
                   <span className={`px-3 py-1 rounded-[9999px] font-apple-body text-[14px] font-medium ${statusColors[order.status] || ""}`}>
-                    {statusLabels[order.status] || order.status}
+                    {statusLabel(order.status)}
                   </span>
                 </div>
 
@@ -193,7 +184,7 @@ export default function Admin() {
                   </div>
                   <div>
                     <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-1">Teléfono</p>
-                    <p className="font-apple-body text-[15px] text-[#1d1d1f]">{order.recipientPhone || "—"}</p>
+                    <p className="font-apple-body text-[15px] text-[#1d1d1f]">{order.recipientPhone || t("common.dash")}</p>
                   </div>
                   <div>
                     <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-1">Total</p>
@@ -201,7 +192,7 @@ export default function Admin() {
                   </div>
                   <div>
                     <p className="font-apple-body text-[12px] text-[#7a7a7a] uppercase tracking-[0.5px] mb-1">Repartidor</p>
-                    <p className="font-apple-body text-[15px] text-[#1d1d1f]">{order.delivery?.name || "—"}</p>
+                    <p className="font-apple-body text-[15px] text-[#1d1d1f]">{order.delivery?.name || t("common.dash")}</p>
                   </div>
                 </div>
 
@@ -219,7 +210,7 @@ export default function Admin() {
                     <button
                       onClick={() => {
                         updateStatus.mutate({ orderId: order.id, status: "CANCELLED" }, {
-                          onSuccess: () => toast("Pedido cancelado", "success"),
+                          onSuccess: () => toast( t("admin.orderCancelled"), "success"),
                           onError: (e) => toast("Error: " + e.message, "error"),
                         });
                       }}

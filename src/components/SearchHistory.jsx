@@ -1,13 +1,15 @@
+import { useTranslation } from "react-i18next";
 import { Clock, X } from "lucide-react";
 
 export default function SearchHistory({ history, onHistoryClick, onClearHistory }) {
+  const { t } = useTranslation();
   return (
     <div className="bg-[#ffffff] border border-[#e0e0e0] rounded-[18px] p-[24px] no-shadow">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Clock size={20} className="text-[#7a7a7a]" />
           <h3 className="font-apple-display text-[21px] font-semibold leading-[1.19] tracking-[0.231px] text-[#1d1d1f]">
-            Búsquedas recientes
+            {t("search.history")}
           </h3>
         </div>
         <button

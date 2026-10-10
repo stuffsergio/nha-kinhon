@@ -1,17 +1,13 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { MapContainer, TileLayer, ZoomControl, useMap } from "react-leaflet";
 import L from "leaflet";
 import { Search, Crosshair } from "lucide-react";
 import { useMarkets } from "../hooks/useMarkets";
 import MarketMarker from "../components/MarketMarker";
 import MarketModal from "../components/MarketModal";
+import { useMarketTypeMeta } from "../hooks/useMarketTypeMeta";
 import "leaflet/dist/leaflet.css";
-
-const typeFilters = [
-  { key: "MERCADO_LOCAL", label: "Mercado Local", color: "#dc3545" },
-  { key: "SUPERMERCADO", label: "Supermercado", color: "#0066cc" },
-  { key: "TIENDA_ESPECIALIZADA", label: "Tienda Especializada", color: "#7c3aed" },
-];
 
 const center = [11.95, -15.25];
 const bounds = [
@@ -49,7 +45,7 @@ function FitBoundsOnLoad({ markets }) {
       <button
         onClick={fit}
         className="w-10 h-10 bg-white rounded-[10px] shadow-lg flex items-center justify-center hover:bg-[#f5f5f7] transition-colors border border-[#e0e0e0]"
-        title="Centrar en todos los mercados"
+        title={t("map.centerAll")}
       >
         <Crosshair size={18} className="text-[#1d1d1f]" />
       </button>
@@ -58,6 +54,8 @@ function FitBoundsOnLoad({ markets }) {
 }
 
 export default function Map() {
+  const { t } = useTranslation();
+  const { filterTypes: typeFilters } = useMarketTypeMeta();
   const [selectedMarket, setSelectedMarket] = useState(null);
   const [search, setSearch] = useState("");
   const [activeTypes, setActiveTypes] = useState(["MERCADO_LOCAL", "SUPERMERCADO", "TIENDA_ESPECIALIZADA"]);
@@ -102,7 +100,7 @@ export default function Map() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nombre o ubicación…"
+            placeholder={t("map.searchPlaceholder")}
             autoComplete="off"
             spellCheck={false}
             className="w-full pl-11 pr-4 py-3 bg-white border border-[#e0e0e0] rounded-[12px] focus-visible:outline-2 focus-visible:outline-[#0071e3] focus-visible:outline-offset-2 focus:border-transparent font-apple-body text-[15px] text-[#1d1d1f] placeholder:text-[#7a7a7a] transition-shadow duration-150"

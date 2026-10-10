@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Quote } from "lucide-react";
 import { Link } from "react-router-dom";
 import ButtonPrimary from "../components/ButtonPrimary";
@@ -15,6 +16,7 @@ const fallbackSupporters = [
 const locations = ["Lisboa, Portugal", "Madrid, España", "Dakar, Senegal", "Bissau, Guinea-Bissau", "París, Francia", "Londres, Reino Unido"];
 
 export default function Support() {
+  const { t } = useTranslation();
   const { data: apiData, isLoading } = useSupporters();
 
   const supporters = apiData?.data?.length > 0 ? apiData.data : fallbackSupporters;

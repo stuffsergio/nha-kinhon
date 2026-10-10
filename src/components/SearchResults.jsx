@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { Apple, Store, Tag } from "lucide-react";
 import { useCart } from "../context/CartContext";
@@ -6,6 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import ButtonPrimary from "./ButtonPrimary";
 
 export default function SearchResults({ results, searchQuery, onProductClick }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { user } = useAuth();
@@ -37,9 +39,9 @@ export default function SearchResults({ results, searchQuery, onProductClick }) 
 
   const getTypeLabel = (type) => {
     switch (type) {
-      case "product": return "Producto";
-      case "market": return "Tienda";
-      case "category": return "Categoría";
+      case "product": return t("search.typeProduct");
+      case "market": return t("search.typeMarket");
+      case "category": return t("search.typeCategory");
       default: return "";
     }
   };

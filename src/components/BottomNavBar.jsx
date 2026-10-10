@@ -1,28 +1,33 @@
 import { NavLink } from "react-router-dom";
 import { Home, Map, Search, ShoppingCart, User } from "lucide-react";
 import { useContext } from "react";
+import { useTranslation } from "react-i18next";
 import { CartContext } from "../context/CartContext";
 
 export default function BottomNavBar() {
+  const { t } = useTranslation();
   const { cart } = useContext(CartContext);
   const cartItemCount = cart.reduce((total, item) => total + item.quantity, 0);
 
   const navItems = [
-    { path: "/", icon: Home, label: "Inicio" },
-    { path: "/mapa", icon: Map, label: "Mapa" },
-    { path: "/buscar", icon: Search, label: "Buscar" },
+    { path: "/", icon: Home, label: t("nav.home") },
+    { path: "/mapa", icon: Map, label: t("nav.map") },
+    { path: "/buscar", icon: Search, label: t("nav.search") },
     {
       path: "/carrito",
       icon: ShoppingCart,
-      label: "Carrito",
+      label: t("nav.cart"),
       badge: cartItemCount,
     },
-    { path: "/perfil", icon: User, label: "Perfil" },
+    { path: "/perfil", icon: User, label: t("nav.profile") },
   ];
 
   return (
     <div className="md:hidden fixed bottom-4 sm:bottom-6 left-0 right-0 z-50 flex justify-center pointer-events-none pb-safe px-3">
-      <nav className="w-full max-w-[22rem] bg-black/20 backdrop-blur-sm border border-white/10 shadow-2xl rounded-2xl h-14 pointer-events-auto" aria-label="Navegación principal">
+      <nav
+        className="w-full max-w-[22rem] bg-black/20 backdrop-blur-sm border border-white/10 shadow-2xl rounded-2xl h-14 pointer-events-auto"
+        aria-label={t("nav.mainAria")}
+      >
         <div className="h-full w-full flex flex-row gap-3 justify-center items-center px-4">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -32,9 +37,7 @@ export default function BottomNavBar() {
                 to={item.path}
                 className={({ isActive }) =>
                   `relative flex flex-col items-center justify-center gap-0 px-1 py-1 btn-apple-active min-w-0 flex-1 transition-colors duration-150 ${
-                    isActive
-                      ? "text-white"
-                      : "text-ink-muted-80 hover:text-white"
+                    isActive ? "text-white" : "text-ink-muted-80 hover:text-white"
                   }`
                 }
                 aria-label={item.label}
