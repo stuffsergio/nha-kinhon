@@ -27,12 +27,12 @@ export function formatNotificationForClient(notification) {
   };
 }
 
-async function getUserLocale(userId) {
+async function getUserLocale(userId, acceptLanguage) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { locale: true },
   });
-  return resolveLocale({ userLocale: user?.locale }) || DEFAULT_LOCALE;
+  return resolveLocale({ userLocale: user?.locale, acceptLanguage }) || DEFAULT_LOCALE;
 }
 
 export async function createNotification({
@@ -43,12 +43,13 @@ export async function createNotification({
   orderId,
   template,
   templateParams = {},
+  acceptLanguage,
 }) {
   let finalTitle = title;
   let finalMessage = message;
 
   if (template) {
-    const locale = await getUserLocale(userId);
+    const locale = await getUserLocale(userId, acceptLanguage);
     const translated = translateNotification(template, locale, templateParams);
     finalTitle = translated.title;
     finalMessage = translated.message;

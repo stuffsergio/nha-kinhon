@@ -21,6 +21,8 @@ import {
   MAX_PHOTOS_PER_REQUEST,
   MAX_PHOTOS_PER_ORDER,
 } from "../utils/deliveryPhoto.js";
+import { localeFromRequestBody } from "../utils/userLocale.js";
+import { resolveLocale } from "../i18n/index.js";
 
 async function countActiveOrdersForDelivery(deliveryUserId) {
   return prisma.order.count({
@@ -236,7 +238,9 @@ export async function addDeliveryPhotos(req, res) {
 export async function getProfile(req, res) {
   const profile = await prisma.deliveryProfile.findUnique({
     where: { userId: req.user.id },
-    include: { user: { select: { id: true, name: true, email: true } } },
+    include: {
+      user: { select: { id: true, name: true, email: true, locale: true } },
+    },
   });
   if (!profile) throw new NotFoundError("Perfil de repartidor");
 
@@ -244,17 +248,39 @@ export async function getProfile(req, res) {
 }
 
 export async function updateProfile(req, res) {
-  const { phone, vehicle, serviceArea } = req.body;
+  const { phone, vehicle, serviceArea, locale: bodyLocale } = req.body;
+
+  const localeValue = localeFromRequestBody(bodyLocale);
+  if (localeValue !== undefined) {
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { locale: localeValue },
+    });
+    req.locale = resolveLocale({
+      userLocale: localeValue,
+      acceptLanguage: req.headers?.["accept-language"],
+    });
+  }
 
   const data = {};
   if (phone !== undefined) data.phone = phone;
   if (vehicle !== undefined) data.vehicle = vehicle;
   if (serviceArea !== undefined) data.serviceArea = serviceArea;
 
-  const profile = await prisma.deliveryProfile.update({
+  if (Object.keys(data).length > 0) {
+    await prisma.deliveryProfile.update({
+      where: { userId: req.user.id },
+      data,
+    });
+  }
+
+  const profile = await prisma.deliveryProfile.findUnique({
     where: { userId: req.user.id },
-    data,
+    include: {
+      user: { select: { id: true, name: true, email: true, locale: true } },
+    },
   });
+  if (!profile) throw new NotFoundError("Perfil de repartidor");
 
   res.json({ profile });
 }

@@ -1,8 +1,10 @@
 import bcrypt from "bcrypt";
 import prisma from "../config/db.js";
 import { signAccessToken, signRefreshToken, verifyToken } from "../utils/jwt.js";
-import { AppError, NotFoundError, UnauthorizedError, codedError } from "../utils/errors.js";
-import { isSupportedLocale, normalizeLocale, resolveLocale, translateMessage } from "../i18n/index.js";
+import { NotFoundError, UnauthorizedError, codedError } from "../utils/errors.js";
+import { resolveLocale, translateMessage } from "../i18n/index.js";
+import { accessPayload, publicAuthUser } from "../utils/accessTokenPayload.js";
+import { localeFromRequestBody } from "../utils/userLocale.js";
 
 const REFRESH_COOKIE_OPTS = {
   httpOnly: true,
@@ -11,20 +13,12 @@ const REFRESH_COOKIE_OPTS = {
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
-function accessPayload(user) {
-  return { id: user.id, role: user.role, locale: user.locale ?? null };
-}
-
 function publicUser(user) {
   return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
+    ...publicAuthUser(user),
     balance: user.balance,
     phone: user.phone,
     avatar: user.avatar,
-    locale: user.locale ?? null,
   };
 }
 
@@ -34,14 +28,8 @@ export async function register(req, res) {
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) throw codedError("EMAIL_REGISTERED", 409);
 
-  let locale = null;
-  if (bodyLocale !== undefined && bodyLocale !== null && bodyLocale !== "") {
-    const norm = normalizeLocale(bodyLocale);
-    if (!norm || !isSupportedLocale(norm)) throw codedError("LOCALE_INVALID", 400);
-    locale = norm;
-  } else {
-    locale = req.locale;
-  }
+  const locale =
+    bodyLocale !== undefined ? localeFromRequestBody(bodyLocale) : req.locale;
 
   const hashed = await bcrypt.hash(password, 10);
   const user = await prisma.user.create({
@@ -165,15 +153,8 @@ export async function updateMe(req, res) {
   }
 
   const data = { name, email, phone, avatar };
-  if (bodyLocale !== undefined) {
-    if (bodyLocale === null || bodyLocale === "") {
-      data.locale = null;
-    } else {
-      const norm = normalizeLocale(bodyLocale);
-      if (!norm || !isSupportedLocale(norm)) throw codedError("LOCALE_INVALID", 400);
-      data.locale = norm;
-    }
-  }
+  const localeValue = localeFromRequestBody(bodyLocale);
+  if (localeValue !== undefined) data.locale = localeValue;
 
   const user = await prisma.user.update({
     where: { id: req.user.id },
