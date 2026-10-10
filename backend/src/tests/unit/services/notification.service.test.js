@@ -119,5 +119,27 @@ describe("notification.service", () => {
         }),
       });
     });
+
+    it("uses Accept-Language when recipient locale is null (e.g. DELIVERY user)", async () => {
+      prisma.user.findUnique.mockResolvedValue({ locale: null });
+      prisma.notification.create.mockResolvedValue({ id: "n3" });
+      prisma.pushToken.findMany.mockResolvedValue([]);
+
+      await createNotification({
+        userId: "courier-1",
+        type: "ORDER_DELIVERED",
+        template: "ORDER_DELIVERED",
+        templateParams: { shortId: "zzzz9999" },
+        orderId: "ord-2",
+        acceptLanguage: "pt-PT",
+      });
+
+      expect(prisma.notification.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          title: "Encomenda entregue",
+          message: expect.stringContaining("zzzz9999"),
+        }),
+      });
+    });
   });
 });

@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("../../../config/db.js", () => ({
   default: {
+    user: {
+      update: vi.fn(),
+    },
     order: {
       findUnique: vi.fn(),
       findMany: vi.fn(),
@@ -216,6 +219,53 @@ describe("delivery controller", () => {
       await expect(deliveryController.addDeliveryPhotos(req, res)).rejects.toMatchObject({
         statusCode: 403,
       });
+    });
+  });
+
+  describe("updateProfile locale", () => {
+    it("persists locale on User and returns it nested under profile.user", async () => {
+      const req = {
+        user: { id: "delivery-1" },
+        body: { locale: "pt" },
+        headers: { "accept-language": "es" },
+      };
+      const res = mockRes();
+
+      prisma.user.update.mockResolvedValue({});
+      prisma.deliveryProfile.findUnique.mockResolvedValue({
+        id: "profile-1",
+        userId: "delivery-1",
+        phone: "+245",
+        user: { id: "delivery-1", name: "João", email: "j@x.com", locale: "pt" },
+      });
+
+      await deliveryController.updateProfile(req, res);
+
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: "delivery-1" },
+        data: { locale: "pt" },
+      });
+      expect(prisma.deliveryProfile.update).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({
+        profile: expect.objectContaining({
+          user: expect.objectContaining({ locale: "pt" }),
+        }),
+      });
+    });
+
+    it("rejects unsupported locale", async () => {
+      const req = {
+        user: { id: "delivery-1" },
+        body: { locale: "en" },
+        headers: {},
+      };
+      const res = mockRes();
+
+      await expect(deliveryController.updateProfile(req, res)).rejects.toMatchObject({
+        code: "LOCALE_INVALID",
+        statusCode: 400,
+      });
+      expect(prisma.user.update).not.toHaveBeenCalled();
     });
   });
 

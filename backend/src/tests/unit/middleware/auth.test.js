@@ -62,4 +62,31 @@ describe("authenticate middleware", () => {
     expect(req.user).toEqual(decoded);
     expect(next).toHaveBeenCalledOnce();
   });
+
+  it("resolves req.locale from JWT locale for delivery tokens", () => {
+    verifyToken.mockReturnValue({ id: "d1", role: "DELIVERY", locale: "pt" });
+    const req = mockReq({
+      authorization: "Bearer validtoken",
+      "accept-language": "es-ES",
+    });
+    const next = vi.fn();
+
+    authenticate(req, mockRes(), next);
+
+    expect(req.locale).toBe("pt");
+    expect(next).toHaveBeenCalledOnce();
+  });
+
+  it("falls back to Accept-Language when JWT locale is null", () => {
+    verifyToken.mockReturnValue({ id: "d1", role: "DELIVERY", locale: null });
+    const req = mockReq({
+      authorization: "Bearer validtoken",
+      "accept-language": "pt-BR,pt;q=0.9",
+    });
+    const next = vi.fn();
+
+    authenticate(req, mockRes(), next);
+
+    expect(req.locale).toBe("pt");
+  });
 });
