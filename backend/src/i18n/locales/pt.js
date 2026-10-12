@@ -53,6 +53,17 @@ export default {
     USER_NOT_DELIVERY: "O utilizador não é um estafeta",
     DELIVERY_AT_CAPACITY: "O estafeta atingiu a capacidade máxima de entregas activas",
     LOCALE_INVALID: "Idioma inválido. Use es, pt ou pov.",
+    REFUND_NOTHING_LEFT: "Não resta valor reembolsável nesta encomenda",
+    REFUND_AMOUNT_INVALID: "Valor de reembolso inválido",
+    REFUND_REQUEST_PENDING: "Já existe um pedido de reembolso pendente",
+    REFUND_ALREADY_PROCESSED: "Este pedido de reembolso já foi processado",
+    REFUND_CANCEL_NOT_ELIGIBLE: "Esta encomenda não pode ser cancelada com reembolso automático",
+    REFUND_UNDELIVERABLE_NOT_ELIGIBLE: "Apenas encomendas não entregues podem usar este reembolso",
+    REFUND_CLAIM_WINDOW_CLOSED: "Prazo para reclamar danos ou faltas expirado",
+    REFUND_REASON_INVALID: "Motivo de reembolso inválido",
+    REFUND_STRIPE_FAILED: "Não foi possível processar o reembolso na Stripe",
+    BUYER_RESOLUTION_WINDOW_CLOSED: "Prazo para corrigir dados ou reintentar expirado",
+    RECIPIENT_UPDATE_NOT_ALLOWED: "Não pode actualizar o destinatário neste estado",
   },
   resources: {
     Recurso: "Recurso",
@@ -118,6 +129,46 @@ export default {
       title: "Encomenda actualizada",
       message: "A sua encomenda #{{shortId}} está {{statusLabel}}.",
     },
+    ORDER_DELIVERY_FAILED: {
+      title: "Tentativa de entrega falhada",
+      message: "Não conseguimos entregar a encomenda #{{shortId}}. Verifique os dados do destinatário.",
+    },
+    ORDER_UNDELIVERABLE: {
+      title: "Encomenda não entregável",
+      message: "A encomenda #{{shortId}} não pôde ser entregue. Corrija os dados ou peça reembolso.",
+    },
+    ORDER_ASSIGNED_COURIER: {
+      title: "Nova encomenda atribuída",
+      message: "Foi-lhe atribuída a encomenda #{{shortId}}.",
+    },
+    REFUND_REQUESTED: {
+      title: "Pedido de reembolso",
+      message: "Recebemos o seu pedido de reembolso da encomenda #{{shortId}}.",
+    },
+    REFUND_APPROVED: {
+      title: "Reembolso aprovado",
+      message: "O reembolso da encomenda #{{shortId}} foi aprovado.",
+    },
+    REFUND_REJECTED: {
+      title: "Reembolso recusado",
+      message: "O pedido de reembolso da encomenda #{{shortId}} foi recusado.",
+    },
+    REFUND_COMPLETED: {
+      title: "Reembolso concluído",
+      message: "O reembolso da encomenda #{{shortId}} foi creditado.",
+    },
+    REFUND_FAILED: {
+      title: "Reembolso falhou",
+      message: "Não foi possível concluir o reembolso da encomenda #{{shortId}}.",
+    },
+    ADMIN_REFUND_REQUEST: {
+      title: "Novo pedido de reembolso",
+      message: "Rever reembolso da encomenda #{{shortId}}.",
+    },
+    ADMIN_UNDELIVERABLE: {
+      title: "Encomenda não entregável",
+      message: "Incidência na encomenda #{{shortId}}.",
+    },
   },
   receipt: {
     header: "🛒 *Nha Kinhon* — Recibo de encomenda",
@@ -144,6 +195,10 @@ export default {
     IN_TRANSIT: "A caminho",
     DELIVERED: "Entregue",
     CANCELLED: "Cancelado",
+    DELIVERY_FAILED_ATTEMPT: "Entrega falhada (reintento)",
+    UNDELIVERABLE: "Não entregável",
+    REFUNDED: "Reembolsado",
+    PARTIALLY_REFUNDED: "Reembolso parcial",
   },
   orderStatusShort: {
     confirmed: "confirmado",

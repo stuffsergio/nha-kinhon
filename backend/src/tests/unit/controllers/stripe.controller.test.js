@@ -49,7 +49,15 @@ vi.mock("../../../config/db.js", () => ({
     notification: {
       create: vi.fn(),
     },
+    stripeProcessedEvent: {
+      findUnique: vi.fn().mockResolvedValue(null),
+      create: vi.fn().mockResolvedValue({}),
+    },
   },
+}));
+
+vi.mock("../../../services/refund.service.js", () => ({
+  applyStripeRefundWebhook: vi.fn(),
 }));
 
 vi.mock("../../../services/notification.service.js", () => ({

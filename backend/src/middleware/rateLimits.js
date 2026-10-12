@@ -50,3 +50,27 @@ export const deliveryPhotosLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+export const deliveryFailureLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  handler: rateLimitHandler("RATE_LIMIT"),
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+export const refundRequestLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  handler: rateLimitHandler("RATE_LIMIT"),
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+export const adminRefundLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  handler: rateLimitHandler("RATE_LIMIT"),
+  standardHeaders: true,
+  legacyHeaders: false,
+});

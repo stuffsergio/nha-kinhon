@@ -23,6 +23,7 @@ import {
 } from "../utils/deliveryPhoto.js";
 import { localeFromRequestBody } from "../utils/userLocale.js";
 import { resolveLocale } from "../i18n/index.js";
+import { recordFailedDeliveryAttempt } from "../services/deliveryAttempt.service.js";
 
 async function countActiveOrdersForDelivery(deliveryUserId) {
   return prisma.order.count({
@@ -108,7 +109,41 @@ export async function pickupOrder(req, res) {
     orderId: order.id,
   });
 
+  await createNotification({
+    userId: req.user.id,
+    type: "ORDER_ASSIGNED_COURIER",
+    template: "ORDER_ASSIGNED_COURIER",
+    templateParams: { shortId: id.slice(0, 8) },
+    orderId: order.id,
+  });
+
   res.json({ order: formatDeliveryOrder(updated) });
+}
+
+export async function reportFailedAttempt(req, res) {
+  const { id } = req.params;
+  const { reason, note, lat, lng } = req.body;
+
+  const result = await recordFailedDeliveryAttempt({
+    orderId: id,
+    courierId: req.user.id,
+    reason,
+    note,
+    lat,
+    lng,
+    photosRaw: req.body,
+  });
+
+  const order = await prisma.order.findUnique({
+    where: { id },
+    include: { items: true },
+  });
+
+  res.json({
+    attempt: result.attempt,
+    order: formatDeliveryOrder(order),
+    status: result.nextStatus,
+  });
 }
 
 export async function updateDeliveryStatus(req, res) {

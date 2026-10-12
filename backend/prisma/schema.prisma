@@ -142,6 +142,10 @@ model Order {
   deliveredAt      DateTime?
   deliveryPhoto    String?
   courierNearbyNotifiedAt DateTime?
+  /// Intentos fallidos de entrega registrados
+  failedDeliveryAttempts Int    @default(0)
+  /// Plazo para acciones del comprador tras fallo / no entregable
+  buyerResolutionDeadline DateTime?
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
@@ -150,6 +154,9 @@ model Order {
   items            OrderItem[]
   deliveryPhotos   OrderDeliveryPhoto[]
   notifications    Notification[]
+  deliveryAttempts DeliveryAttempt[]
+  orderEvents      OrderEvent[]
+  refunds          Refund[]
 
   @@index([userId])
   @@index([status])
@@ -168,8 +175,138 @@ enum OrderStatus {
   SHIPPED
   PICKED_UP
   IN_TRANSIT
+  /// Intento fallido; puede reprogramarse
+  DELIVERY_FAILED_ATTEMPT
+  /// No entregable (agotados reintentos o motivo no reintentable)
+  UNDELIVERABLE
   DELIVERED
   CANCELLED
+  /// Reembolso total completado
+  REFUNDED
+  /// Reembolso parcial completado
+  PARTIALLY_REFUNDED
+}
+
+enum DeliveryFailureReason {
+  RECIPIENT_ABSENT
+  WRONG_ADDRESS
+  RECIPIENT_REFUSED
+  UNREACHABLE_PHONE
+  ACCESS_BLOCKED
+  PRODUCT_DAMAGED
+  OTHER
+}
+
+enum OrderEventType {
+  DELIVERY_FAILED
+  BUYER_RECIPIENT_UPDATED
+  BUYER_REQUEST_REATTEMPT
+  BUYER_CANCEL_REQUEST_REFUND
+  ADMIN_RESOLVE_UNDELIVERABLE
+  REFUND_REQUESTED
+  REFUND_APPROVED
+  REFUND_REJECTED
+  REFUND_STRIPE_CREATED
+  REFUND_COMPLETED
+  REFUND_FAILED
+  ORDER_CANCELLED_AUTO_REFUND
+}
+
+enum RefundStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELED
+}
+
+enum RefundReason {
+  CANCEL_BEFORE_DISPATCH
+  UNDELIVERABLE
+  DAMAGED_PRODUCT
+  MISSING_PRODUCT
+  ADMIN_MANUAL
+  OTHER
+}
+
+model DeliveryAttempt {
+  id           String                @id @default(cuid())
+  orderId      String
+  attemptNumber Int
+  reason       DeliveryFailureReason
+  note         String?
+  lat          Float?
+  lng          Float?
+  recordedById String
+  createdAt    DateTime              @default(now())
+
+  order        Order                 @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  photos       OrderDeliveryPhoto[]
+
+  @@index([orderId])
+  @@map("delivery_attempts")
+}
+
+model OrderEvent {
+  id        String         @id @default(cuid())
+  orderId   String
+  type      OrderEventType
+  actorId   String?
+  actorRole Role?
+  payload   Json?
+  createdAt DateTime       @default(now())
+
+  order     Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_events")
+}
+
+model Refund {
+  id              String       @id @default(cuid())
+  orderId         String
+  amount          Int
+  status          RefundStatus @default(PENDING)
+  stripeRefundId  String?
+  reason          RefundReason
+  requestedById   String?
+  approvedById    String?
+  rejectedById    String?
+  adminNote       String?
+  buyerNote       String?
+  /// IDs de líneas de pedido para reembolso parcial (OrderItem.id)
+  orderItemIds    Json?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  order           Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([status])
+  @@index([stripeRefundId])
+  @@map("refunds")
+}
+
+model AdminAuditLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  action    String
+  orderId   String?
+  refundId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([adminId])
+  @@index([orderId])
+  @@map("admin_audit_logs")
+}
+
+model StripeProcessedEvent {
+  id        String   @id @default(cuid())
+  eventId   String   @unique
+  type      String
+  createdAt DateTime @default(now())
+
+  @@map("stripe_processed_events")
 }
 
 model OrderItem {
@@ -265,6 +402,16 @@ enum NotificationType {
   ORDER_COURIER_NEARBY
   ORDER_DELIVERED
   ORDER_CANCELLED
+  ORDER_DELIVERY_FAILED
+  ORDER_UNDELIVERABLE
+  ORDER_ASSIGNED_COURIER
+  REFUND_REQUESTED
+  REFUND_APPROVED
+  REFUND_REJECTED
+  REFUND_COMPLETED
+  REFUND_FAILED
+  ADMIN_REFUND_REQUEST
+  ADMIN_UNDELIVERABLE
   PAYMENT_RECEIVED
   PROMO
 }
@@ -274,11 +421,14 @@ model OrderDeliveryPhoto {
   orderId      String
   url          String
   uploadedById String
+  deliveryAttemptId String?
   createdAt    DateTime @default(now())
 
   order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  deliveryAttempt DeliveryAttempt? @relation(fields: [deliveryAttemptId], references: [id], onDelete: SetNull)
 
   @@index([orderId])
+  @@index([deliveryAttemptId])
   @@map("order_delivery_photos")
 }
 

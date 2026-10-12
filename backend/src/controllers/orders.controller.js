@@ -39,6 +39,11 @@ const orderDetailInclude = {
   items: { include: { product: true } },
   delivery: { select: { id: true, name: true } },
   deliveryPhotos: { orderBy: { createdAt: "asc" }, select: { id: true, url: true, createdAt: true } },
+  deliveryAttempts: {
+    orderBy: { attemptNumber: "asc" },
+    include: { photos: { select: { id: true, url: true, createdAt: true } } },
+  },
+  refunds: { orderBy: { createdAt: "desc" } },
 };
 
 export async function getById(req, res) {

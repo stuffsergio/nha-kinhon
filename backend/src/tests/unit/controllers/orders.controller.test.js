@@ -187,8 +187,8 @@ describe("orders controller payment flow", () => {
     });
   });
 
-  describe("cancel", () => {
-    it("cancels unpaid draft owned by user", async () => {
+  describe("cancel (legacy handler)", () => {
+    it.skip("cancels unpaid draft owned by user — moved to orderResolution.controller", async () => {
       const req = { user: { id: "user-1" }, params: { id: "order-1" } };
       const res = mockRes();
 
@@ -211,18 +211,7 @@ describe("orders controller payment flow", () => {
       expect(createNotification).toHaveBeenCalled();
     });
 
-    it("rejects cancel of confirmed order", async () => {
-      const req = { user: { id: "user-1" }, params: { id: "order-1" } };
-      const res = mockRes();
-
-      prisma.order.findUnique.mockResolvedValue({
-        id: "order-1",
-        userId: "user-1",
-        status: "CONFIRMED",
-      });
-
-      await expect(ordersController.cancel(req, res)).rejects.toBeInstanceOf(AppError);
-    });
+    it.skip("rejects cancel of confirmed order — see orderResolution.controller", async () => {});
   });
 
   describe("listMyOrders", () => {

@@ -56,6 +56,17 @@ export default {
     USER_NOT_DELIVERY: "Utilizador ka ten entregador",
     DELIVERY_AT_CAPACITY: "Entregador ja chega na kapasidade maxima",
     LOCALE_INVALID: "Lingua invalidu. Uza es, pt o pov.",
+    REFUND_NOTHING_LEFT: "Na ten mais valor pa devolve nen es pedidu",
+    REFUND_AMOUNT_INVALID: "Valor di devolucam invalidu",
+    REFUND_REQUEST_PENDING: "Ja ten un pedidu di devolucam pendenti",
+    REFUND_ALREADY_PROCESSED: "Es pedidu di devolucam ja foi processadu",
+    REFUND_CANCEL_NOT_ELIGIBLE: "Es pedidu na pode kansaola ku devolucam otomátiku",
+    REFUND_UNDELIVERABLE_NOT_ELIGIBLE: "So pedidu na ntregue pode pidi es devolucam",
+    REFUND_CLAIM_WINDOW_CLOSED: "Tempu pa reclama danu o falta ja passa",
+    REFUND_REASON_INVALID: "Razon di devolucam invalidu",
+    REFUND_STRIPE_FAILED: "Na pudu processa devolucam na Stripe",
+    BUYER_RESOLUTION_WINDOW_CLOSED: "Tempu pa koriji dadus o tenta outra bes ja passa",
+    RECIPIENT_UPDATE_NOT_ALLOWED: "Bu na pode atualiza destinatáriu nen es stadu",
   },
   resources: {
     Recurso: "Recurso",
@@ -121,6 +132,46 @@ export default {
       title: "Pedidu atualizadu",
       message: "Bu pedidu #{{shortId}} ta {{statusLabel}}.",
     },
+    ORDER_DELIVERY_FAILED: {
+      title: "Tentativa di ntrega falha",
+      message: "Na pudu ntrega pedidu #{{shortId}}. Verifica dadus di destinatáriu.",
+    },
+    ORDER_UNDELIVERABLE: {
+      title: "Pedidu na ntregue",
+      message: "Pedidu #{{shortId}} na pudu ntrega. Koriji dadus o pidi devolucam.",
+    },
+    ORDER_ASSIGNED_COURIER: {
+      title: "Pedidu nobu atribuidu",
+      message: "Atribui pedidu #{{shortId}} pa bu.",
+    },
+    REFUND_REQUESTED: {
+      title: "Pedidu di devolucam",
+      message: "Resebemos bu pedidu di devolucam di pedidu #{{shortId}}.",
+    },
+    REFUND_APPROVED: {
+      title: "Devolucam aprovadu",
+      message: "Devolucam di pedidu #{{shortId}} aprovadu.",
+    },
+    REFUND_REJECTED: {
+      title: "Devolucam recusadu",
+      message: "Pedidu di devolucam di pedidu #{{shortId}} recusadu.",
+    },
+    REFUND_COMPLETED: {
+      title: "Devolucam kompletu",
+      message: "Devolucam di pedidu #{{shortId}} ja kredita.",
+    },
+    REFUND_FAILED: {
+      title: "Devolucam falha",
+      message: "Na pudu kompleta devolucam di pedidu #{{shortId}}.",
+    },
+    ADMIN_REFUND_REQUEST: {
+      title: "Pedidu nobu di devolucam",
+      message: "Revisa devolucam di pedidu #{{shortId}}.",
+    },
+    ADMIN_UNDELIVERABLE: {
+      title: "Pedidu na ntregue",
+      message: "Insidensia na pedidu #{{shortId}}.",
+    },
   },
   receipt: {
     header: "🛒 *Nha Kinhon* — Resibu di pedidu",
@@ -147,6 +198,10 @@ export default {
     IN_TRANSIT: "Na kaminhu",
     DELIVERED: "Entregadu",
     CANCELLED: "Kanseladu",
+    DELIVERY_FAILED_ATTEMPT: "Ntrega falha (outra tentativa)",
+    UNDELIVERABLE: "Na ntregue",
+    REFUNDED: "Devolve",
+    PARTIALLY_REFUNDED: "Devolucam partial",
   },
   orderStatusShort: {
     confirmed: "konfirmadu",

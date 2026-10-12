@@ -6,6 +6,7 @@ import { useAdminOrders, useUpdateOrderStatus } from "../hooks/useAdminOrders";
 import { useDeliveryPeople, useAssignDelivery } from "../hooks/useAdminDelivery";
 import { useToast } from "../context/ToastContext";
 import AdminOrderTrackingPanel from "../components/AdminOrderTrackingPanel";
+import AdminIncidentsPanel from "../components/AdminIncidentsPanel";
 import OrderReceiptShare from "../components/OrderReceiptShare";
 import DeliveryProofGallery from "../components/DeliveryProofGallery";
 import { useOrderStatusLabel } from "../hooks/useOrderStatusLabel";
@@ -20,6 +21,10 @@ const statusColors = {
   IN_TRANSIT: "bg-[#f59e0b]/10 text-[#f59e0b]",
   DELIVERED: "bg-[#059669]/10 text-[#059669]",
   CANCELLED: "bg-[#dc2626]/10 text-[#dc2626]",
+  DELIVERY_FAILED_ATTEMPT: "bg-[#fffbeb] text-[#d97706]",
+  UNDELIVERABLE: "bg-[#dc2626]/10 text-[#dc2626]",
+  REFUNDED: "bg-[#f5f5f7] text-[#7a7a7a]",
+  PARTIALLY_REFUNDED: "bg-[#f5f3ff] text-[#7c3aed]",
 };
 
 export default function Admin() {
@@ -29,6 +34,7 @@ export default function Admin() {
     { id: "orders", label: t("admin.tabOrders") },
     { id: "assign", label: t("admin.tabAssign") },
     { id: "delivery", label: t("admin.tabDelivery") },
+    { id: "incidents", label: t("admin.tabIncidents") },
   ];
   const { user } = useAuth();
   const toast = useToast();
@@ -272,6 +278,8 @@ export default function Admin() {
           )}
         </div>
       )}
+
+      {activeTab === "incidents" && <AdminIncidentsPanel />}
     </div>
   );
 }
