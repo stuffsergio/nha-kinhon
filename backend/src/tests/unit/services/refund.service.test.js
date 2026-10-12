@@ -1,25 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+const txOrderFind = vi.fn();
+const txRefundCreate = vi.fn();
+
 vi.mock("../../../config/db.js", () => ({
   default: {
-    order: { findUnique: vi.fn(), update: vi.fn() },
+    order: { findUnique: vi.fn() },
     refund: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn(), findFirst: vi.fn() },
-    $transaction: vi.fn((fn) => fn({
-      order: { findUnique: vi.fn(), update: vi.fn() },
-      refund: { create: vi.fn(), update: vi.fn(), findUnique: vi.fn() },
-    })),
-    stripeProcessedEvent: { findUnique: vi.fn(), create: vi.fn() },
+    $transaction: vi.fn((fn) =>
+      fn({
+        $executeRaw: vi.fn(),
+        order: { findUnique: txOrderFind },
+        refund: { create: txRefundCreate, findUnique: vi.fn(), update: vi.fn() },
+      }),
+    ),
   },
 }));
 
 vi.mock("../../../services/stripe.service.js", () => ({
   isStripeConfigured: vi.fn(() => true),
-  getStripe: vi.fn(() => ({
-    refunds: {
-      create: vi.fn().mockResolvedValue({ id: "re_1", status: "succeeded" }),
-    },
-    checkout: { sessions: { retrieve: vi.fn() } },
-  })),
+  getStripe: vi.fn(),
 }));
 
 vi.mock("../../../services/notification.service.js", () => ({
@@ -38,7 +38,6 @@ vi.mock("../../../services/adminAudit.service.js", () => ({
   logAdminAction: vi.fn(),
 }));
 
-import prisma from "../../../config/db.js";
 import { createBuyerRefundRequest } from "../../../services/refund.service.js";
 
 describe("refund.service", () => {
@@ -47,7 +46,7 @@ describe("refund.service", () => {
   });
 
   it("creates buyer refund request when eligible", async () => {
-    prisma.order.findUnique.mockResolvedValue({
+    txOrderFind.mockResolvedValue({
       id: "order-1",
       userId: "u1",
       total: 5000,
@@ -55,7 +54,7 @@ describe("refund.service", () => {
       items: [],
       refunds: [],
     });
-    prisma.refund.create.mockResolvedValue({
+    txRefundCreate.mockResolvedValue({
       id: "ref-1",
       orderId: "order-1",
       amount: 5000,
@@ -69,6 +68,6 @@ describe("refund.service", () => {
     });
 
     expect(refund.id).toBe("ref-1");
-    expect(prisma.refund.create).toHaveBeenCalled();
+    expect(txRefundCreate).toHaveBeenCalled();
   });
 });

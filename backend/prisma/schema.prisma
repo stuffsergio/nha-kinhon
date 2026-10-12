@@ -309,6 +309,20 @@ model StripeProcessedEvent {
   @@map("stripe_processed_events")
 }
 
+model RequestIdempotency {
+  id           String   @id @default(cuid())
+  scope        String
+  key          String
+  actorId      String
+  orderId      String?
+  responseBody Json
+  createdAt    DateTime @default(now())
+
+  @@unique([scope, key])
+  @@index([actorId])
+  @@map("request_idempotency")
+}
+
 model OrderItem {
   id        String  @id @default(cuid())
   orderId   String

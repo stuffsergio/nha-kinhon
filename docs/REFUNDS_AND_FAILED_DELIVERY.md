@@ -61,6 +61,8 @@ Migración: `20261012180000_refunds_failed_delivery`.
 
 ### `POST /api/delivery/orders/:id/failed-attempt`
 
+**Idempotencia (app móvil):** cabecera opcional `X-Idempotency-Key` (8–128 caracteres `[A-Za-z0-9._-]`). Misma clave + mismo repartidor → misma respuesta JSON almacenada (`request_idempotency`, scope `delivery_failed_attempt`). Clave reutilizada por otro usuario → `409 IDEMPOTENCY_KEY_CONFLICT`.
+
 Body (allowlist):
 
 ```json

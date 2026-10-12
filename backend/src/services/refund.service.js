@@ -4,10 +4,16 @@ import { getStripe, isStripeConfigured } from "./stripe.service.js";
 import {
   assertRefundEligibility,
   computeOrderRefundStatus,
+  isPreDispatchForCancel,
   orderAmountFcfa,
   refundableRemainingFcfa,
   sumSucceededRefunds,
 } from "../utils/orderRefunds.js";
+import {
+  assertRefundAmountWithinLimit,
+  loadOrderWithRefundsTx,
+  lockOrderRow,
+} from "../utils/refundLock.js";
 import { recordOrderEvent } from "./orderEvent.service.js";
 import { createNotification } from "./notification.service.js";
 import { notifyAllAdmins } from "./adminNotify.service.js";
@@ -36,6 +42,16 @@ export async function getRefundSummaryForOrder(orderId) {
   };
 }
 
+function assertOrderItemIdsBelongToOrder(order, orderItemIds) {
+  if (!orderItemIds?.length) return;
+  const ids = new Set(order.items.map((i) => i.id));
+  for (const lineId of orderItemIds) {
+    if (!ids.has(lineId)) {
+      throw codedError("REFUND_ORDER_ITEM_INVALID", 400);
+    }
+  }
+}
+
 export async function createBuyerRefundRequest({
   orderId,
   userId,
@@ -44,41 +60,40 @@ export async function createBuyerRefundRequest({
   orderItemIds,
   acceptLanguage,
 }) {
-  const order = await loadOrderWithRefunds(orderId);
-  if (!order) throw new AppError("Pedido no encontrado", 404);
-  if (order.userId !== userId) throw new AppError("No tienes permiso", 403);
+  const refund = await prisma.$transaction(async (tx) => {
+    await lockOrderRow(tx, orderId);
+    const order = await loadOrderWithRefundsTx(tx, orderId);
+    if (!order) throw new AppError("Pedido no encontrado", 404);
+    if (order.userId !== userId) throw new AppError("No tienes permiso", 403);
 
-  const eligibility = assertRefundEligibility(order, order.refunds, {
-    reason,
-    orderItemIds,
-    items: order.items,
-  });
-  if (!eligibility.ok) {
-    throw codedError(eligibility.code, 400);
-  }
+    assertOrderItemIdsBelongToOrder(order, orderItemIds);
 
-  const amount = eligibility.suggestedAmount;
-  if (amount <= 0 || amount > eligibility.maxAmount) {
-    throw codedError("REFUND_AMOUNT_INVALID", 400);
-  }
-
-  const pendingSame = order.refunds.find(
-    (r) => r.status === "PENDING" && r.requestedById === userId,
-  );
-  if (pendingSame) {
-    throw codedError("REFUND_REQUEST_PENDING", 409);
-  }
-
-  const refund = await prisma.refund.create({
-    data: {
-      orderId,
-      amount,
+    const eligibility = assertRefundEligibility(order, order.refunds, {
       reason,
-      requestedById: userId,
-      buyerNote: buyerNote ?? null,
-      orderItemIds: orderItemIds?.length ? orderItemIds : undefined,
-      status: "PENDING",
-    },
+      orderItemIds,
+      items: order.items,
+    });
+    if (!eligibility.ok) throw codedError(eligibility.code, 400);
+
+    const amount = eligibility.suggestedAmount;
+    assertRefundAmountWithinLimit(order, order.refunds, amount);
+
+    const pendingSame = order.refunds.find(
+      (r) => r.status === "PENDING" && r.requestedById === userId,
+    );
+    if (pendingSame) throw codedError("REFUND_REQUEST_PENDING", 409);
+
+    return tx.refund.create({
+      data: {
+        orderId,
+        amount,
+        reason,
+        requestedById: userId,
+        buyerNote: buyerNote ?? null,
+        orderItemIds: orderItemIds?.length ? orderItemIds : undefined,
+        status: "PENDING",
+      },
+    });
   });
 
   await recordOrderEvent({
@@ -86,7 +101,7 @@ export async function createBuyerRefundRequest({
     type: "REFUND_REQUESTED",
     actorId: userId,
     actorRole: "USER",
-    payload: { refundId: refund.id, amount, reason },
+    payload: { refundId: refund.id, amount: refund.amount, reason },
   });
 
   await createNotification({
@@ -116,24 +131,19 @@ export async function approveRefundRequest({
   adminNote,
   acceptLanguage,
 }) {
-  return prisma.$transaction(async (tx) => {
-    const refund = await tx.refund.findUnique({
-      where: { id: refundId },
-      include: { order: { include: { items: true, refunds: true } } },
-    });
+  const orderId = await prisma.$transaction(async (tx) => {
+    const refund = await tx.refund.findUnique({ where: { id: refundId } });
     if (!refund) throw new AppError("Reembolso no encontrado", 404);
-    if (refund.status !== "PENDING") {
-      throw codedError("REFUND_ALREADY_PROCESSED", 409);
-    }
+    if (refund.status !== "PENDING") throw codedError("REFUND_ALREADY_PROCESSED", 409);
 
-    const order = refund.order;
-    const remaining = refundableRemainingFcfa(order, order.refunds);
+    await lockOrderRow(tx, refund.orderId);
+    const order = await loadOrderWithRefundsTx(tx, refund.orderId);
     const amount = amountFcfa != null ? Math.round(amountFcfa) : refund.amount;
-    if (amount <= 0 || amount > remaining) {
-      throw codedError("REFUND_AMOUNT_INVALID", 400);
-    }
+    assertRefundAmountWithinLimit(order, order.refunds, amount, {
+      excludeRefundId: refundId,
+    });
 
-    const updated = await tx.refund.update({
+    await tx.refund.update({
       where: { id: refundId },
       data: {
         amount,
@@ -158,25 +168,24 @@ export async function approveRefundRequest({
       metadata: { amount },
     });
 
-    const stripeRefund = await executeStripeRefund({
-      tx,
-      order,
-      refund: updated,
-    });
-
-    if (order.userId) {
-      await createNotification({
-        userId: order.userId,
-        type: "REFUND_APPROVED",
-        template: "REFUND_APPROVED",
-        templateParams: { shortId: order.id.slice(0, 8) },
-        orderId: order.id,
-        acceptLanguage,
-      });
-    }
-
-    return stripeRefund;
+    return order.id;
   });
+
+  const executed = await executeStripeRefundById(refundId);
+
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (order?.userId) {
+    await createNotification({
+      userId: order.userId,
+      type: "REFUND_APPROVED",
+      template: "REFUND_APPROVED",
+      templateParams: { shortId: order.id.slice(0, 8) },
+      orderId: order.id,
+      acceptLanguage,
+    });
+  }
+
+  return executed;
 }
 
 export async function rejectRefundRequest({ refundId, adminId, adminNote, acceptLanguage }) {
@@ -185,9 +194,7 @@ export async function rejectRefundRequest({ refundId, adminId, adminNote, accept
     include: { order: true },
   });
   if (!refund) throw new AppError("Reembolso no encontrado", 404);
-  if (refund.status !== "PENDING") {
-    throw codedError("REFUND_ALREADY_PROCESSED", 409);
-  }
+  if (refund.status !== "PENDING") throw codedError("REFUND_ALREADY_PROCESSED", 409);
 
   const updated = await prisma.refund.update({
     where: { id: refundId },
@@ -236,25 +243,25 @@ export async function createAdminManualRefund({
   orderItemIds,
   acceptLanguage,
 }) {
-  const order = await loadOrderWithRefunds(orderId);
-  if (!order) throw new AppError("Pedido no encontrado", 404);
-
-  const eligibility = assertRefundEligibility(order, order.refunds, {
-    reason: reason || "ADMIN_MANUAL",
-    orderItemIds,
-    items: order.items,
-  });
-  if (!eligibility.ok) {
-    throw codedError(eligibility.code, 400);
-  }
-
   const amount = Math.round(amountFcfa);
-  if (amount <= 0 || amount > eligibility.maxAmount) {
-    throw codedError("REFUND_AMOUNT_INVALID", 400);
-  }
 
-  return prisma.$transaction(async (tx) => {
-    const refund = await tx.refund.create({
+  const refund = await prisma.$transaction(async (tx) => {
+    await lockOrderRow(tx, orderId);
+    const order = await loadOrderWithRefundsTx(tx, orderId);
+    if (!order) throw new AppError("Pedido no encontrado", 404);
+
+    assertOrderItemIdsBelongToOrder(order, orderItemIds);
+
+    const eligibility = assertRefundEligibility(order, order.refunds, {
+      reason: reason || "ADMIN_MANUAL",
+      orderItemIds,
+      items: order.items,
+    });
+    if (!eligibility.ok) throw codedError(eligibility.code, 400);
+
+    assertRefundAmountWithinLimit(order, order.refunds, amount);
+
+    const created = await tx.refund.create({
       data: {
         orderId,
         amount,
@@ -271,24 +278,31 @@ export async function createAdminManualRefund({
       adminId,
       action: "REFUND_MANUAL",
       orderId,
-      refundId: refund.id,
+      refundId: created.id,
       metadata: { amount },
     });
 
-    return executeStripeRefund({ tx, order, refund });
+    return created;
   });
+
+  return executeStripeRefundById(refund.id);
 }
 
-export async function executeStripeRefund({ tx, order, refund }) {
-  if (!isStripeConfigured()) {
-    throw codedError("STRIPE_NOT_CONFIGURED", 503);
-  }
+async function executeStripeRefundById(refundId) {
+  const refund = await prisma.refund.findUnique({
+    where: { id: refundId },
+    include: { order: { include: { items: true, refunds: true } } },
+  });
+  if (!refund) throw new AppError("Reembolso no encontrado", 404);
+  if (refund.status !== "PENDING") return refund;
 
-  const paymentRef = await resolvePaymentIntentId(order);
-  const stripe = getStripe();
+  if (!isStripeConfigured()) throw codedError("STRIPE_NOT_CONFIGURED", 503);
 
+  const order = refund.order;
   let stripeRefund;
   try {
+    const paymentRef = await resolvePaymentIntentId(order);
+    const stripe = getStripe();
     stripeRefund = await stripe.refunds.create(
       {
         payment_intent: paymentRef,
@@ -298,7 +312,7 @@ export async function executeStripeRefund({ tx, order, refund }) {
       { idempotencyKey: `nha-refund-${refund.id}` },
     );
   } catch (err) {
-    await tx.refund.update({
+    await prisma.refund.update({
       where: { id: refund.id },
       data: { status: "FAILED" },
     });
@@ -310,25 +324,67 @@ export async function executeStripeRefund({ tx, order, refund }) {
     throw codedError("REFUND_STRIPE_FAILED", 502);
   }
 
-  const updated = await tx.refund.update({
-    where: { id: refund.id },
-    data: {
-      stripeRefundId: stripeRefund.id,
-      status: stripeRefund.status === "succeeded" ? "SUCCEEDED" : "PENDING",
-    },
-  });
+  const finalized = await finalizeRefundFromStripeObject(refund.id, stripeRefund);
 
-  await recordOrderEvent({
-    orderId: order.id,
-    type: "REFUND_STRIPE_CREATED",
-    payload: { refundId: refund.id, stripeRefundId: stripeRefund.id },
-  });
-
-  if (stripeRefund.status === "succeeded") {
-    await reconcileOrderAfterRefund(tx, order.id);
+  if (finalized?.status === "SUCCEEDED" && order.userId) {
+    await createNotification({
+      userId: order.userId,
+      type: "REFUND_COMPLETED",
+      template: "REFUND_COMPLETED",
+      templateParams: { shortId: order.id.slice(0, 8) },
+      orderId: order.id,
+    });
   }
 
-  return updated;
+  return finalized;
+}
+
+export async function finalizeRefundFromStripeObject(refundId, stripeRefundObject) {
+  const status =
+    stripeRefundObject.status === "succeeded"
+      ? "SUCCEEDED"
+      : stripeRefundObject.status === "failed"
+        ? "FAILED"
+        : stripeRefundObject.status === "canceled"
+          ? "CANCELED"
+          : "PENDING";
+
+  const pre = await prisma.refund.findUnique({
+    where: { id: refundId },
+    select: { orderId: true },
+  });
+  if (!pre) return null;
+
+  return prisma.$transaction(async (tx) => {
+    await lockOrderRow(tx, pre.orderId);
+
+    const refund = await tx.refund.findUnique({ where: { id: refundId } });
+    if (!refund) return null;
+
+    if (refund.status === "SUCCEEDED" && status === "SUCCEEDED") {
+      return refund;
+    }
+
+    const updated = await tx.refund.update({
+      where: { id: refundId },
+      data: {
+        stripeRefundId: stripeRefundObject.id,
+        status,
+        amount: stripeRefundObject.amount ?? refund.amount,
+      },
+    });
+
+    if (status === "SUCCEEDED") {
+      await reconcileOrderAfterRefund(tx, updated.orderId);
+      await recordOrderEvent({
+        orderId: updated.orderId,
+        type: "REFUND_STRIPE_CREATED",
+        payload: { refundId, stripeRefundId: stripeRefundObject.id },
+      });
+    }
+
+    return updated;
+  });
 }
 
 async function resolvePaymentIntentId(order) {
@@ -360,10 +416,12 @@ export async function reconcileOrderAfterRefund(tx, orderId) {
   const nextStatus = computeOrderRefundStatus(orderAmountFcfa(order), succeeded);
   if (!nextStatus) return;
 
-  await tx.order.update({
-    where: { id: orderId },
-    data: { status: nextStatus },
-  });
+  if (order.status !== "CANCELLED" || nextStatus === "REFUNDED") {
+    await tx.order.update({
+      where: { id: orderId },
+      data: { status: nextStatus },
+    });
+  }
 
   await recordOrderEvent({
     orderId,
@@ -372,39 +430,78 @@ export async function reconcileOrderAfterRefund(tx, orderId) {
   });
 }
 
-export async function applyStripeRefundWebhook({ stripeRefundObject, eventType }) {
-  const refundId = stripeRefundObject.metadata?.refundId;
-  let refund = refundId
-    ? await prisma.refund.findUnique({ where: { id: refundId } })
-    : null;
+async function findOrderIdForStripeRefund(stripeRefundObject) {
+  const metaOrderId = stripeRefundObject.metadata?.orderId;
+  if (metaOrderId) return metaOrderId;
 
-  if (!refund && stripeRefundObject.id) {
-    refund = await prisma.refund.findFirst({
-      where: { stripeRefundId: stripeRefundObject.id },
-    });
+  const pi = stripeRefundObject.payment_intent;
+  if (typeof pi === "string") {
+    const byPi = await prisma.order.findFirst({ where: { stripePaymentId: pi } });
+    if (byPi) return byPi.id;
   }
 
-  if (!refund) {
-    const orderId = stripeRefundObject.metadata?.orderId;
+  return null;
+}
+
+export async function applyStripeRefundWebhook({ stripeRefundObject, eventType }) {
+  if (!stripeRefundObject?.id?.startsWith("re_")) return null;
+
+  return prisma.$transaction(async (tx) => {
+    let refund =
+      stripeRefundObject.metadata?.refundId
+        ? await tx.refund.findUnique({ where: { id: stripeRefundObject.metadata.refundId } })
+        : null;
+
+    if (!refund) {
+      refund = await tx.refund.findFirst({
+        where: { stripeRefundId: stripeRefundObject.id },
+      });
+    }
+
+    if (refund) {
+      await lockOrderRow(tx, refund.orderId);
+      return applyStripeRefundToExisting(tx, refund, stripeRefundObject, eventType);
+    }
+
+    const orderId = await findOrderIdForStripeRefund(stripeRefundObject);
     if (!orderId) return null;
-    refund = await prisma.refund.create({
+
+    await lockOrderRow(tx, orderId);
+    const order = await loadOrderWithRefundsTx(tx, orderId);
+    const amount = Math.round(stripeRefundObject.amount || 0);
+    assertRefundAmountWithinLimit(order, order.refunds, amount);
+
+    const created = await tx.refund.create({
       data: {
         orderId,
-        amount: stripeRefundObject.amount || 0,
+        amount,
         status: "PENDING",
         stripeRefundId: stripeRefundObject.id,
         reason: "ADMIN_MANUAL",
+        adminNote: "Stripe Dashboard / webhook externo",
       },
     });
-  }
 
+    return applyStripeRefundToExisting(tx, created, stripeRefundObject, eventType);
+  });
+}
+
+async function applyStripeRefundToExisting(tx, refund, stripeRefundObject, eventType) {
   let status = refund.status;
   if (stripeRefundObject.status === "succeeded") status = "SUCCEEDED";
   else if (stripeRefundObject.status === "failed") status = "FAILED";
   else if (stripeRefundObject.status === "canceled") status = "CANCELED";
   else if (eventType === "refund.failed") status = "FAILED";
 
-  const updated = await prisma.refund.update({
+  if (status === "SUCCEEDED" && refund.status !== "SUCCEEDED") {
+    const order = await loadOrderWithRefundsTx(tx, refund.orderId);
+    const amount = Math.round(stripeRefundObject.amount ?? refund.amount);
+    assertRefundAmountWithinLimit(order, order.refunds, amount, {
+      excludeRefundId: refund.id,
+    });
+  }
+
+  const updated = await tx.refund.update({
     where: { id: refund.id },
     data: {
       stripeRefundId: stripeRefundObject.id,
@@ -413,11 +510,10 @@ export async function applyStripeRefundWebhook({ stripeRefundObject, eventType }
     },
   });
 
-  const order = await prisma.order.findUnique({ where: { id: updated.orderId } });
+  const order = await tx.order.findUnique({ where: { id: updated.orderId } });
+
   if (status === "SUCCEEDED") {
-    await prisma.$transaction(async (tx) => {
-      await reconcileOrderAfterRefund(tx, updated.orderId);
-    });
+    await reconcileOrderAfterRefund(tx, updated.orderId);
     if (order?.userId) {
       await createNotification({
         userId: order.userId,
@@ -433,36 +529,40 @@ export async function applyStripeRefundWebhook({ stripeRefundObject, eventType }
       type: "REFUND_FAILED",
       payload: { refundId: updated.id, eventType },
     });
-    if (order?.userId) {
-      await createNotification({
-        userId: order.userId,
-        type: "REFUND_FAILED",
-        template: "REFUND_FAILED",
-        templateParams: { shortId: order.id.slice(0, 8) },
-        orderId: order.id,
-      });
-    }
   }
 
   return updated;
 }
 
 export async function cancelOrderWithAutoRefund({ order, userId, acceptLanguage }) {
-  const withRefunds = await loadOrderWithRefunds(order.id);
-  const remaining = refundableRemainingFcfa(withRefunds, withRefunds.refunds);
-  if (remaining <= 0) {
-    throw codedError("REFUND_NOTHING_LEFT", 400);
-  }
+  const result = await prisma.$transaction(async (tx) => {
+    await lockOrderRow(tx, order.id);
+    const fresh = await loadOrderWithRefundsTx(tx, order.id);
+    if (!fresh) throw new AppError("Pedido no encontrado", 404);
+    if (fresh.userId !== userId) throw codedError("ORDER_FORBIDDEN", 403);
 
-  return prisma.$transaction(async (tx) => {
+    if (fresh.status === "CANCELLED") {
+      const existing = fresh.refunds.find(
+        (r) => r.reason === "CANCEL_BEFORE_DISPATCH" && r.status !== "CANCELED",
+      );
+      return { kind: "idempotent", refund: existing ?? null, order: fresh };
+    }
+
+    if (!isPreDispatchForCancel(fresh)) {
+      throw codedError("REFUND_CANCEL_NOT_ELIGIBLE", 400);
+    }
+
+    const remaining = refundableRemainingFcfa(fresh, fresh.refunds);
+    if (remaining <= 0) throw codedError("REFUND_NOTHING_LEFT", 400);
+
     await tx.order.update({
-      where: { id: order.id },
+      where: { id: fresh.id },
       data: { status: "CANCELLED" },
     });
 
     const refund = await tx.refund.create({
       data: {
-        orderId: order.id,
+        orderId: fresh.id,
         amount: remaining,
         reason: "CANCEL_BEFORE_DISPATCH",
         requestedById: userId,
@@ -472,24 +572,30 @@ export async function cancelOrderWithAutoRefund({ order, userId, acceptLanguage 
     });
 
     await recordOrderEvent({
-      orderId: order.id,
+      orderId: fresh.id,
       type: "ORDER_CANCELLED_AUTO_REFUND",
       actorId: userId,
       actorRole: "USER",
       payload: { refundId: refund.id },
     });
 
-    const executed = await executeStripeRefund({ tx, order: withRefunds, refund });
-
-    await createNotification({
-      userId,
-      type: "ORDER_CANCELLED",
-      template: "ORDER_CANCELLED",
-      templateParams: { shortId: order.id.slice(0, 8) },
-      orderId: order.id,
-      acceptLanguage,
-    });
-
-    return executed;
+    return { kind: "created", refund, order: fresh };
   });
+
+  if (result.kind === "idempotent") {
+    return result.refund;
+  }
+
+  const executed = await executeStripeRefundById(result.refund.id);
+
+  await createNotification({
+    userId,
+    type: "ORDER_CANCELLED",
+    template: "ORDER_CANCELLED",
+    templateParams: { shortId: order.id.slice(0, 8) },
+    orderId: order.id,
+    acceptLanguage,
+  });
+
+  return executed;
 }

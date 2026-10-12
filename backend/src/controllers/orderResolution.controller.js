@@ -9,16 +9,9 @@ import {
 } from "../services/refund.service.js";
 import {
   rescheduleDeliveryAfterFailure,
+  assertBuyerResolutionWindow,
 } from "../services/deliveryAttempt.service.js";
-import { recordOrderEvent } from "../services/orderEvent.service.js";
 import { BUYER_RESOLUTION_WINDOW_HOURS } from "../config/refundsDelivery.js";
-
-function assertBuyerResolutionWindow(order) {
-  if (!order.buyerResolutionDeadline) return;
-  if (new Date() > new Date(order.buyerResolutionDeadline)) {
-    throw codedError("BUYER_RESOLUTION_WINDOW_CLOSED", 400);
-  }
-}
 
 export async function getOrderHistory(req, res) {
   const order = await prisma.order.findUnique({
@@ -57,6 +50,9 @@ export async function updateRecipient(req, res) {
   if (order.userId !== req.user.id) throw codedError("ORDER_FORBIDDEN", 403);
 
   if (!["DELIVERY_FAILED_ATTEMPT", "UNDELIVERABLE"].includes(order.status)) {
+    throw codedError("RECIPIENT_UPDATE_NOT_ALLOWED", 400);
+  }
+  if (["DELIVERED", "REFUNDED", "PARTIALLY_REFUNDED", "CANCELLED"].includes(order.status)) {
     throw codedError("RECIPIENT_UPDATE_NOT_ALLOWED", 400);
   }
   assertBuyerResolutionWindow(order);
@@ -98,6 +94,9 @@ export async function requestReattempt(req, res) {
   const order = await prisma.order.findUnique({ where: { id: req.params.id } });
   if (!order) throw new NotFoundError("Pedido");
   if (order.userId !== req.user.id) throw codedError("ORDER_FORBIDDEN", 403);
+  if (order.status !== "DELIVERY_FAILED_ATTEMPT") {
+    throw codedError("DELIVERY_REATTEMPT_INVALID", 400);
+  }
   assertBuyerResolutionWindow(order);
 
   const updated = await rescheduleDeliveryAfterFailure({

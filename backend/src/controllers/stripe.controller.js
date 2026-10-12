@@ -225,17 +225,24 @@ export async function handleWebhook(req, res) {
     event.type === "refund.updated" ||
     event.type === "refund.failed"
   ) {
-    let stripeRefund = event.data.object;
+    const refundsToProcess = [];
     if (event.type === "charge.refunded") {
       const charge = event.data.object;
-      const refundsList = charge.refunds?.data;
-      stripeRefund = refundsList?.[refundsList.length - 1] || stripeRefund;
+      const list = charge.refunds?.data;
+      if (Array.isArray(list) && list.length > 0) {
+        refundsToProcess.push(...list);
+      }
+    } else {
+      refundsToProcess.push(event.data.object);
     }
-    if (stripeRefund?.object === "refund" || stripeRefund?.id?.startsWith("re_")) {
-      await applyStripeRefundWebhook({
-        stripeRefundObject: stripeRefund,
-        eventType: event.type,
-      });
+
+    for (const stripeRefund of refundsToProcess) {
+      if (stripeRefund?.object === "refund" || stripeRefund?.id?.startsWith("re_")) {
+        await applyStripeRefundWebhook({
+          stripeRefundObject: stripeRefund,
+          eventType: event.type,
+        });
+      }
     }
   }
 

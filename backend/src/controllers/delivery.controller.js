@@ -24,6 +24,7 @@ import {
 import { localeFromRequestBody } from "../utils/userLocale.js";
 import { resolveLocale } from "../i18n/index.js";
 import { recordFailedDeliveryAttempt } from "../services/deliveryAttempt.service.js";
+import { parseIdempotencyKey, withIdempotency } from "../utils/requestIdempotency.js";
 
 async function countActiveOrdersForDelivery(deliveryUserId) {
   return prisma.order.count({
@@ -123,27 +124,38 @@ export async function pickupOrder(req, res) {
 export async function reportFailedAttempt(req, res) {
   const { id } = req.params;
   const { reason, note, lat, lng } = req.body;
+  const idempotencyKey = parseIdempotencyKey(req.headers["x-idempotency-key"]);
 
-  const result = await recordFailedDeliveryAttempt({
+  const payload = await withIdempotency({
+    scope: "delivery_failed_attempt",
+    key: idempotencyKey,
+    actorId: req.user.id,
     orderId: id,
-    courierId: req.user.id,
-    reason,
-    note,
-    lat,
-    lng,
-    photosRaw: req.body,
+    run: async () => {
+      const result = await recordFailedDeliveryAttempt({
+        orderId: id,
+        courierId: req.user.id,
+        reason,
+        note,
+        lat,
+        lng,
+        photosRaw: req.body,
+      });
+
+      const order = await prisma.order.findUnique({
+        where: { id },
+        include: { items: true },
+      });
+
+      return {
+        attempt: result.attempt,
+        order: formatDeliveryOrder(order),
+        status: result.nextStatus,
+      };
+    },
   });
 
-  const order = await prisma.order.findUnique({
-    where: { id },
-    include: { items: true },
-  });
-
-  res.json({
-    attempt: result.attempt,
-    order: formatDeliveryOrder(order),
-    status: result.nextStatus,
-  });
+  res.json(payload);
 }
 
 export async function updateDeliveryStatus(req, res) {

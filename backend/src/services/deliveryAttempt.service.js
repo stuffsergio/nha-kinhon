@@ -1,5 +1,5 @@
 import prisma from "../config/db.js";
-import { AppError } from "../utils/errors.js";
+import { AppError, codedError } from "../utils/errors.js";
 import { BUYER_RESOLUTION_WINDOW_HOURS } from "../config/refundsDelivery.js";
 import {
   canRecordDeliveryFailure,
@@ -14,11 +14,19 @@ import {
 import { recordOrderEvent } from "./orderEvent.service.js";
 import { createNotification } from "./notification.service.js";
 import { notifyAllAdmins } from "./adminNotify.service.js";
+import { lockOrderRow } from "../utils/refundLock.js";
 
 function buyerDeadlineFromNow() {
   const d = new Date();
   d.setHours(d.getHours() + BUYER_RESOLUTION_WINDOW_HOURS);
   return d;
+}
+
+export function assertBuyerResolutionWindow(order) {
+  if (!order.buyerResolutionDeadline) return;
+  if (new Date() > new Date(order.buyerResolutionDeadline)) {
+    throw codedError("BUYER_RESOLUTION_WINDOW_CLOSED", 400);
+  }
 }
 
 export async function recordFailedDeliveryAttempt({
@@ -30,30 +38,33 @@ export async function recordFailedDeliveryAttempt({
   lng,
   photosRaw,
 }) {
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
-  if (!order) throw new AppError("Pedido no encontrado", 404);
-  if (order.deliveryId !== courierId) {
-    throw new AppError("Este pedido no te pertenece", 403);
-  }
-  if (!canRecordDeliveryFailure(order.status)) {
-    throw new AppError("El pedido no está en reparto", 400);
-  }
-
   const photoList = photosRaw ? normalizePhotoList(photosRaw) : [];
   if (photoList.length > MAX_PHOTOS_PER_REQUEST) {
     throw new AppError(`Máximo ${MAX_PHOTOS_PER_REQUEST} fotos por solicitud`, 400);
   }
 
-  const existingPhotos = await prisma.orderDeliveryPhoto.count({ where: { orderId } });
-  if (existingPhotos + photoList.length > MAX_PHOTOS_PER_ORDER) {
-    throw new AppError(`Máximo ${MAX_PHOTOS_PER_ORDER} fotos por pedido`, 400);
-  }
+  const { attempt, nextStatus, orderUserId } = await prisma.$transaction(async (tx) => {
+    await lockOrderRow(tx, orderId);
+    const order = await tx.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new AppError("Pedido no encontrado", 404);
+    if (order.deliveryId !== courierId) {
+      throw new AppError("Este pedido no te pertenece", 403);
+    }
+    if (!canRecordDeliveryFailure(order.status)) {
+      throw codedError("DELIVERY_FAILURE_STATUS_INVALID", 400);
+    }
 
-  const attemptNumber = order.failedDeliveryAttempts + 1;
-  const failedAfter = attemptNumber;
-  const nextStatus = resolveStatusAfterFailure({ reason, failedAttemptsAfter: failedAfter });
+    const existingPhotos = await tx.orderDeliveryPhoto.count({ where: { orderId } });
+    if (existingPhotos + photoList.length > MAX_PHOTOS_PER_ORDER) {
+      throw new AppError(`Máximo ${MAX_PHOTOS_PER_ORDER} fotos por pedido`, 400);
+    }
 
-  const attempt = await prisma.$transaction(async (tx) => {
+    const attemptNumber = order.failedDeliveryAttempts + 1;
+    const nextStatus = resolveStatusAfterFailure({
+      reason,
+      failedAttemptsAfter: attemptNumber,
+    });
+
     const createdAttempt = await tx.deliveryAttempt.create({
       data: {
         orderId,
@@ -87,7 +98,7 @@ export async function recordFailedDeliveryAttempt({
       },
     });
 
-    return createdAttempt;
+    return { attempt: createdAttempt, nextStatus, orderUserId: order.userId };
   });
 
   await recordOrderEvent({
@@ -98,14 +109,14 @@ export async function recordFailedDeliveryAttempt({
     payload: {
       attemptId: attempt.id,
       reason,
-      attemptNumber,
+      attemptNumber: attempt.attemptNumber,
       nextStatus,
     },
   });
 
   const shortId = orderId.slice(0, 8);
   await createNotification({
-    userId: order.userId,
+    userId: orderUserId,
     type: nextStatus === "UNDELIVERABLE" ? "ORDER_UNDELIVERABLE" : "ORDER_DELIVERY_FAILED",
     template: nextStatus === "UNDELIVERABLE" ? "ORDER_UNDELIVERABLE" : "ORDER_DELIVERY_FAILED",
     templateParams: { shortId },
@@ -125,15 +136,19 @@ export async function recordFailedDeliveryAttempt({
 }
 
 export async function rescheduleDeliveryAfterFailure({ orderId, actorId, actorRole }) {
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
-  if (!order) throw new AppError("Pedido no encontrado", 404);
-  if (order.status !== "DELIVERY_FAILED_ATTEMPT") {
-    throw new AppError("El pedido no está pendiente de reintento", 400);
-  }
+  const updated = await prisma.$transaction(async (tx) => {
+    await lockOrderRow(tx, orderId);
+    const order = await tx.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new AppError("Pedido no encontrado", 404);
+    if (order.status !== "DELIVERY_FAILED_ATTEMPT") {
+      throw codedError("DELIVERY_REATTEMPT_INVALID", 400);
+    }
+    assertBuyerResolutionWindow(order);
 
-  const updated = await prisma.order.update({
-    where: { id: orderId },
-    data: { status: "IN_TRANSIT" },
+    return tx.order.update({
+      where: { id: orderId },
+      data: { status: "IN_TRANSIT" },
+    });
   });
 
   await recordOrderEvent({

@@ -64,6 +64,11 @@ export default {
     REFUND_STRIPE_FAILED: "No se pudo procesar el reembolso en Stripe",
     BUYER_RESOLUTION_WINDOW_CLOSED: "Plazo para corregir datos o elegir reintento expirado",
     RECIPIENT_UPDATE_NOT_ALLOWED: "No puedes actualizar el destinatario en este estado",
+    REFUND_ORDER_ITEM_INVALID: "Línea de pedido no válida para el reembolso",
+    IDEMPOTENCY_KEY_INVALID: "Clave de idempotencia no válida",
+    IDEMPOTENCY_KEY_CONFLICT: "Clave de idempotencia ya usada por otro cliente",
+    DELIVERY_FAILURE_STATUS_INVALID: "No se puede registrar un fallo de entrega en este estado",
+    DELIVERY_REATTEMPT_INVALID: "El pedido no admite reintento de entrega",
   },
   resources: {
     Recurso: "Recurso",
