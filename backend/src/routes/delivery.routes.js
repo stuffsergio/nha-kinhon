@@ -16,6 +16,7 @@ router.use(authenticate, requireDelivery);
 
 router.get("/orders/available", deliveryController.listAvailable);
 router.get("/orders/my", deliveryController.listMyOrders);
+router.get("/orders/:id/attempts", deliveryController.getOrderFailedAttempts);
 router.post("/orders/:id/pickup", deliveryController.pickupOrder);
 router.put("/orders/:id/status", deliveryController.updateDeliveryStatus);
 router.post(

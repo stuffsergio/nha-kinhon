@@ -29,6 +29,7 @@ describe("requestIdempotency", () => {
       scope: "delivery_failed_attempt",
       key: "mobile-key-12345678",
       actorId: "u1",
+      orderId: "order-1",
       run: async () => ({ ok: false }),
     });
 

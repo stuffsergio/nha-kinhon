@@ -318,8 +318,9 @@ model RequestIdempotency {
   responseBody Json
   createdAt    DateTime @default(now())
 
-  @@unique([scope, key])
+  @@unique([scope, actorId, orderId, key])
   @@index([actorId])
+  @@index([orderId])
   @@map("request_idempotency")
 }
 

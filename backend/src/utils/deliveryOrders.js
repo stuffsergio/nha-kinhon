@@ -15,6 +15,16 @@ export function toMobileStatus(status) {
   return STATUS_MOBILE_ALIASES[status] || status;
 }
 
+export function formatDeliveryAttemptForCourier(attempt) {
+  return {
+    attemptNumber: attempt.attemptNumber,
+    reason: attempt.reason,
+    note: attempt.note ?? null,
+    photos: (attempt.photos || []).map((p) => ({ url: p.url })),
+    createdAt: attempt.createdAt,
+  };
+}
+
 export function formatDeliveryOrder(order, { includeItems = true } = {}) {
   const formatted = {
     id: order.id,
@@ -28,6 +38,10 @@ export function formatDeliveryOrder(order, { includeItems = true } = {}) {
     deliveryAddress: order.recipientAddress ?? null,
     createdAt: order.createdAt,
   };
+
+  if (order.deliveryAttempts?.length) {
+    formatted.failedAttempts = order.deliveryAttempts.map(formatDeliveryAttemptForCourier);
+  }
 
   if (includeItems && order.items) {
     formatted.items = order.items.map((item) => ({

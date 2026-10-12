@@ -57,11 +57,24 @@ Motivos **no reintentables** (→ `UNDELIVERABLE` al primer registro): `RECIPIEN
 
 Migración: `20261012180000_refunds_failed_delivery`.
 
-## Repartidor (rol DELIVERY)
+## Repartidor (rol DELIVERY) — contrato app móvil
+
+Alineado con [`stuffsergio/nha-kinhon-mobile`](https://github.com/stuffsergio/nha-kinhon-mobile) (cola offline).
 
 ### `POST /api/delivery/orders/:id/failed-attempt`
 
-**Idempotencia (app móvil):** cabecera opcional `X-Idempotency-Key` (8–128 caracteres `[A-Za-z0-9._-]`). Misma clave + mismo repartidor → misma respuesta JSON almacenada (`request_idempotency`, scope `delivery_failed_attempt`). Clave reutilizada por otro usuario → `409 IDEMPOTENCY_KEY_CONFLICT`.
+**Cabecera obligatoria:** `X-Idempotency-Key: <UUID>` (v4). La app genera **un UUID por par repartidor + pedido** y lo reutiliza al reenviar desde la cola offline.
+
+**Idempotencia (persistente):**
+
+| Clave única en DB | `scope` + `actorId` (JWT repartidor) + `orderId` + `key` |
+|-------------------|-------------------------------------------------------------|
+| Tabla | `request_idempotency` |
+| Scope | `delivery_failed_attempt` |
+| Primer envío | Crea `DeliveryAttempt`, actualiza pedido, guarda **respuesta JSON completa** |
+| Reintento misma clave | Devuelve la **misma respuesta** sin nuevo intento |
+| Cabecera respuesta | `Idempotent-Replayed: true` en replays |
+| Errores | `400 IDEMPOTENCY_KEY_REQUIRED` / `IDEMPOTENCY_KEY_INVALID` |
 
 Body (allowlist):
 
@@ -78,9 +91,63 @@ Body (allowlist):
 
 `reason` ∈ `RECIPIENT_ABSENT|WRONG_ADDRESS|RECIPIENT_REFUSED|UNREACHABLE_PHONE|ACCESS_BLOCKED|PRODUCT_DAMAGED|OTHER`.
 
-Respuesta: `{ attempt, order, status }`.
+Respuesta **200** (también en replay idempotente):
+
+```json
+{
+  "attempt": {
+    "attemptNumber": 1,
+    "reason": "RECIPIENT_ABSENT",
+    "note": "…",
+    "photos": [{ "url": "data:image/jpeg;base64,…" }],
+    "createdAt": "2026-10-12T12:00:00.000Z"
+  },
+  "order": {
+    "id": "…",
+    "status": "DELIVERY_FAILED_ATTEMPT",
+    "failedAttempts": [
+      {
+        "attemptNumber": 1,
+        "reason": "RECIPIENT_ABSENT",
+        "note": "…",
+        "photos": [{ "url": "…" }],
+        "createdAt": "2026-10-12T12:00:00.000Z"
+      }
+    ],
+    "recipientName": "…",
+    "items": []
+  },
+  "status": "DELIVERY_FAILED_ATTEMPT"
+}
+```
+
+`order.status` usa alias móvil cuando aplica (`PREPARING`, `READY`, …) vía `formatDeliveryOrder`.
 
 Rate limit: `deliveryFailureLimiter` (30 / 15 min).
+
+### `GET /api/delivery/orders/:id/attempts`
+
+Solo el repartidor **asignado** (`order.deliveryId === JWT user id`). Misma forma de intento que en `failedAttempts`:
+
+```json
+{
+  "attempts": [
+    {
+      "attemptNumber": 1,
+      "reason": "RECIPIENT_ABSENT",
+      "note": null,
+      "photos": [{ "url": "…" }],
+      "createdAt": "2026-10-12T12:00:00.000Z"
+    }
+  ]
+}
+```
+
+### `GET /api/delivery/orders/my`
+
+Cada pedido incluye `failedAttempts[]` con el mismo shape (historial completo asc por `attemptNumber`).
+
+Migración idempotencia compuesta: `20261012200000_idempotency_courier_order`.
 
 ## Comprador (rol USER)
 

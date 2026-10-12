@@ -14,20 +14,20 @@ export function parseIdempotencyKey(headerValue) {
 }
 
 /**
- * @param {object} opts
- * @param {string} opts.scope
- * @param {string} opts.key
- * @param {string} opts.actorId
- * @param {string} [opts.orderId]
- * @param {() => Promise<object>} opts.run - debe devolver payload JSON-serializable
+ * Idempotencia genérica (requiere orderId para clave compuesta en DB).
  */
 export async function withIdempotency({ scope, key, actorId, orderId, run }) {
   if (!key) {
     return run();
   }
+  if (!orderId) {
+    throw codedError("VALIDATION", 400);
+  }
 
   const existing = await prisma.requestIdempotency.findUnique({
-    where: { scope_key: { scope, key } },
+    where: {
+      scope_actorId_orderId_key: { scope, actorId, orderId, key },
+    },
   });
   if (existing) {
     if (existing.actorId !== actorId) {
@@ -36,7 +36,7 @@ export async function withIdempotency({ scope, key, actorId, orderId, run }) {
     return existing.responseBody;
   }
 
-  const responseBody = await run();
+  const responseBody = JSON.parse(JSON.stringify(await run()));
 
   try {
     await prisma.requestIdempotency.create({
@@ -44,14 +44,16 @@ export async function withIdempotency({ scope, key, actorId, orderId, run }) {
         scope,
         key,
         actorId,
-        orderId: orderId ?? null,
+        orderId,
         responseBody,
       },
     });
   } catch (err) {
     if (err.code === "P2002") {
       const raced = await prisma.requestIdempotency.findUnique({
-        where: { scope_key: { scope, key } },
+        where: {
+          scope_actorId_orderId_key: { scope, actorId, orderId, key },
+        },
       });
       if (raced?.actorId === actorId) return raced.responseBody;
       throw codedError("IDEMPOTENCY_KEY_CONFLICT", 409);
