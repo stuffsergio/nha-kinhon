@@ -89,6 +89,14 @@ export async function assignDelivery(req, res) {
     orderId: order.id,
   });
 
+  await createNotification({
+    userId: deliveryId,
+    type: "ORDER_ASSIGNED_COURIER",
+    template: "ORDER_ASSIGNED_COURIER",
+    templateParams: { shortId: id.slice(0, 8) },
+    orderId: order.id,
+  });
+
   res.json({ order: updated });
 }
 

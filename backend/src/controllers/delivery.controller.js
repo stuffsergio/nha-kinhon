@@ -3,6 +3,7 @@ import { AppError, NotFoundError } from "../utils/errors.js";
 import { createNotification } from "../services/notification.service.js";
 import {
   buildAvailableOrdersWhere,
+  formatDeliveryAttemptForCourier,
   formatDeliveryOrder,
   isPickupEligible,
 } from "../utils/deliveryOrders.js";
@@ -23,6 +24,31 @@ import {
 } from "../utils/deliveryPhoto.js";
 import { localeFromRequestBody } from "../utils/userLocale.js";
 import { resolveLocale } from "../i18n/index.js";
+import { recordFailedDeliveryAttempt } from "../services/deliveryAttempt.service.js";
+import {
+  parseDeliveryFailedIdempotencyKey,
+  withDeliveryFailedAttemptIdempotency,
+} from "../utils/deliveryFailedIdempotency.js";
+
+const deliveryOrderInclude = {
+  items: true,
+  deliveryAttempts: {
+    orderBy: { attemptNumber: "asc" },
+    include: { photos: { select: { url: true } } },
+  },
+};
+
+async function loadDeliveryOrderForCourier(orderId, courierId) {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: deliveryOrderInclude,
+  });
+  if (!order) throw new NotFoundError("Pedido");
+  if (order.deliveryId !== courierId) {
+    throw new AppError("Este pedido no te pertenece", 403);
+  }
+  return order;
+}
 
 async function countActiveOrdersForDelivery(deliveryUserId) {
   return prisma.order.count({
@@ -66,7 +92,7 @@ export async function listAvailable(req, res) {
 export async function listMyOrders(req, res) {
   const orders = await prisma.order.findMany({
     where: { deliveryId: req.user.id },
-    include: { items: true },
+    include: deliveryOrderInclude,
     orderBy: { createdAt: "desc" },
   });
 
@@ -108,7 +134,72 @@ export async function pickupOrder(req, res) {
     orderId: order.id,
   });
 
+  await createNotification({
+    userId: req.user.id,
+    type: "ORDER_ASSIGNED_COURIER",
+    template: "ORDER_ASSIGNED_COURIER",
+    templateParams: { shortId: id.slice(0, 8) },
+    orderId: order.id,
+  });
+
   res.json({ order: formatDeliveryOrder(updated) });
+}
+
+export async function reportFailedAttempt(req, res) {
+  const { id } = req.params;
+  const { reason, note, lat, lng } = req.body;
+  const idempotencyKey = parseDeliveryFailedIdempotencyKey(req.headers["x-idempotency-key"]);
+
+  const { responseBody, replayed } = await withDeliveryFailedAttemptIdempotency({
+    key: idempotencyKey,
+    courierId: req.user.id,
+    orderId: id,
+    run: async () => {
+      const result = await recordFailedDeliveryAttempt({
+        orderId: id,
+        courierId: req.user.id,
+        reason,
+        note,
+        lat,
+        lng,
+        photosRaw: req.body,
+      });
+
+      const order = await loadDeliveryOrderForCourier(id, req.user.id);
+
+      return {
+        attempt: formatDeliveryAttemptForCourier({
+          ...result.attempt,
+          photos: await prisma.orderDeliveryPhoto.findMany({
+            where: { deliveryAttemptId: result.attempt.id },
+            select: { url: true },
+          }),
+        }),
+        order: formatDeliveryOrder(order),
+        status: result.nextStatus,
+      };
+    },
+  });
+
+  if (replayed) {
+    res.setHeader("Idempotent-Replayed", "true");
+  }
+  res.json(responseBody);
+}
+
+/** Historial de intentos fallidos del pedido (solo repartidor asignado). */
+export async function getOrderFailedAttempts(req, res) {
+  await loadDeliveryOrderForCourier(req.params.id, req.user.id);
+
+  const attempts = await prisma.deliveryAttempt.findMany({
+    where: { orderId: req.params.id },
+    orderBy: { attemptNumber: "asc" },
+    include: { photos: { select: { url: true } } },
+  });
+
+  res.json({
+    attempts: attempts.map(formatDeliveryAttemptForCourier),
+  });
 }
 
 export async function updateDeliveryStatus(req, res) {

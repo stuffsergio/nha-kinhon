@@ -5,6 +5,7 @@ import { isUnpaidOrderStatus } from "../utils/orderPayment.js";
 import { isProduction } from "../config/runtime.js";
 import { getStripe, isStripeConfigured } from "../services/stripe.service.js";
 import { finalizeOrderAsPaid } from "../services/orderConfirm.service.js";
+import { applyStripeRefundWebhook } from "../services/refund.service.js";
 
 export async function getConfig(req, res) {
   res.json({ publishableKey: env.STRIPE_PUBLISHABLE_KEY });
@@ -136,6 +137,15 @@ export async function handleWebhook(req, res) {
     event = req.body;
   }
 
+  if (event.id && env.STRIPE_WEBHOOK_SECRET) {
+    const already = await prisma.stripeProcessedEvent.findUnique({
+      where: { eventId: event.id },
+    });
+    if (already) {
+      return res.json({ received: true, duplicate: true });
+    }
+  }
+
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
     const orderId = session.metadata?.orderId;
@@ -207,6 +217,42 @@ export async function handleWebhook(req, res) {
 
     if (orderId) {
       await markOrderCancelled(orderId);
+    }
+  }
+
+  if (
+    event.type === "charge.refunded" ||
+    event.type === "refund.updated" ||
+    event.type === "refund.failed"
+  ) {
+    const refundsToProcess = [];
+    if (event.type === "charge.refunded") {
+      const charge = event.data.object;
+      const list = charge.refunds?.data;
+      if (Array.isArray(list) && list.length > 0) {
+        refundsToProcess.push(...list);
+      }
+    } else {
+      refundsToProcess.push(event.data.object);
+    }
+
+    for (const stripeRefund of refundsToProcess) {
+      if (stripeRefund?.object === "refund" || stripeRefund?.id?.startsWith("re_")) {
+        await applyStripeRefundWebhook({
+          stripeRefundObject: stripeRefund,
+          eventType: event.type,
+        });
+      }
+    }
+  }
+
+  if (event.id && env.STRIPE_WEBHOOK_SECRET) {
+    try {
+      await prisma.stripeProcessedEvent.create({
+        data: { eventId: event.id, type: event.type },
+      });
+    } catch (err) {
+      if (err.code !== "P2002") throw err;
     }
   }
 

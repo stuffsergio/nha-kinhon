@@ -16,6 +16,7 @@ import {
 import OrderTimeline from "../components/OrderTimeline";
 import OrderTrackingPanel from "../components/OrderTrackingPanel";
 import OrderReceiptShare from "../components/OrderReceiptShare";
+import OrderIncidentsPanel from "../components/OrderIncidentsPanel";
 import DeliveryProofGallery from "../components/DeliveryProofGallery";
 import { useAuth } from "../context/AuthContext";
 import { useOrders } from "../hooks/useOrders";
@@ -403,6 +404,8 @@ export default function Profile() {
                   />
 
                   <OrderReceiptShare orderId={order.id} />
+
+                  <OrderIncidentsPanel order={order} />
 
                   {order.delivery && (
                     <div className="flex items-center gap-2 text-[15px] text-[#1d1d1f]">
