@@ -30,7 +30,7 @@ function sniffImageMime(buffer) {
   return null;
 }
 
-function validateDataUrlImage(trimmed) {
+export function assertValidDataUrlImage(trimmed) {
   const match = /^data:(image\/(?:jpeg|jpg|png|webp));base64,(.+)$/i.exec(trimmed);
   if (!match) {
     throw new Error("Formato de imagen no soportado");
@@ -69,7 +69,7 @@ export function assertValidDeliveryPhotoUrl(url) {
   const isDataImage = /^data:image\/(jpeg|jpg|png|webp);base64,/i.test(trimmed);
   const isHttp = /^https?:\/\//i.test(trimmed);
   if (isDataImage) {
-    return validateDataUrlImage(trimmed);
+    return assertValidDataUrlImage(trimmed);
   }
   if (isHttp) {
     return trimmed;

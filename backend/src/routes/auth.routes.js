@@ -12,6 +12,8 @@ router.post("/refresh", refreshLimiter, requireSameSiteOrigin, authController.re
 router.post("/logout", authenticate, requireSameSiteOrigin, authController.logout);
 router.get("/me", authenticate, authController.getMe);
 router.put("/me", authenticate, authController.updateMe);
+router.post("/me/avatar", authenticate, authController.uploadAvatar);
+router.delete("/me/avatar", authenticate, authController.deleteAvatar);
 router.put("/me/password", authenticate, authController.changePassword);
 
 export default router;
