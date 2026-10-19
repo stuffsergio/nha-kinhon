@@ -5,6 +5,8 @@ import { NotFoundError, UnauthorizedError, codedError } from "../utils/errors.js
 import { resolveLocale, translateMessage } from "../i18n/index.js";
 import { accessPayload, publicAuthUser } from "../utils/accessTokenPayload.js";
 import { localeFromRequestBody } from "../utils/userLocale.js";
+import { assertValidAvatarValue } from "../utils/avatar.js";
+import { AppError } from "../utils/errors.js";
 
 const REFRESH_COOKIE_OPTS = {
   httpOnly: true,
@@ -12,6 +14,26 @@ const REFRESH_COOKIE_OPTS = {
   sameSite: "none",
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
+
+const meSelect = {
+  id: true,
+  name: true,
+  email: true,
+  phone: true,
+  avatar: true,
+  balance: true,
+  role: true,
+  locale: true,
+};
+
+function resolveAvatarInput(avatar) {
+  if (avatar === undefined) return undefined;
+  try {
+    return assertValidAvatarValue(avatar);
+  } catch (e) {
+    throw new AppError(e.message, 400);
+  }
+}
 
 function publicUser(user) {
   return {
@@ -152,17 +174,52 @@ export async function updateMe(req, res) {
     if (existing) throw codedError("EMAIL_IN_USE", 409);
   }
 
-  const data = { name, email, phone, avatar };
+  const data = { name, email, phone };
+  const avatarValue = resolveAvatarInput(avatar);
+  if (avatarValue !== undefined) data.avatar = avatarValue;
   const localeValue = localeFromRequestBody(bodyLocale);
   if (localeValue !== undefined) data.locale = localeValue;
 
   const user = await prisma.user.update({
     where: { id: req.user.id },
     data,
-    select: {
-      id: true, name: true, email: true, phone: true,
-      avatar: true, balance: true, role: true, locale: true,
-    },
+    select: meSelect,
+  });
+
+  req.locale = resolveLocale({
+    userLocale: user.locale,
+    acceptLanguage: req.headers?.["accept-language"],
+  });
+
+  res.json({ user });
+}
+
+export async function uploadAvatar(req, res) {
+  const { avatar } = req.body ?? {};
+  if (avatar === undefined || avatar === null || avatar === "") {
+    throw new AppError("Se requiere un avatar en formato imagen base64", 400);
+  }
+  const avatarValue = resolveAvatarInput(avatar);
+
+  const user = await prisma.user.update({
+    where: { id: req.user.id },
+    data: { avatar: avatarValue },
+    select: meSelect,
+  });
+
+  req.locale = resolveLocale({
+    userLocale: user.locale,
+    acceptLanguage: req.headers?.["accept-language"],
+  });
+
+  res.json({ user });
+}
+
+export async function deleteAvatar(req, res) {
+  const user = await prisma.user.update({
+    where: { id: req.user.id },
+    data: { avatar: null },
+    select: meSelect,
   });
 
   req.locale = resolveLocale({

@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { assertStripeEnvironmentAlignment } from "./stripeEnvironment.js";
 
 const env = {
   PORT: parseInt(process.env.PORT, 10) || 3000,
@@ -10,6 +11,8 @@ const env = {
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
   STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY || "",
   CLIENT_URL: process.env.CLIENT_URL || "http://localhost:5173",
+  APP_ENV: process.env.APP_ENV || "",
+  SENTRY_DSN: process.env.SENTRY_DSN || "",
 };
 
 const required = ["DATABASE_URL", "JWT_SECRET"];
@@ -19,5 +22,7 @@ for (const key of required) {
     process.exit(1);
   }
 }
+
+assertStripeEnvironmentAlignment();
 
 export default env;

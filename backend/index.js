@@ -1,3 +1,7 @@
+import { initSentry, registerSentryExpressErrorHandler } from "./src/config/sentry.js";
+
+initSentry();
+
 import express from "express";
 import compression from "compression";
 import { brotliJson } from "./src/middleware/brotliJson.js";
@@ -28,6 +32,7 @@ import adminDeliveryRoutes from "./src/routes/admin.delivery.routes.js";
 import { localeMiddleware } from "./src/middleware/locale.js";
 import { formatErrorResponse } from "./src/utils/httpErrors.js";
 import { translateError } from "./src/i18n/index.js";
+import { describeStripeEnvironmentForHealth } from "./src/config/stripeEnvironment.js";
 
 const app = express();
 
@@ -59,7 +64,11 @@ app.use(cookieParser());
 app.use(localeMiddleware);
 
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+  res.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    ...describeStripeEnvironmentForHealth(),
+  });
 });
 
 app.use("/api/auth", authRoutes);
@@ -102,6 +111,8 @@ app.use((req, res) => {
     code: "ROUTE_NOT_FOUND",
   });
 });
+
+registerSentryExpressErrorHandler(app);
 
 app.use((err, req, res, _next) => {
   const locale = req.locale;

@@ -223,6 +223,105 @@ describe("auth controller", () => {
     });
   });
 
+  describe("updateMe avatar", () => {
+    const tinyPng = Buffer.from([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
+    ]);
+
+    it("rejects invalid avatar with 400", async () => {
+      const req = {
+        user: { id: 1 },
+        body: { avatar: "not-an-image" },
+        headers: {},
+      };
+      const res = mockRes();
+
+      await expect(authController.updateMe(req, res)).rejects.toMatchObject({
+        statusCode: 400,
+      });
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it("accepts null avatar to clear", async () => {
+      const req = {
+        user: { id: 1 },
+        body: { avatar: null },
+        headers: { "accept-language": "es-ES" },
+      };
+      const res = mockRes();
+      const updated = {
+        id: 1,
+        name: "Test",
+        email: "t@t.com",
+        phone: null,
+        avatar: null,
+        balance: 0,
+        role: "USER",
+        locale: "es",
+      };
+      prisma.user.update.mockResolvedValue(updated);
+
+      await authController.updateMe(req, res);
+
+      expect(prisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ avatar: null }),
+        }),
+      );
+    });
+
+    it("uploadAvatar stores validated data URL", async () => {
+      const url = `data:image/png;base64,${tinyPng.toString("base64")}`;
+      const req = {
+        user: { id: 1 },
+        body: { avatar: url },
+        headers: { "accept-language": "es-ES" },
+      };
+      const res = mockRes();
+      prisma.user.update.mockResolvedValue({
+        id: 1,
+        name: "Test",
+        email: "t@t.com",
+        phone: null,
+        avatar: url,
+        balance: 0,
+        role: "USER",
+        locale: "es",
+      });
+
+      await authController.uploadAvatar(req, res);
+
+      expect(prisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { avatar: url } }),
+      );
+      expect(res.json).toHaveBeenCalled();
+    });
+
+    it("deleteAvatar clears avatar", async () => {
+      const req = {
+        user: { id: 1 },
+        headers: { "accept-language": "es-ES" },
+      };
+      const res = mockRes();
+      prisma.user.update.mockResolvedValue({
+        id: 1,
+        name: "Test",
+        email: "t@t.com",
+        phone: null,
+        avatar: null,
+        balance: 0,
+        role: "USER",
+        locale: "es",
+      });
+
+      await authController.deleteAvatar(req, res);
+
+      expect(prisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { avatar: null } }),
+      );
+    });
+  });
+
   describe("updateMe locale", () => {
     it("persists supported locale", async () => {
       const req = {
