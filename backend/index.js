@@ -29,6 +29,8 @@ import stripeRoutes from "./src/routes/stripe.routes.js";
 import deliveryAuthRoutes from "./src/routes/delivery.auth.routes.js";
 import deliveryRoutes from "./src/routes/delivery.routes.js";
 import adminDeliveryRoutes from "./src/routes/admin.delivery.routes.js";
+import walletRoutes from "./src/routes/wallet.routes.js";
+import adminWalletRoutes from "./src/routes/admin.wallet.routes.js";
 import { localeMiddleware } from "./src/middleware/locale.js";
 import { formatErrorResponse } from "./src/utils/httpErrors.js";
 import { translateError } from "./src/i18n/index.js";
@@ -87,6 +89,8 @@ app.use("/api/stripe", stripeRoutes);
 app.use("/api/delivery/auth", deliveryAuthRoutes);
 app.use("/api/delivery", deliveryRoutes);
 app.use("/api/admin", adminDeliveryRoutes);
+app.use("/api/wallet", walletRoutes);
+app.use("/api/admin/wallet", adminWalletRoutes);
 
 if (process.env.NODE_ENV === "production") {
   const __dirname = path.dirname(fileURLToPath(import.meta.url));

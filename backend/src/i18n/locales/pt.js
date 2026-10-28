@@ -64,6 +64,13 @@ export default {
     REFUND_STRIPE_FAILED: "Não foi possível processar o reembolso na Stripe",
     BUYER_RESOLUTION_WINDOW_CLOSED: "Prazo para corrigir dados ou reintentar expirado",
     RECIPIENT_UPDATE_NOT_ALLOWED: "Não pode actualizar o destinatário neste estado",
+    WALLET_DISABLED: "A carteira não está disponível neste ambiente",
+    WALLET_INSUFFICIENT_FUNDS: "Saldo insuficiente",
+    ACCOUNT_DELETED: "Esta conta foi eliminada",
+    USERNAME_MISMATCH: "O nome de confirmação não coincide",
+    ACTIVE_ORDERS: "Não pode eliminar a conta com encomendas activas",
+    WALLET_BALANCE: "Esvazie a carteira antes de eliminar a conta",
+    ACCOUNT_BLOCKED: "Conta bloqueada. Contacte o suporte.",
   },
   resources: {
     Recurso: "Recurso",
@@ -168,6 +175,30 @@ export default {
     ADMIN_UNDELIVERABLE: {
       title: "Encomenda não entregável",
       message: "Incidência na encomenda #{{shortId}}.",
+    },
+    WALLET_DEPOSIT_RECEIVED: {
+      title: "Depósito recebido",
+      message: "Foram creditados {{amount}} XOF na sua carteira.",
+    },
+    WALLET_TRANSFER_SENT: {
+      title: "Transferência enviada",
+      message: "Enviou {{amount}} XOF para {{maskedName}}.",
+    },
+    WALLET_TRANSFER_RECEIVED: {
+      title: "Transferência recebida",
+      message: "Recebeu {{amount}} XOF na sua carteira.",
+    },
+    WALLET_WITHDRAWAL_APPROVED: {
+      title: "Levantamento aprovado",
+      message: "O seu levantamento de {{amount}} XOF foi aprovado.",
+    },
+    WALLET_WITHDRAWAL_REJECTED: {
+      title: "Levantamento rejeitado",
+      message: "O seu levantamento de {{amount}} XOF foi rejeitado.",
+    },
+    WALLET_WITHDRAWAL_PAID: {
+      title: "Levantamento pago",
+      message: "O seu levantamento de {{amount}} XOF foi marcado como pago.",
     },
   },
   receipt: {

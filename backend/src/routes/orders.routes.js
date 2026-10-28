@@ -9,6 +9,10 @@ import {
 } from "../validations/refundsDelivery.js";
 import * as ordersController from "../controllers/orders.controller.js";
 import * as orderResolutionController from "../controllers/orderResolution.controller.js";
+import { requireWalletEnabled } from "../middleware/walletEnabled.js";
+import { requireActiveUser } from "../middleware/requireActiveUser.js";
+import * as walletController from "../controllers/wallet.controller.js";
+import { walletMutationLimiter } from "../middleware/rateLimits.js";
 
 const router = Router();
 
@@ -46,6 +50,14 @@ router.post(
   authenticate,
   confirmPaymentLimiter,
   ordersController.confirmAfterPayment,
+);
+router.post(
+  "/:id/pay-with-wallet",
+  authenticate,
+  requireActiveUser,
+  requireWalletEnabled,
+  walletMutationLimiter,
+  walletController.payOrderWithWalletController,
 );
 router.put("/:id/status", authenticate, requireAdmin, ordersController.updateStatus);
 router.post("/:id/cancel", authenticate, refundRequestLimiter, orderResolutionController.cancelWithRefund);
