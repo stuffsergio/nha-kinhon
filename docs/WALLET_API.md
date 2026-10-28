@@ -57,17 +57,16 @@ Stripe (depósitos): `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBH
 
 Rate limit: 5/h por IP.
 
-**Body**
+**Body (contrato app móvil PR #27)**
 
 ```json
 {
-  "confirmUsername": "Carlos Mendes",
-  "password": "123456"
+  "confirmUsername": "Carlos Mendes"
 }
 ```
 
-- `confirmUsername` debe coincidir **exactamente** con el campo `name` del usuario.
-- Reautenticación con contraseña actual.
+- `confirmUsername`: nombre visible del usuario (`User.name`). Comparación **exacta** tras `trim()` en ambos lados.
+- `password`: **opcional** (web puede enviarla); la app móvil no la envía.
 
 **Éxito `200`**
 
@@ -79,15 +78,16 @@ Rate limit: 5/h por IP.
 }
 ```
 
-**Errores**
+**Errores** (siempre incluyen `{ "error": "…", "code": "…" }`)
 
 | Código | HTTP | Motivo |
 |--------|------|--------|
-| `ACCOUNT_DELETE_USERNAME_MISMATCH` | 400 | Nombre no coincide |
-| `PASSWORD_WRONG` | 400 | Contraseña incorrecta |
-| `ACCOUNT_DELETE_ACTIVE_ORDERS` | 409 | Pedidos en curso |
-| `ACCOUNT_DELETE_WALLET_BALANCE` | 409 | Saldo o retenciones ≠ 0 |
-| `ACCOUNT_ALREADY_DELETED` | 409 | Ya eliminada |
+| `USERNAME_MISMATCH` | 400 | `confirmUsername` (trim) ≠ `User.name` (trim) |
+| `ACTIVE_ORDERS` | 409 | Pedidos activos (pago, confirmado o en reparto) |
+| `WALLET_BALANCE` | 409 | Saldo o retenciones de billetera ≠ 0 |
+| `ACCOUNT_DELETED` | 403 | Cuenta ya eliminada |
+| `ACCOUNT_BLOCKED` | 403 | Cuenta bloqueada |
+| `PASSWORD_WRONG` | 400 | Solo si se envió `password` y es incorrecta |
 
 Efecto: soft-delete, PII anonimizada, tokens push/contactos borrados, refresh revocado; pedidos/pagos históricos conservados.
 

@@ -67,8 +67,10 @@ export default {
     WALLET_DISABLED: "A carteira não está disponível neste ambiente",
     WALLET_INSUFFICIENT_FUNDS: "Saldo insuficiente",
     ACCOUNT_DELETED: "Esta conta foi eliminada",
-    ACCOUNT_DELETE_ACTIVE_ORDERS: "Não pode eliminar a conta com encomendas activas",
-    ACCOUNT_DELETE_WALLET_BALANCE: "Esvazie a carteira antes de eliminar a conta",
+    USERNAME_MISMATCH: "O nome de confirmação não coincide",
+    ACTIVE_ORDERS: "Não pode eliminar a conta com encomendas activas",
+    WALLET_BALANCE: "Esvazie a carteira antes de eliminar a conta",
+    ACCOUNT_BLOCKED: "Conta bloqueada. Contacte o suporte.",
   },
   resources: {
     Recurso: "Recurso",

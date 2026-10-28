@@ -14,28 +14,35 @@ const ACTIVE_ORDER_STATUSES = [
   "DELIVERY_FAILED_ATTEMPT",
 ];
 
+function namesMatch(confirmUsername, userName) {
+  return String(confirmUsername ?? "").trim() === String(userName ?? "").trim();
+}
+
 export async function deleteUserAccount({ userId, confirmUsername, password }) {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw codedError("NOT_FOUND", 404);
-  if (user.deletedAt) throw codedError("ACCOUNT_ALREADY_DELETED", 409);
+  if (user.deletedAt) throw codedError("ACCOUNT_DELETED", 403);
+  if (user.isBlocked) throw codedError("ACCOUNT_BLOCKED", 403);
 
-  if (confirmUsername !== user.name) {
-    throw codedError("ACCOUNT_DELETE_USERNAME_MISMATCH", 400);
+  if (!namesMatch(confirmUsername, user.name)) {
+    throw codedError("USERNAME_MISMATCH", 400);
   }
 
-  const valid = await bcrypt.compare(password, user.password);
-  if (!valid) throw codedError("PASSWORD_WRONG", 400);
+  if (password != null && password !== "") {
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) throw codedError("PASSWORD_WRONG", 400);
+  }
 
   const activeOrders = await prisma.order.count({
     where: { userId, status: { in: ACTIVE_ORDER_STATUSES } },
   });
   if (activeOrders > 0) {
-    throw codedError("ACCOUNT_DELETE_ACTIVE_ORDERS", 409);
+    throw codedError("ACTIVE_ORDERS", 409);
   }
 
   const { balanceMinor, availableMinor, pendingHoldMinor } = await getWalletBalanceMinor(userId);
   if (balanceMinor !== 0 || availableMinor !== 0 || pendingHoldMinor !== 0) {
-    throw codedError("ACCOUNT_DELETE_WALLET_BALANCE", 409);
+    throw codedError("WALLET_BALANCE", 409);
   }
 
   const anonymizedEmail = `deleted_${user.id}@deleted.local`;

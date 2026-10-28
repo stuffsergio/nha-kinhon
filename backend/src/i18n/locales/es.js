@@ -87,10 +87,9 @@ export default {
     WALLET_WITHDRAWAL_NOT_APPROVED: "El retiro debe estar aprobado antes de marcar como pagado",
     ACCOUNT_DELETED: "Esta cuenta ha sido eliminada",
     ACCOUNT_BLOCKED: "Cuenta bloqueada. Contacta con soporte.",
-    ACCOUNT_DELETE_USERNAME_MISMATCH: "El nombre de confirmación no coincide",
-    ACCOUNT_DELETE_ACTIVE_ORDERS: "No puedes eliminar la cuenta con pedidos activos",
-    ACCOUNT_DELETE_WALLET_BALANCE: "Vacía la billetera antes de eliminar la cuenta",
-    ACCOUNT_ALREADY_DELETED: "La cuenta ya fue eliminada",
+    USERNAME_MISMATCH: "El nombre de confirmación no coincide",
+    ACTIVE_ORDERS: "No puedes eliminar la cuenta con pedidos activos",
+    WALLET_BALANCE: "Vacía la billetera antes de eliminar la cuenta",
   },
   resources: {
     Recurso: "Recurso",

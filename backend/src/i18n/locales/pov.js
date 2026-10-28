@@ -70,8 +70,10 @@ export default {
     WALLET_DISABLED: "Carteira na sta disponível",
     WALLET_INSUFFICIENT_FUNDS: "Saldu na basta",
     ACCOUNT_DELETED: "Konta bu eliminadu",
-    ACCOUNT_DELETE_ACTIVE_ORDERS: "Na pode elimina konta ku pedidu ativu",
-    ACCOUNT_DELETE_WALLET_BALANCE: "Bazi saldu na carteira antis di elimina",
+    USERNAME_MISMATCH: "Nomi konfirmason na ta bate",
+    ACTIVE_ORDERS: "Na pode elimina konta ku pedidu ativu",
+    WALLET_BALANCE: "Bazi saldu na carteira antis di elimina",
+    ACCOUNT_BLOCKED: "Konta blokeadu",
   },
   resources: {
     Recurso: "Recurso",
