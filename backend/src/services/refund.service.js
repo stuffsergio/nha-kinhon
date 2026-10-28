@@ -18,6 +18,8 @@ import { recordOrderEvent } from "./orderEvent.service.js";
 import { createNotification } from "./notification.service.js";
 import { notifyAllAdmins } from "./adminNotify.service.js";
 import { logAdminAction } from "./adminAudit.service.js";
+import { isWalletEnabled } from "../config/wallet.js";
+import { creditWalletRefund } from "./wallet.service.js";
 
 async function loadOrderWithRefunds(orderId) {
   return prisma.order.findUnique({
@@ -241,7 +243,8 @@ export async function createAdminManualRefund({
   reason,
   adminNote,
   orderItemIds,
-  acceptLanguage,
+  acceptLanguage: _acceptLanguage,
+  refundToWallet = false,
 }) {
   const amount = Math.round(amountFcfa);
 
@@ -285,7 +288,50 @@ export async function createAdminManualRefund({
     return created;
   });
 
+  if (refundToWallet && isWalletEnabled()) {
+    return executeWalletRefundById(refund.id, adminId);
+  }
   return executeStripeRefundById(refund.id);
+}
+
+async function executeWalletRefundById(refundId, adminId) {
+  const refund = await prisma.refund.findUnique({
+    where: { id: refundId },
+    include: { order: true },
+  });
+  if (!refund) throw new AppError("Reembolso no encontrado", 404);
+  if (refund.status !== "PENDING") return refund;
+
+  await creditWalletRefund({
+    userId: refund.order.userId,
+    amountMinor: refund.amount,
+    orderId: refund.orderId,
+    idempotencyKey: `refund-${refund.id}`,
+    adminId,
+  });
+
+  const updated = await prisma.refund.update({
+    where: { id: refund.id },
+    data: { status: "SUCCEEDED" },
+  });
+
+  await recordOrderEvent({
+    orderId: refund.orderId,
+    type: "REFUND_COMPLETED",
+    actorId: adminId,
+    actorRole: "ADMIN",
+    payload: { refundId: refund.id, destination: "wallet" },
+  });
+
+  await createNotification({
+    userId: refund.order.userId,
+    type: "REFUND_COMPLETED",
+    template: "REFUND_COMPLETED",
+    templateParams: { shortId: refund.orderId.slice(0, 8) },
+    orderId: refund.orderId,
+  });
+
+  return updated;
 }
 
 async function executeStripeRefundById(refundId) {
@@ -296,9 +342,12 @@ async function executeStripeRefundById(refundId) {
   if (!refund) throw new AppError("Reembolso no encontrado", 404);
   if (refund.status !== "PENDING") return refund;
 
-  if (!isStripeConfigured()) throw codedError("STRIPE_NOT_CONFIGURED", 503);
-
   const order = refund.order;
+  if (order.stripePaymentId?.startsWith("wallet:") && isWalletEnabled()) {
+    return executeWalletRefundById(refundId, refund.approvedById);
+  }
+
+  if (!isStripeConfigured()) throw codedError("STRIPE_NOT_CONFIGURED", 503);
   let stripeRefund;
   try {
     const paymentRef = await resolvePaymentIntentId(order);

@@ -74,3 +74,35 @@ export const adminRefundLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+export const walletReadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 120,
+  handler: rateLimitHandler("RATE_LIMIT"),
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+export const walletMutationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 40,
+  handler: rateLimitHandler("RATE_LIMIT"),
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+export const adminWalletLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 80,
+  handler: rateLimitHandler("RATE_LIMIT"),
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+export const accountDeleteLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  handler: rateLimitHandler("RATE_LIMIT"),
+  standardHeaders: true,
+  legacyHeaders: false,
+});

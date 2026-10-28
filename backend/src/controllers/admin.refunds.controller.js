@@ -95,6 +95,7 @@ export async function manualRefund(req, res) {
     adminNote: req.body.adminNote,
     orderItemIds: req.body.orderItemIds,
     acceptLanguage: req.headers["accept-language"],
+    refundToWallet: req.body.refundToWallet === true,
   });
   res.status(201).json({ refund });
 }

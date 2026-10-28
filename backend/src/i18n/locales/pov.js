@@ -67,6 +67,11 @@ export default {
     REFUND_STRIPE_FAILED: "Na pudu processa devolucam na Stripe",
     BUYER_RESOLUTION_WINDOW_CLOSED: "Tempu pa koriji dadus o tenta outra bes ja passa",
     RECIPIENT_UPDATE_NOT_ALLOWED: "Bu na pode atualiza destinatáriu nen es stadu",
+    WALLET_DISABLED: "Carteira na sta disponível",
+    WALLET_INSUFFICIENT_FUNDS: "Saldu na basta",
+    ACCOUNT_DELETED: "Konta bu eliminadu",
+    ACCOUNT_DELETE_ACTIVE_ORDERS: "Na pode elimina konta ku pedidu ativu",
+    ACCOUNT_DELETE_WALLET_BALANCE: "Bazi saldu na carteira antis di elimina",
   },
   resources: {
     Recurso: "Recurso",
@@ -171,6 +176,30 @@ export default {
     ADMIN_UNDELIVERABLE: {
       title: "Pedidu na ntregue",
       message: "Insidensia na pedidu #{{shortId}}.",
+    },
+    WALLET_DEPOSIT_RECEIVED: {
+      title: "Depózitu recebidu",
+      message: "{{amount}} XOF entra na bu carteira.",
+    },
+    WALLET_TRANSFER_SENT: {
+      title: "Transferénsia mandadu",
+      message: "Bu manda {{amount}} XOF pa {{maskedName}}.",
+    },
+    WALLET_TRANSFER_RECEIVED: {
+      title: "Transferénsia recebidu",
+      message: "Bu recebe {{amount}} XOF na carteira.",
+    },
+    WALLET_WITHDRAWAL_APPROVED: {
+      title: "Levantamentu aprovadu",
+      message: "Levantamentu di {{amount}} XOF aprovadu.",
+    },
+    WALLET_WITHDRAWAL_REJECTED: {
+      title: "Levantamentu rejeitadu",
+      message: "Levantamentu di {{amount}} XOF rejeitadu.",
+    },
+    WALLET_WITHDRAWAL_PAID: {
+      title: "Levantamentu paga",
+      message: "Levantamentu di {{amount}} XOF marcadu paga.",
     },
   },
   receipt: {

@@ -70,6 +70,27 @@ export default {
     IDEMPOTENCY_KEY_CONFLICT: "Clave de idempotencia ya usada por otro cliente",
     DELIVERY_FAILURE_STATUS_INVALID: "No se puede registrar un fallo de entrega en este estado",
     DELIVERY_REATTEMPT_INVALID: "El pedido no admite reintento de entrega",
+    WALLET_DISABLED: "La billetera no está disponible en este entorno",
+    WALLET_NOT_FOUND: "Billetera no encontrada",
+    WALLET_AMOUNT_REQUIRED: "Se requiere un importe",
+    WALLET_AMOUNT_INTEGER: "El importe debe ser un entero (unidades mínimas XOF)",
+    WALLET_AMOUNT_INVALID: "Importe inválido",
+    WALLET_AMOUNT_OVERFLOW: "Importe fuera de rango permitido",
+    WALLET_AMOUNT_BELOW_MIN: "Importe por debajo del mínimo",
+    WALLET_AMOUNT_ABOVE_MAX: "Importe por encima del máximo",
+    WALLET_INSUFFICIENT_FUNDS: "Saldo insuficiente",
+    WALLET_TRANSFER_SELF: "No puedes transferir a tu propia cuenta",
+    WALLET_TRANSFER_DAILY_LIMIT: "Límite diario de transferencias alcanzado",
+    WALLET_RECIPIENT_NOT_FOUND: "Destinatario no encontrado",
+    WALLET_RECIPIENT_QUERY_SHORT: "Indica al menos 3 caracteres para buscar",
+    WALLET_WITHDRAWAL_ALREADY_REVIEWED: "Esta solicitud de retiro ya fue revisada",
+    WALLET_WITHDRAWAL_NOT_APPROVED: "El retiro debe estar aprobado antes de marcar como pagado",
+    ACCOUNT_DELETED: "Esta cuenta ha sido eliminada",
+    ACCOUNT_BLOCKED: "Cuenta bloqueada. Contacta con soporte.",
+    ACCOUNT_DELETE_USERNAME_MISMATCH: "El nombre de confirmación no coincide",
+    ACCOUNT_DELETE_ACTIVE_ORDERS: "No puedes eliminar la cuenta con pedidos activos",
+    ACCOUNT_DELETE_WALLET_BALANCE: "Vacía la billetera antes de eliminar la cuenta",
+    ACCOUNT_ALREADY_DELETED: "La cuenta ya fue eliminada",
   },
   resources: {
     Recurso: "Recurso",
@@ -97,6 +118,7 @@ export default {
     CART_ITEM_REMOVED: "Item eliminado",
     CART_CLEARED: "Carrito vaciado",
     TESTIMONIAL_DELETED: "Testimonio eliminado",
+    ACCOUNT_DELETED: "Tu cuenta ha sido eliminada",
   },
   notifications: {
     ORDER_PAYMENT_CONFIRMED: {
@@ -174,6 +196,30 @@ export default {
     ADMIN_UNDELIVERABLE: {
       title: "Pedido no entregable",
       message: "Incidencia en el pedido #{{shortId}}.",
+    },
+    WALLET_DEPOSIT_RECEIVED: {
+      title: "Depósito recibido",
+      message: "Se acreditaron {{amount}} XOF en tu billetera.",
+    },
+    WALLET_TRANSFER_SENT: {
+      title: "Transferencia enviada",
+      message: "Enviaste {{amount}} XOF a {{maskedName}}.",
+    },
+    WALLET_TRANSFER_RECEIVED: {
+      title: "Transferencia recibida",
+      message: "Recibiste {{amount}} XOF en tu billetera.",
+    },
+    WALLET_WITHDRAWAL_APPROVED: {
+      title: "Retiro aprobado",
+      message: "Tu retiro de {{amount}} XOF fue aprobado y está en proceso de pago.",
+    },
+    WALLET_WITHDRAWAL_REJECTED: {
+      title: "Retiro rechazado",
+      message: "Tu retiro de {{amount}} XOF fue rechazado. El importe quedó disponible de nuevo.",
+    },
+    WALLET_WITHDRAWAL_PAID: {
+      title: "Retiro pagado",
+      message: "Tu retiro de {{amount}} XOF fue marcado como pagado.",
     },
   },
   receipt: {

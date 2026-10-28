@@ -19,6 +19,8 @@ model User {
   stripeCustomerId String?
   refreshToken    String?
   locale          String?
+  deletedAt       DateTime?
+  isBlocked       Boolean   @default(false)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -32,7 +34,9 @@ model User {
   deliveryProfile DeliveryProfile?
   deliveryOrders  Order[]          @relation("DeliveryOrders")
   pushTokens      PushToken[]
+  wallet          Wallet?
 
+  @@index([deletedAt])
   @@map("users")
 }
 
@@ -429,6 +433,161 @@ enum NotificationType {
   ADMIN_UNDELIVERABLE
   PAYMENT_RECEIVED
   PROMO
+  WALLET_DEPOSIT_RECEIVED
+  WALLET_TRANSFER_SENT
+  WALLET_TRANSFER_RECEIVED
+  WALLET_WITHDRAWAL_APPROVED
+  WALLET_WITHDRAWAL_REJECTED
+  WALLET_WITHDRAWAL_PAID
+}
+
+model Wallet {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  currency  String   @default("XOF")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User                @relation(fields: [userId], references: [id], onDelete: Restrict)
+  ledgerEntries LedgerEntry[]
+  transactions WalletTransaction[]
+
+  @@map("wallets")
+}
+
+enum LedgerSide {
+  DEBIT
+  CREDIT
+}
+
+enum LedgerEntryType {
+  DEPOSIT
+  WITHDRAWAL
+  TRANSFER_IN
+  TRANSFER_OUT
+  ORDER_PAYMENT
+  REFUND
+  ADJUSTMENT
+}
+
+enum LedgerEntryStatus {
+  PENDING
+  POSTED
+  REVERSED
+}
+
+model LedgerEntry {
+  id                  String            @id @default(cuid())
+  walletId            String
+  side                LedgerSide
+  amountMinor         Int
+  entryType           LedgerEntryType
+  status              LedgerEntryStatus @default(POSTED)
+  reference           String?
+  idempotencyKey      String?           @unique
+  walletTransactionId String?
+  metadata            Json?
+  createdAt           DateTime          @default(now())
+
+  wallet            Wallet             @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  walletTransaction WalletTransaction? @relation(fields: [walletTransactionId], references: [id], onDelete: SetNull)
+
+  @@index([walletId])
+  @@index([walletTransactionId])
+  @@index([status])
+  @@map("ledger_entries")
+}
+
+enum WalletTransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  TRANSFER_OUT
+  TRANSFER_IN
+  ORDER_PAYMENT
+  REFUND
+  ADJUSTMENT
+}
+
+enum WalletTransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REVERSED
+}
+
+model WalletTransaction {
+  id              String                  @id @default(cuid())
+  walletId        String
+  type            WalletTransactionType
+  status          WalletTransactionStatus @default(PENDING)
+  amountMinor     Int
+  counterpartyWalletId String?
+  orderId         String?
+  note            String?
+  stripePaymentIntentId String?
+  idempotencyKey  String?                 @unique
+  metadata        Json?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  wallet           Wallet          @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  ledgerEntries    LedgerEntry[]
+  withdrawalRequest WithdrawalRequest?
+
+  @@index([walletId, createdAt])
+  @@index([status])
+  @@index([orderId])
+  @@map("wallet_transactions")
+}
+
+enum WithdrawalMethod {
+  MOBILE_MONEY
+  BANK
+}
+
+enum WithdrawalRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+  CANCELLED
+}
+
+model WithdrawalRequest {
+  id                  String                  @id @default(cuid())
+  walletTransactionId String                  @unique
+  userId              String
+  amountMinor         Int
+  method              WithdrawalMethod
+  destination         Json
+  status              WithdrawalRequestStatus @default(PENDING)
+  adminNote           String?
+  reviewedById        String?
+  reviewedAt          DateTime?
+  paidAt              DateTime?
+  payoutReference     String?
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+
+  walletTransaction WalletTransaction @relation(fields: [walletTransactionId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([status])
+  @@map("withdrawal_requests")
+}
+
+model WalletRequestIdempotency {
+  id           String   @id @default(cuid())
+  scope        String
+  key          String
+  actorId      String
+  responseBody Json
+  createdAt    DateTime @default(now())
+
+  @@unique([scope, actorId, key])
+  @@index([actorId])
+  @@map("wallet_request_idempotency")
 }
 
 model OrderDeliveryPhoto {

@@ -6,6 +6,8 @@ import { isProduction } from "../config/runtime.js";
 import { getStripe, isStripeConfigured } from "../services/stripe.service.js";
 import { finalizeOrderAsPaid } from "../services/orderConfirm.service.js";
 import { applyStripeRefundWebhook } from "../services/refund.service.js";
+import { finalizeWalletDepositFromStripe } from "../services/walletDeposit.service.js";
+import { isWalletEnabled } from "../config/wallet.js";
 
 export async function getConfig(req, res) {
   res.json({ publishableKey: env.STRIPE_PUBLISHABLE_KEY });
@@ -190,7 +192,9 @@ export async function handleWebhook(req, res) {
       orderId = byPi?.id;
     }
 
-    if (orderId) {
+    if (paymentIntent.metadata?.type === "wallet_deposit" && isWalletEnabled()) {
+      await finalizeWalletDepositFromStripe(paymentIntent);
+    } else if (orderId) {
       await finalizeOrderAsPaid({
         orderId,
         userId,

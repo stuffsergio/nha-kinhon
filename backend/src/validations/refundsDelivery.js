@@ -38,6 +38,7 @@ export const adminRefundDecisionSchema = z.object({
 });
 
 export const adminManualRefundSchema = z.object({
+  refundToWallet: z.boolean().optional(),
   amount: z.number().int().positive(),
   reason: z
     .enum([

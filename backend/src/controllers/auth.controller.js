@@ -7,6 +7,7 @@ import { accessPayload, publicAuthUser } from "../utils/accessTokenPayload.js";
 import { localeFromRequestBody } from "../utils/userLocale.js";
 import { assertValidAvatarValue } from "../utils/avatar.js";
 import { AppError } from "../utils/errors.js";
+import { deleteUserAccount } from "../services/accountDeletion.service.js";
 
 const REFRESH_COOKIE_OPTS = {
   httpOnly: true,
@@ -85,6 +86,7 @@ export async function login(req, res) {
 
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) throw new UnauthorizedError("Credenciales incorrectas", "CREDENTIALS_INVALID");
+  if (user.deletedAt) throw codedError("ACCOUNT_DELETED", 403);
 
   const valid = await bcrypt.compare(password, user.password);
   if (!valid) throw new UnauthorizedError("Credenciales incorrectas", "CREDENTIALS_INVALID");
@@ -120,6 +122,7 @@ export async function refresh(req, res) {
   if (!user || user.refreshToken !== refreshToken) {
     throw new UnauthorizedError("Refresh token inválido", "REFRESH_MISMATCH");
   }
+  if (user.deletedAt) throw codedError("ACCOUNT_DELETED", 403);
 
   const newAccess = signAccessToken(accessPayload(user));
   const newRefresh = signRefreshToken({ id: user.id });
@@ -228,6 +231,22 @@ export async function deleteAvatar(req, res) {
   });
 
   res.json({ user });
+}
+
+export async function deleteAccount(req, res) {
+  const { confirmUsername, password } = req.body;
+  const result = await deleteUserAccount({
+    userId: req.user.id,
+    confirmUsername,
+    password,
+  });
+
+  res.clearCookie("refreshToken", { httpOnly: true, secure: true, sameSite: "none" });
+  res.json({
+    message: translateMessage("ACCOUNT_DELETED", req.locale),
+    code: result.code,
+    deletedAt: result.deletedAt,
+  });
 }
 
 export async function changePassword(req, res) {
