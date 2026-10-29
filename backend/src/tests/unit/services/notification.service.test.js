@@ -10,6 +10,7 @@ vi.mock("../../../config/db.js", () => ({
 
 import prisma from "../../../config/db.js";
 import {
+  buildNotificationPushData,
   createNotification,
   formatNotificationForClient,
   notificationDeepLinkFields,
@@ -43,6 +44,28 @@ describe("notification.service", () => {
     });
   });
 
+  describe("buildNotificationPushData", () => {
+    it("includes wallet ids on wallet notifications", () => {
+      expect(
+        buildNotificationPushData({
+          type: "WALLET_WITHDRAWAL_APPROVED",
+          notificationId: "n-w",
+          orderId: null,
+          walletTransactionId: "wt-1",
+          withdrawalRequestId: "wr-1",
+        }),
+      ).toEqual({
+        type: "WALLET_WITHDRAWAL_APPROVED",
+        notificationId: "n-w",
+        orderId: null,
+        url: "/notificaciones",
+        route: "/notificaciones",
+        walletTransactionId: "wt-1",
+        withdrawalRequestId: "wr-1",
+      });
+    });
+  });
+
   describe("formatNotificationForClient", () => {
     it("merges deep link fields onto stored notification", () => {
       const formatted = formatNotificationForClient({
@@ -59,6 +82,18 @@ describe("notification.service", () => {
       expect(formatted.orderId).toBe("ord-1");
       expect(formatted.screen).toBe("order_tracking");
       expect(formatted.route).toBe("/pedido/ord-1");
+    });
+
+    it("exposes walletTransactionId and withdrawalRequestId", () => {
+      const formatted = formatNotificationForClient({
+        id: "n1",
+        type: "WALLET_DEPOSIT_RECEIVED",
+        walletTransactionId: "wt-9",
+        withdrawalRequestId: null,
+        orderId: null,
+      });
+      expect(formatted.walletTransactionId).toBe("wt-9");
+      expect(formatted.withdrawalRequestId).toBeNull();
     });
   });
 
@@ -118,6 +153,30 @@ describe("notification.service", () => {
           message: expect.stringContaining("abcd1234"),
         }),
       });
+    });
+
+    it("persists walletTransactionId on wallet deposit notifications", async () => {
+      prisma.user.findUnique.mockResolvedValue({ locale: "es" });
+      prisma.notification.create.mockResolvedValue({ id: "n-wallet" });
+      prisma.pushToken.findMany.mockResolvedValue([{ token: "ExponentPushToken[x]" }]);
+
+      await createNotification({
+        userId: "user-1",
+        type: "WALLET_DEPOSIT_RECEIVED",
+        template: "WALLET_DEPOSIT_RECEIVED",
+        templateParams: { amount: "5000" },
+        walletTransactionId: "wt-deposit",
+      });
+
+      expect(prisma.notification.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          walletTransactionId: "wt-deposit",
+          withdrawalRequestId: null,
+        }),
+      });
+
+      const body = JSON.parse(global.fetch.mock.calls[0][1].body);
+      expect(body[0].data.walletTransactionId).toBe("wt-deposit");
     });
 
     it("uses Accept-Language when recipient locale is null (e.g. DELIVERY user)", async () => {

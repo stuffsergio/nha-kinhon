@@ -9,7 +9,11 @@ import {
   payOrderWithWallet,
 } from "../services/wallet.service.js";
 import { createWalletDepositIntent } from "../services/walletDeposit.service.js";
-import { createWithdrawalRequest } from "../services/walletWithdrawal.service.js";
+import {
+  cancelWithdrawalByUser,
+  createWithdrawalRequest,
+  listWithdrawalsForUser,
+} from "../services/walletWithdrawal.service.js";
 
 function parseBodyAmount(body) {
   const amountMinor = parseAmountMinor(body.amount);
@@ -19,6 +23,16 @@ function parseBodyAmount(body) {
 export async function getWallet(req, res) {
   const summary = await getWalletSummaryForUser(req.user.id);
   res.json(summary);
+}
+
+export async function listWithdrawals(req, res) {
+  const { cursor, limit, status } = req.query;
+  const result = await listWithdrawalsForUser(req.user.id, {
+    cursor,
+    limit: limit ? parseInt(limit, 10) : undefined,
+    status,
+  });
+  res.json(result);
 }
 
 export async function listTransactions(req, res) {
@@ -116,6 +130,24 @@ export async function createWithdrawal(req, res) {
   });
 
   res.status(replay ? 200 : 201).json(body);
+}
+
+export async function cancelWithdrawal(req, res) {
+  const { id: withdrawalId } = req.params;
+  const idempotencyKey = requireIdempotencyKey(req.headers["x-idempotency-key"]);
+
+  const { body, replay } = await withWalletIdempotency({
+    scope: "wallet_withdrawal_cancel",
+    key: idempotencyKey,
+    actorId: req.user.id,
+    run: async () =>
+      cancelWithdrawalByUser({
+        userId: req.user.id,
+        withdrawalId,
+      }),
+  });
+
+  res.status(replay ? 200 : 200).json(body);
 }
 
 export async function payOrderWithWalletController(req, res) {

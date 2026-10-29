@@ -15,7 +15,9 @@ Documentación para implementar la billetera y el borrado de cuenta en clientes 
 stateDiagram-v2
   [*] --> PENDING: POST /wallet/withdrawals
   PENDING --> APPROVED: admin approve
+  PENDING --> CANCELLED: usuario cancela
   PENDING --> REJECTED: admin reject
+  CANCELLED --> [*]: fondos liberados
   REJECTED --> [*]: fondos liberados
   APPROVED --> PAID: admin mark-paid
   PAID --> [*]
@@ -118,6 +120,29 @@ Efecto: soft-delete, PII anonimizada, tokens push/contactos borrados, refresh re
 
 Paginación cursor. `limit` máx. 50.
 
+Cada ítem incluye `withdrawalRequest` cuando `type` es `WITHDRAWAL` (o `null` en otros tipos):
+
+```json
+{
+  "transactions": [
+    {
+      "id": "clx…",
+      "type": "WITHDRAWAL",
+      "status": "PENDING",
+      "amountMinor": 10000,
+      "withdrawalRequest": {
+        "id": "clw…",
+        "status": "PENDING",
+        "method": "MOBILE_MONEY"
+      }
+    }
+  ],
+  "nextCursor": null
+}
+```
+
+El cliente puede distinguir retiros **PENDING** (aún en revisión) de **APPROVED** (aprobado, pago manual pendiente) leyendo `withdrawalRequest.status` (no confundir con `WalletTransaction.status`, que permanece `PENDING` hasta el pago admin).
+
 ### `GET /api/wallet/recipients/lookup?q=maria@example.com`
 
 Respuesta si existe (sin enumeración de emails):
@@ -195,6 +220,58 @@ o `{ "found": false }`.
 
 `method`: `MOBILE_MONEY` | `BANK`. Retiene fondos (`pendingHoldMinor`) hasta resolución admin.
 
+### `GET /api/wallet/withdrawals?cursor=&limit=20&status=`
+
+Lista las solicitudes de retiro del usuario autenticado (paginación cursor, `limit` máx. 50). Filtro opcional `status`: `PENDING` | `APPROVED` | `REJECTED` | `PAID` | `CANCELLED`.
+
+**Respuesta `200`**
+
+```json
+{
+  "withdrawals": [
+    {
+      "id": "clw…",
+      "walletTransactionId": "clx…",
+      "status": "PENDING",
+      "method": "MOBILE_MONEY",
+      "amountMinor": 10000,
+      "destination": { "operator": "ORANGE_MONEY", "phone": "+245…", "accountName": "Carlos" },
+      "createdAt": "2026-10-28T12:00:00.000Z",
+      "updatedAt": "2026-10-28T12:00:00.000Z",
+      "reviewedAt": null,
+      "paidAt": null
+    }
+  ],
+  "nextCursor": null
+}
+```
+
+### `POST /api/wallet/withdrawals/:id/cancel`
+
+Cancela un retiro propio mientras `WithdrawalRequest.status` sea `PENDING`. Libera la retención en el libro mayor (asientos `PENDING` → `REVERSED`, transacción `CANCELLED`) dentro de una transacción con bloqueo de fila de billetera.
+
+Requiere `X-Idempotency-Key` (mismo contrato que otras mutaciones).
+
+**Respuesta `200`**
+
+```json
+{
+  "withdrawalRequest": { "id": "…", "status": "CANCELLED", … },
+  "walletTransaction": { "id": "…", "status": "CANCELLED", … },
+  "idempotent": false
+}
+```
+
+Si ya estaba `CANCELLED`, responde `200` con `"idempotent": true` (repetición segura). No permite cancelar retiros de otro usuario ni estados distintos de `PENDING`.
+
+**Errores**
+
+| Código | HTTP | Motivo |
+|--------|------|--------|
+| `NOT_FOUND` | 404 | Id inexistente o no pertenece al usuario |
+| `WALLET_WITHDRAWAL_NOT_PENDING` | 409 | Estado `APPROVED`, `REJECTED`, `PAID`, etc. |
+| `IDEMPOTENCY_KEY_REQUIRED` | 400 | Falta cabecera en cancelación |
+
 ### Admin
 
 | Método | Ruta |
@@ -246,6 +323,28 @@ Pedidos pagados con billetera (`stripePaymentId` prefijo `wallet:`) reembolsan a
 
 Deep links: bandeja `/notificaciones` (sin `orderId`).
 
+Push `data` y registros en bandeja incluyen, cuando aplica:
+
+| Campo | Cuándo |
+|-------|--------|
+| `walletTransactionId` | Depósito, transferencias, retiros (aprobado/rechazado/pagado) |
+| `withdrawalRequestId` | Notificaciones de retiro (`WALLET_WITHDRAWAL_*`) |
+
+Ejemplo push retiro aprobado:
+
+```json
+{
+  "type": "WALLET_WITHDRAWAL_APPROVED",
+  "notificationId": "…",
+  "walletTransactionId": "…",
+  "withdrawalRequestId": "…",
+  "url": "/notificaciones",
+  "route": "/notificaciones"
+}
+```
+
+La app móvil puede usar estos ids para refrescar `GET /api/wallet/withdrawals` o el detalle de movimientos.
+
 ---
 
 ## Checklist frontend
@@ -254,7 +353,9 @@ Deep links: bandeja `/notificaciones` (sin `orderId`).
 - [ ] Enviar `X-Idempotency-Key` UUID v4 en cada mutación.
 - [ ] PaymentSheet depósito: no optimizar saldo local sin webhook.
 - [ ] Lookup destinatario antes de confirmar transferencia.
-- [ ] UI retiros: estados PENDING / APPROVED / PAID / REJECTED.
+- [ ] UI retiros: listar con `GET /api/wallet/withdrawals`; cancelar PENDING con `POST …/cancel`; estados PENDING / APPROVED / PAID / REJECTED / CANCELLED.
+- [ ] En movimientos, usar `withdrawalRequest.status` en ítems `WITHDRAWAL`.
+- [ ] Notificaciones wallet: leer `walletTransactionId` / `withdrawalRequestId` del push o bandeja.
 - [ ] Manejar `503 WALLET_DISABLED` ocultando sección billetera.
 - [ ] Flujo borrar cuenta: confirmar nombre exacto + contraseña; bloqueos 409.
 - [ ] Formatear XOF como entero con separadores locales.
@@ -264,4 +365,4 @@ Deep links: bandeja `/notificaciones` (sin `orderId`).
 
 ## Códigos de error billetera (resumen)
 
-`WALLET_DISABLED`, `WALLET_INSUFFICIENT_FUNDS`, `WALLET_AMOUNT_*`, `WALLET_TRANSFER_*`, `WALLET_WITHDRAWAL_*`, `IDEMPOTENCY_KEY_*`, `ACCOUNT_*`.
+`WALLET_DISABLED`, `WALLET_INSUFFICIENT_FUNDS`, `WALLET_AMOUNT_*`, `WALLET_TRANSFER_*`, `WALLET_WITHDRAWAL_*` (incl. `WALLET_WITHDRAWAL_NOT_PENDING`), `IDEMPOTENCY_KEY_*`, `ACCOUNT_*`.

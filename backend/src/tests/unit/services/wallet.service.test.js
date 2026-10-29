@@ -5,6 +5,7 @@ function makeTx() {
     wallet: { findUnique: vi.fn(), create: vi.fn() },
     walletTransaction: {
       findUnique: vi.fn(),
+      findMany: vi.fn(),
       create: vi.fn(),
       aggregate: vi.fn(),
     },

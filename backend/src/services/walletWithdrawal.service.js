@@ -73,6 +73,83 @@ export async function createWithdrawalRequest({
   });
 }
 
+const userWithdrawalSelect = {
+  id: true,
+  status: true,
+  method: true,
+  amountMinor: true,
+  destination: true,
+  walletTransactionId: true,
+  createdAt: true,
+  updatedAt: true,
+  reviewedAt: true,
+  paidAt: true,
+};
+
+export async function listWithdrawalsForUser(userId, { cursor, limit = 20, status }) {
+  const take = Math.min(Math.max(limit, 1), 50);
+  const where = { userId };
+  if (status) where.status = status;
+
+  const items = await prisma.withdrawalRequest.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    take: take + 1,
+    select: userWithdrawalSelect,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+  });
+
+  const hasMore = items.length > take;
+  const page = hasMore ? items.slice(0, take) : items;
+  return { withdrawals: page, nextCursor: hasMore ? page[page.length - 1].id : null };
+}
+
+export async function cancelWithdrawalByUser({ userId, withdrawalId }) {
+  return prisma.$transaction(async (tx) => {
+    const wr = await tx.withdrawalRequest.findUnique({
+      where: { id: withdrawalId },
+      include: { walletTransaction: true },
+    });
+    if (!wr || wr.userId !== userId) throw codedError("NOT_FOUND", 404);
+
+    if (wr.status === "CANCELLED") {
+      return {
+        withdrawalRequest: wr,
+        walletTransaction: wr.walletTransaction,
+        idempotent: true,
+      };
+    }
+
+    if (wr.status !== "PENDING") {
+      throw codedError("WALLET_WITHDRAWAL_NOT_PENDING", 409);
+    }
+
+    const walletTx = wr.walletTransaction;
+    await lockWalletRow(tx, walletTx.walletId);
+
+    await tx.ledgerEntry.updateMany({
+      where: { walletTransactionId: walletTx.id, status: "PENDING" },
+      data: { status: "REVERSED" },
+    });
+
+    await tx.walletTransaction.update({
+      where: { id: walletTx.id },
+      data: { status: "CANCELLED" },
+    });
+
+    const withdrawalRequest = await tx.withdrawalRequest.update({
+      where: { id: withdrawalId },
+      data: { status: "CANCELLED" },
+    });
+
+    const walletTransaction = await tx.walletTransaction.findUnique({
+      where: { id: walletTx.id },
+    });
+
+    return { withdrawalRequest, walletTransaction, idempotent: false };
+  });
+}
+
 export async function listWithdrawalsForAdmin({ status, cursor, limit = 30 }) {
   const take = Math.min(Math.max(limit, 1), 100);
   const where = status ? { status } : {};
@@ -160,6 +237,8 @@ async function reviewWithdrawal({ withdrawalId, adminId, adminNote, decision }) 
       type,
       template,
       templateParams: { amount: String(wr.amountMinor) },
+      walletTransactionId: wr.walletTransactionId,
+      withdrawalRequestId: wr.id,
     });
 
     return tx.withdrawalRequest.findUnique({ where: { id: withdrawalId } });
@@ -215,6 +294,8 @@ export async function markWithdrawalPaid({ withdrawalId, adminId, payoutReferenc
       type: "WALLET_WITHDRAWAL_PAID",
       template: "WALLET_WITHDRAWAL_PAID",
       templateParams: { amount: String(wr.amountMinor) },
+      walletTransactionId: wr.walletTransactionId,
+      withdrawalRequestId: wr.id,
     });
 
     return updated;
