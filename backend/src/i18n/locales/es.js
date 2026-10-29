@@ -85,6 +85,7 @@ export default {
     WALLET_RECIPIENT_QUERY_SHORT: "Indica al menos 3 caracteres para buscar",
     WALLET_WITHDRAWAL_ALREADY_REVIEWED: "Esta solicitud de retiro ya fue revisada",
     WALLET_WITHDRAWAL_NOT_APPROVED: "El retiro debe estar aprobado antes de marcar como pagado",
+    WALLET_WITHDRAWAL_NOT_PENDING: "Solo puedes cancelar retiros pendientes de revisión",
     ACCOUNT_DELETED: "Esta cuenta ha sido eliminada",
     ACCOUNT_BLOCKED: "Cuenta bloqueada. Contacta con soporte.",
     USERNAME_MISMATCH: "El nombre de confirmación no coincide",

@@ -20,6 +20,7 @@ router.use(authenticate, requireActiveUser, requireWalletEnabled);
 
 router.get("/", walletReadLimiter, walletController.getWallet);
 router.get("/transactions", walletReadLimiter, walletController.listTransactions);
+router.get("/withdrawals", walletReadLimiter, walletController.listWithdrawals);
 router.get("/recipients/lookup", walletReadLimiter, walletController.lookupRecipient);
 router.post(
   "/deposits",
@@ -38,6 +39,11 @@ router.post(
   walletMutationLimiter,
   validate(walletWithdrawalSchema),
   walletController.createWithdrawal,
+);
+router.post(
+  "/withdrawals/:id/cancel",
+  walletMutationLimiter,
+  walletController.cancelWithdrawal,
 );
 
 export default router;

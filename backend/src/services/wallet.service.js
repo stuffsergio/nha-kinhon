@@ -76,6 +76,11 @@ export async function listWalletTransactions(userId, { cursor, limit = 20, type,
     where,
     orderBy: { createdAt: "desc" },
     take: take + 1,
+    include: {
+      withdrawalRequest: {
+        select: { id: true, status: true, method: true },
+      },
+    },
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
   });
 
@@ -186,6 +191,7 @@ export async function transferBetweenUsers({
       type: "WALLET_TRANSFER_SENT",
       template: "WALLET_TRANSFER_SENT",
       templateParams: { amount: String(amountMinor), maskedName: recipient.maskedName },
+      walletTransactionId: outTx.id,
     });
 
     await createNotification({
@@ -193,6 +199,7 @@ export async function transferBetweenUsers({
       type: "WALLET_TRANSFER_RECEIVED",
       template: "WALLET_TRANSFER_RECEIVED",
       templateParams: { amount: String(amountMinor) },
+      walletTransactionId: inTx.id,
     });
 
     return formatTransferResponse(outTx, recipient);

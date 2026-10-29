@@ -154,6 +154,7 @@ export async function finalizeWalletDepositFromStripe(paymentIntent) {
       type: "WALLET_DEPOSIT_RECEIVED",
       template: "WALLET_DEPOSIT_RECEIVED",
       templateParams: { amount: String(walletTx.amountMinor) },
+      walletTransactionId: walletTx.id,
     });
 
     const balances = await sumLedgerBalancesTx(tx, wallet.id);

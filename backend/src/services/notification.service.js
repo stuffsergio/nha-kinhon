@@ -18,12 +18,38 @@ export function notificationDeepLinkFields(orderId) {
   };
 }
 
+export function walletNotificationExtraFields({ walletTransactionId, withdrawalRequestId }) {
+  const extra = {};
+  if (walletTransactionId) extra.walletTransactionId = walletTransactionId;
+  if (withdrawalRequestId) extra.withdrawalRequestId = withdrawalRequestId;
+  return extra;
+}
+
+export function buildNotificationPushData({
+  type,
+  notificationId,
+  orderId,
+  walletTransactionId,
+  withdrawalRequestId,
+}) {
+  return {
+    type,
+    notificationId,
+    ...notificationDeepLinkFields(orderId ?? null),
+    ...walletNotificationExtraFields({ walletTransactionId, withdrawalRequestId }),
+  };
+}
+
 export function formatNotificationForClient(notification) {
   const rest = { ...notification };
   delete rest.order;
   return {
     ...rest,
     ...notificationDeepLinkFields(rest.orderId ?? null),
+    ...walletNotificationExtraFields({
+      walletTransactionId: rest.walletTransactionId ?? null,
+      withdrawalRequestId: rest.withdrawalRequestId ?? null,
+    }),
   };
 }
 
@@ -41,6 +67,8 @@ export async function createNotification({
   title,
   message,
   orderId,
+  walletTransactionId,
+  withdrawalRequestId,
   template,
   templateParams = {},
   acceptLanguage,
@@ -62,22 +90,20 @@ export async function createNotification({
       title: finalTitle,
       message: finalMessage,
       orderId: orderId ?? null,
+      walletTransactionId: walletTransactionId ?? null,
+      withdrawalRequestId: withdrawalRequestId ?? null,
     },
   });
 
   console.log(`[NOTIFICATION] User: ${userId} | ${finalTitle}: ${finalMessage}`);
 
-  const data = orderId
-    ? {
-        type,
-        notificationId: notification.id,
-        ...notificationDeepLinkFields(orderId),
-      }
-    : {
-        type,
-        notificationId: notification.id,
-        ...notificationDeepLinkFields(null),
-      };
+  const data = buildNotificationPushData({
+    type,
+    notificationId: notification.id,
+    orderId: orderId ?? null,
+    walletTransactionId: walletTransactionId ?? null,
+    withdrawalRequestId: withdrawalRequestId ?? null,
+  });
 
   await sendPushToUser(userId, finalTitle, finalMessage, data);
 

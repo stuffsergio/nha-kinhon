@@ -69,6 +69,7 @@ export default {
     RECIPIENT_UPDATE_NOT_ALLOWED: "Bu na pode atualiza destinatáriu nen es stadu",
     WALLET_DISABLED: "Carteira na sta disponível",
     WALLET_INSUFFICIENT_FUNDS: "Saldu na basta",
+    WALLET_WITHDRAWAL_NOT_PENDING: "Bu so pode kansa levantamentu pendenti di revizon",
     ACCOUNT_DELETED: "Konta bu eliminadu",
     USERNAME_MISMATCH: "Nomi konfirmason na ta bate",
     ACTIVE_ORDERS: "Na pode elimina konta ku pedidu ativu",

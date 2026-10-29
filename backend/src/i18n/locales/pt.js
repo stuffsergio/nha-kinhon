@@ -66,6 +66,7 @@ export default {
     RECIPIENT_UPDATE_NOT_ALLOWED: "Não pode actualizar o destinatário neste estado",
     WALLET_DISABLED: "A carteira não está disponível neste ambiente",
     WALLET_INSUFFICIENT_FUNDS: "Saldo insuficiente",
+    WALLET_WITHDRAWAL_NOT_PENDING: "Só pode cancelar levantamentos pendentes de revisão",
     ACCOUNT_DELETED: "Esta conta foi eliminada",
     USERNAME_MISMATCH: "O nome de confirmação não coincide",
     ACTIVE_ORDERS: "Não pode eliminar a conta com encomendas activas",
